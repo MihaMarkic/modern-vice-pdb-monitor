@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ModernVicePdbMonitor.Engine.Services.Abstract;
-using ModernVicePdbMonitor.Engine.Services.Implementation;
 using Spectre.Console;
 using System;
 using System.Net;

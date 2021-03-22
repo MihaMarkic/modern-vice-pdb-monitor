@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using ModernVicePdbMonitor.Engine.Commands;
 using ModernVicePdbMonitor.Engine.Services.Abstract;
 
 namespace ModernVicePdbMonitor.Engine.Services.Implementation
