@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Assets\Icons\cog.svg" />
+    <None Remove="Styles\AppStyles.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\Icons\cog.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaXaml Include="Styles\AppStyles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </AvaloniaXaml>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="0.10.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.10.0" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="0.10.0" />
+    <PackageReference Include="Avalonia.Svg.Skia" Version="0.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.2" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.2" />
+   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
+    <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
+  </ItemGroup>
+</Project>

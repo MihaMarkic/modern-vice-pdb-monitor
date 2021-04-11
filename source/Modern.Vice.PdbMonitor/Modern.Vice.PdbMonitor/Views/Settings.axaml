@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:SettingsViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.Settings">
+  <DockPanel LastChildFill="True">
+    <Button x:Name="Verify" HorizontalAlignment="Right" DockPanel.Dock="Bottom" Command="{Binding VerifyValues}">Verify values</Button>
+    <StackPanel Orientation="Vertical">
+      <TextBlock Classes="h1">Settings</TextBlock>
+      <TextBlock Classes="label">VICE directory</TextBlock>
+      <DockPanel LastChildFill="True">
+        <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenViceDirectory">...</Button>
+        <TextBox Text="{Binding Settings.VicePath}" Margin="0,0,4,0" />
+      </DockPanel>
+      <CheckBox IsChecked="{Binding IsVicePathGood}" IsEnabled="false">Valid directory</CheckBox>
+    </StackPanel>
+  </DockPanel>
+</UserControl>
