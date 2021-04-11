@@ -16,6 +16,7 @@
   </Window.Styles>
   <DockPanel LastChildFill="True">
     <DockPanel LastChildFill="False" DockPanel.Dock="Top" Margin="4,0">
+      <Button x:Name="createProject" DockPanel.Dock="Left" Click="CreateProject">New project</Button>
       <ToggleButton DockPanel.Dock="Right" ToolTip.Tip="Settings" IsChecked="{Binding IsShowingSettings}">
         <Image Width="32" Height="32">
           <Image.Source>
@@ -25,6 +26,7 @@
       </ToggleButton>
     </DockPanel>
     <TextBlock IsVisible="{Binding !IsShowingSettings}">Content</TextBlock>
+    <Button Command="{Binding TestCommand}">Test</Button>
     <ContentControl IsVisible="{Binding IsShowingSettings}">
       <v:Settings DataContext="{Binding SettingsViewModel}" Margin="4"></v:Settings>
     </ContentControl>
