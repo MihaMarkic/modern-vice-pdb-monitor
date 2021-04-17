@@ -22,6 +22,16 @@
         <Separator/>
         <MenuItem Header="_Close" Command="{Binding CloseProjectCommand}" />
         <Separator/>
+        <MenuItem Command="{Binding ToggleSettingsVisibilityCommand}">
+          <MenuItem.Icon>
+            <CheckBox BorderThickness="0"
+                      IsHitTestVisible="False"
+                      IsChecked="{Binding IsShowingSettings}">
+              Settings
+            </CheckBox>
+          </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
         <MenuItem Classes="parent" Header="Recent" Items="{Binding RecentProjects}">
           <MenuItem.Styles>
             <Style Selector="MenuItem:not(.parent)">
@@ -30,20 +40,23 @@
               <Setter Property="CommandParameter" Value="{Binding}" />
             </Style>
           </MenuItem.Styles>
-          <!--<MenuItem.Styles>
-            <Style Selector="MenuItem">
-              <Setter Property="Header" Value="{Binding}" />
-              <Setter Property="Command" Value="{Binding DataContext.OpenProjectFromPathCommand, ElementName=Menu}" />
-              <Setter Property="CommandParameter" Value="{Binding}" />
-            </Style>
-          </MenuItem.Styles>-->
-          
         </MenuItem>
         <Separator/>
         <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
       </MenuItem>
+      <!--<MenuItem Header="_Window">
+        <MenuItem Command="{Binding ToggleErrorsVisibilityCommand}">
+          <MenuItem.Icon>
+            <CheckBox BorderThickness="0"
+                      IsHitTestVisible="False"
+                      IsChecked="{Binding IsShowingErrors}">
+              Errors
+            </CheckBox>
+          </MenuItem.Icon>
+        </MenuItem>
+      </MenuItem>-->
     </Menu>
-    <DockPanel LastChildFill="False" DockPanel.Dock="Top" Margin="4,0">
+    <!--<DockPanel LastChildFill="False" DockPanel.Dock="Top" Margin="4,0">
       <ToggleButton DockPanel.Dock="Right" ToolTip.Tip="Settings" IsChecked="{Binding IsShowingSettings}">
         <Image Width="32" Height="32">
           <Image.Source>
@@ -51,11 +64,15 @@
           </Image.Source>
         </Image>
       </ToggleButton>
-    </DockPanel>
-    <TextBlock IsVisible="{Binding !IsShowingSettings}">Content</TextBlock>
-    <Button Command="{Binding TestCommand}">Test</Button>
-    <ContentControl IsVisible="{Binding IsShowingSettings}">
-      <v:Settings DataContext="{Binding SettingsViewModel}" Margin="4"></v:Settings>
-    </ContentControl>
+    </DockPanel>-->
+    <TabControl DockPanel.Dock="Bottom" Height="200">
+      <TabItem Header="Errors">
+        <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
+      </TabItem>
+    </TabControl>
+    <Panel>
+      <TextBlock IsVisible="{Binding !IsShowingSettings}">Content</TextBlock>
+      <v:Settings IsVisible="{Binding DataContext.IsShowingSettings, ElementName=Menu}" DataContext="{Binding SettingsViewModel}" Margin="4"></v:Settings>
+    </Panel>
   </DockPanel>
 </Window>

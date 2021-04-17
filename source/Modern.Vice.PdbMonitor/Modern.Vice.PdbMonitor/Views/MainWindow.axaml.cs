@@ -5,10 +5,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
@@ -28,6 +31,7 @@ namespace Modern.Vice.PdbMonitor.Views
             viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
             viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
             viewModel.CloseApp = Close;
+            var dispatcher = scope.ServiceProvider.GetService<Righthand.MessageBus.IDispatcher>()!;
         }
 
         void InitializeComponent()

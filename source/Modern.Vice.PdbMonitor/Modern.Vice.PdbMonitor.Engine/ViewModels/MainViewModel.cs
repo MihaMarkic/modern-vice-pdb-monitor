@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic.CompilerServices;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
@@ -28,18 +29,21 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public Project? Project => globals.Project;
         public ObservableCollection<string> RecentProjects => globals.Settings.RecentProjects;
         public SettingsViewModel SettingsViewModel { get; }
-        public RelayCommand ShowSettingsCommand { get; }
+        public RelayCommand ToggleSettingsVisibilityCommand { get; }
         public RelayCommand TestCommand { get; }
         public RelayCommand CreateProjectCommand { get; }
         public RelayCommand<string> OpenProjectFromPathCommand { get; }
         public RelayCommand OpenProjectCommand { get; }
         public RelayCommand CloseProjectCommand { get; }
         public RelayCommand ExitCommand { get; }
+        public RelayCommand ToggleErrorsVisibilityCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
-        public Action CloseApp { get; set; }
+        public Action? CloseApp { get; set; }
         public bool IsShowingSettings { get; private set; }
+        public bool IsShowingErrors { get; set; }
         public bool IsBusy { get; private set; }
+        public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
         public string Caption
         {
             get
@@ -55,7 +59,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, SettingsViewModel settingsViewModel, Globals globals, IDispatcher dispatcher,
-            ISettingsManager settingsManager)
+            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
@@ -63,7 +67,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.globals = globals;
             this.dispatcher = dispatcher;
             this.settingsManager = settingsManager;
-            ShowSettingsCommand = new RelayCommand(() => IsShowingSettings = !IsShowingSettings);
+            ErrorMessagesViewModel = errorMessagesViewModel;
+            ToggleSettingsVisibilityCommand = new RelayCommand(() => IsShowingSettings = !IsShowingSettings);
             TestCommand = new RelayCommand(Test, () => !IsBusy);
             CreateProjectCommand = new RelayCommand(CreateProject, () => !IsBusy);
             OpenProjectFromPathCommand = new RelayCommand<string>(OpenProjectFromPath, _ => !IsBusy);
@@ -71,9 +76,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             globals.PropertyChanged += Globals_PropertyChanged;
             CloseProjectCommand = new RelayCommand(CloseProject, () => Project is not null);
             ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
+            ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
         }
-
-        private void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {

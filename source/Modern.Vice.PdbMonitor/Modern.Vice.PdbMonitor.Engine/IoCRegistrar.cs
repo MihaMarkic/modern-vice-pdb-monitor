@@ -12,6 +12,7 @@ namespace Modern.Vice.PdbMonitor.Engine
         {
             services.AddScoped<MainViewModel>();
             services.AddScoped<SettingsViewModel>();
+            services.AddScoped<ErrorMessagesViewModel>();
             services.AddSingleton<Globals>();
             services.AddSingleton<IAcmePdbParser, AcmePdbParser>();
             services.AddSingleton<ISettingsManager, SettingsManager>();
