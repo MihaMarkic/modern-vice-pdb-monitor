@@ -10,13 +10,40 @@
         MinHeight="200" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="Modern VICE PDB Monitor">
+        Title="{Binding Caption}">
   <Window.Styles>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
   </Window.Styles>
   <DockPanel LastChildFill="True">
+    <Menu x:Name="Menu" DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_New..." Command="{Binding CreateProjectCommand}"/>
+        <MenuItem Header="_Open..." Command="{Binding OpenProjectCommand}" />
+        <Separator/>
+        <MenuItem Header="_Close" Command="{Binding CloseProjectCommand}" />
+        <Separator/>
+        <MenuItem Classes="parent" Header="Recent" Items="{Binding RecentProjects}">
+          <MenuItem.Styles>
+            <Style Selector="MenuItem:not(.parent)">
+              <Setter Property="Header" Value="{Binding}" />
+              <Setter Property="Command" Value="{Binding DataContext.OpenProjectFromPathCommand, ElementName=Menu}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </Style>
+          </MenuItem.Styles>
+          <!--<MenuItem.Styles>
+            <Style Selector="MenuItem">
+              <Setter Property="Header" Value="{Binding}" />
+              <Setter Property="Command" Value="{Binding DataContext.OpenProjectFromPathCommand, ElementName=Menu}" />
+              <Setter Property="CommandParameter" Value="{Binding}" />
+            </Style>
+          </MenuItem.Styles>-->
+          
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
+      </MenuItem>
+    </Menu>
     <DockPanel LastChildFill="False" DockPanel.Dock="Top" Margin="4,0">
-      <Button x:Name="createProject" DockPanel.Dock="Left" Click="CreateProject">New project</Button>
       <ToggleButton DockPanel.Dock="Right" ToolTip.Tip="Settings" IsChecked="{Binding IsShowingSettings}">
         <Image Width="32" Height="32">
           <Image.Source>

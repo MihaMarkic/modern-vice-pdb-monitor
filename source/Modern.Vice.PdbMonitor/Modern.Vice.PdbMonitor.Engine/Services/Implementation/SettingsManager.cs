@@ -18,30 +18,54 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ModernVicePdbMonitor");
             settingsPath = Path.Combine(directory, "settings.json");
         }
-        public Settings Load()
+        public Settings LoadSettings()
         {
-            Settings? result = null;
-            if (File.Exists(settingsPath))
+            Settings? result;
+            try
             {
-                try
-                {
-                    string content = File.ReadAllText(settingsPath);
-                    result = JsonConvert.DeserializeObject<Settings>(content);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, $"Failed to load settings, will fallback to default");
-                }
+                result = Load<Settings>(settingsPath);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to load settings, will fallback to default");
+                result = null;
             }
             return result ?? new Settings();
         }
-        public void Save(Settings settings)
+        public T? Load<T>(string path)
+            where T: class
+        {
+            T? result = null;
+            if (File.Exists(path))
+            {
+                try
+                {
+                    string content = File.ReadAllText(path);
+                    result = JsonConvert.DeserializeObject<T>(content);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"Failed to load {typeof(T).Name}");
+                    throw;
+                }
+            }
+            return result;
+        }
+        public void Save(Settings settings) => Save(settings, settingsPath, true);
+        public void Save<T>(T settings, string path, bool createDirectory)
         {
             var data = JsonConvert.SerializeObject(settings);
             try
             {
-                Directory.CreateDirectory(directory);
-                File.WriteAllText(settingsPath, data);
+                if (createDirectory)
+                {
+                    string? directory = Path.GetDirectoryName(path);
+                    if (directory is not null)
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+                }
+                File.WriteAllText(path, data);
             }
             catch (Exception ex)
             {

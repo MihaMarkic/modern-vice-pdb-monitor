@@ -1,10 +1,9 @@
 using System;
-using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
@@ -26,31 +25,76 @@ namespace Modern.Vice.PdbMonitor.Views
             Bootstrap.Init(scope);
             var viewModel = scope.ServiceProvider.GetService<MainViewModel>()!;
             DataContext = viewModel;
+            viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
+            viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
+            viewModel.CloseApp = Close;
         }
 
         void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
         }
-        public MainViewModel ViewModel => (MainViewModel)DataContext!;
-        async void CreateProject(object sender, RoutedEventArgs e)
+
+        internal async Task<string?> ShowOpenProjectFileDialogAsync(string? initialDirectory, CancellationToken ct)
         {
             var dialog = new OpenFileDialog
             {
-                Title = "PRG file selection",
+                Title = "Open project",
                 AllowMultiple = false,
             };
-            dialog.Filters.Add(new FileDialogFilter { Name = "ACME .prg", Extensions = { "prg" } });
-
+            if (initialDirectory is not null)
+            {
+                dialog.Directory = initialDirectory;
+            }
+            dialog.Filters.Add(new FileDialogFilter { Name = "Modern ACME PDB Debugger .mapd", Extensions = { "mapd" } });
             if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var result = await dialog.ShowAsync(desktop.MainWindow);
                 if (result.Length == 1)
                 {
-                    ViewModel.CreateProject(result[0]);
+                    return result[0];
                 }
             }
+            return null;
         }
+        internal async Task<string?> ShowCreateProjectFileDialogAsync(string? initialDirectory, CancellationToken ct)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "Create project",
+            };
+            if (initialDirectory is not null)
+            {
+                dialog.Directory = initialDirectory;
+            }
+            dialog.Filters.Add(new FileDialogFilter { Name = "Modern ACME PDB Debugger .mapd", Extensions = { "mapd" } });
+            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var result = await dialog.ShowAsync(desktop.MainWindow);
+                return result;
+            }
+            return null;
+        }
+
+        public MainViewModel ViewModel => (MainViewModel)DataContext!;
+        //async void CreateProject(object sender, RoutedEventArgs e)
+        //{
+        //    var dialog = new OpenFileDialog
+        //    {
+        //        Title = "PRG file selection",
+        //        AllowMultiple = false,
+        //    };
+        //    dialog.Filters.Add(new FileDialogFilter { Name = "ACME .prg", Extensions = { "prg" } });
+
+        //    if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        //    {
+        //        var result = await dialog.ShowAsync(desktop.MainWindow);
+        //        if (result.Length == 1)
+        //        {
+        //            ViewModel.CreateProject result[0]);
+        //        }
+        //    }
+        //}
 
         protected override void OnClosed(EventArgs e)
         {
