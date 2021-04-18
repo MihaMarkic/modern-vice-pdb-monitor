@@ -12,11 +12,15 @@ namespace Modern.Vice.PdbMonitor.Engine
         {
             services.AddScoped<MainViewModel>();
             services.AddScoped<SettingsViewModel>();
+            services.AddScoped<DebuggerViewModel>();
             services.AddScoped<ErrorMessagesViewModel>();
+            services.AddScoped<ProjectExplorerViewModel>();
+            services.AddScoped<ProjectViewModel>();
             services.AddSingleton<Globals>();
             services.AddSingleton<IAcmePdbParser, AcmePdbParser>();
             services.AddSingleton<ISettingsManager, SettingsManager>();
             services.AddSingleton<IDispatcher, Dispatcher>();
+            services.AddTransient(sp => sp.CreateScope());
         }
     }
 }

@@ -5,15 +5,30 @@
         xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
         xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
         xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+        xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         MinWidth="400" Width="800"
         MinHeight="200" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding Caption}">
+  <Window.Resources>
+    <c:FirstNonNullConverter x:Key="FirstNonNullConverter" />
+  </Window.Resources>
   <Window.Styles>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
   </Window.Styles>
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:SettingsViewModel">
+      <v:Settings />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ProjectViewModel">
+      <v:Project />
+    </DataTemplate>
+    <DataTemplate DataType="vm:DebuggerViewModel">
+      <v:Debugger />
+    </DataTemplate>
+  </Window.DataTemplates>
   <DockPanel LastChildFill="True">
     <Menu x:Name="Menu" DockPanel.Dock="Top">
       <MenuItem Header="_File">
@@ -22,15 +37,8 @@
         <Separator/>
         <MenuItem Header="_Close" Command="{Binding CloseProjectCommand}" />
         <Separator/>
-        <MenuItem Command="{Binding ToggleSettingsVisibilityCommand}">
-          <MenuItem.Icon>
-            <CheckBox BorderThickness="0"
-                      IsHitTestVisible="False"
-                      IsChecked="{Binding IsShowingSettings}">
-              Settings
-            </CheckBox>
-          </MenuItem.Icon>
-        </MenuItem>
+        <MenuItem Header="Settings..." Command="{Binding ShowSettingsCommand}" />
+        <MenuItem Header="Project Settings..." Command="{Binding ShowProjectCommand}" />
         <Separator/>
         <MenuItem Classes="parent" Header="Recent" Items="{Binding RecentProjects}">
           <MenuItem.Styles>
@@ -70,9 +78,17 @@
         <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
       </TabItem>
     </TabControl>
-    <Panel>
+    <!--<Panel>
       <TextBlock IsVisible="{Binding !IsShowingSettings}">Content</TextBlock>
       <v:Settings IsVisible="{Binding DataContext.IsShowingSettings, ElementName=Menu}" DataContext="{Binding SettingsViewModel}" Margin="4"></v:Settings>
-    </Panel>
+    </Panel>-->
+    <ContentControl>
+      <ContentControl.Content>
+        <MultiBinding Converter="{StaticResource FirstNonNullConverter}">
+          <Binding Path="OverlayContent" />
+          <Binding Path="Content" />
+        </MultiBinding>
+      </ContentControl.Content>
+    </ContentControl>
   </DockPanel>
 </Window>

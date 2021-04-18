@@ -1,22 +1,22 @@
-﻿using System.IO;
+﻿using System;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using Modern.Vice.PdbMonitor.Core;
-using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
-using System.ComponentModel;
-using System;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class SettingsViewModel: NotifiableObject
+    public sealed class SettingsViewModel: OverlayContentViewModel
     {
         readonly ILogger<SettingsViewModel> logger;
         readonly Globals globals;
         public Settings Settings => globals.Settings;
         public bool IsVicePathGood { get; private set; }
         public RelayCommand VerifyValuesCommand { get; }
-        public SettingsViewModel(ILogger<SettingsViewModel> logger, Globals globals)
+        public SettingsViewModel(ILogger<SettingsViewModel> logger, Globals globals, IDispatcher dispatcher): base(dispatcher)
         {
             this.logger = logger;
             this.globals = globals;

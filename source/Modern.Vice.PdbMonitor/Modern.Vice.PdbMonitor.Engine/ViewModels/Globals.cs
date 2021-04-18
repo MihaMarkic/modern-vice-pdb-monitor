@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
@@ -13,7 +14,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly ISettingsManager settingsManager;
         public Settings Settings { get; set; } = default!;
         public Project? Project { get; set; }
-        public string? ProjectDirectory { get; set; }
+        public string? ProjectFile => Settings.RecentProjects.Count > 0 ? Settings.RecentProjects[0] : null;
+        public string? ProjectDirectory => Settings.RecentProjects.Count > 0 ? Path.GetDirectoryName(Settings.RecentProjects[0]) : null;
         public AcmePdb? Pdb { get; set; }
         public Globals(ILogger<Globals> logger, ISettingsManager settingsManager)
         {

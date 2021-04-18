@@ -7,6 +7,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic.CompilerServices;
 using Modern.Vice.PdbMonitor.Core;
@@ -25,11 +27,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly Globals globals;
         readonly IDispatcher dispatcher;
         readonly ISettingsManager settingsManager;
+        readonly IServiceScope scope;
         public string AppName => "Modern VICE PDB Monitor";
+        readonly Subscription closeOverlaySubscription;
         public Project? Project => globals.Project;
+        public bool IsProjectOpen => Project is not null;
         public ObservableCollection<string> RecentProjects => globals.Settings.RecentProjects;
-        public SettingsViewModel SettingsViewModel { get; }
-        public RelayCommand ToggleSettingsVisibilityCommand { get; }
+        public RelayCommand ShowSettingsCommand { get; }
+        public RelayCommand ShowProjectCommand { get; }
         public RelayCommand TestCommand { get; }
         public RelayCommand CreateProjectCommand { get; }
         public RelayCommand<string> OpenProjectFromPathCommand { get; }
@@ -40,10 +45,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
         public Action? CloseApp { get; set; }
-        public bool IsShowingSettings { get; private set; }
+        public bool IsShowingSettings => OverlayContent is SettingsViewModel;
+        public bool IsShowingProject => OverlayContent is ProjectViewModel;
         public bool IsShowingErrors { get; set; }
         public bool IsBusy { get; private set; }
+        public bool IsOverlayVisible => OverlayContent is not null;
         public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
+        public ContentViewModel Content { get; private set; } = default!;
+        public ContentViewModel? OverlayContent { get; private set; }
         public string Caption
         {
             get
@@ -58,17 +67,19 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
         }
-        public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, SettingsViewModel settingsViewModel, Globals globals, IDispatcher dispatcher,
-            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel)
+        public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
+            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
-            SettingsViewModel = settingsViewModel;
             this.globals = globals;
             this.dispatcher = dispatcher;
             this.settingsManager = settingsManager;
+            this.scope = scope;
+            closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
             ErrorMessagesViewModel = errorMessagesViewModel;
-            ToggleSettingsVisibilityCommand = new RelayCommand(() => IsShowingSettings = !IsShowingSettings);
+            ShowSettingsCommand = new RelayCommand(ShowSettings, () => !IsShowingSettings);
+            ShowProjectCommand = new(ShowProject, () => !IsShowingProject && IsProjectOpen);
             TestCommand = new RelayCommand(Test, () => !IsBusy);
             CreateProjectCommand = new RelayCommand(CreateProject, () => !IsBusy);
             OpenProjectFromPathCommand = new RelayCommand<string>(OpenProjectFromPath, _ => !IsBusy);
@@ -77,6 +88,53 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             CloseProjectCommand = new RelayCommand(CloseProject, () => Project is not null);
             ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
             ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
+            if (!Directory.Exists(globals.Settings.VicePath))
+            {
+                SwitchContent<SettingsViewModel>();
+            }
+            else
+            {
+                SwitchContent<DebuggerViewModel>();
+            }
+        }
+        internal void CloseOverlay(object sender, CloseOverlayMessage message)
+        {
+            OverlayContent?.Dispose();
+            OverlayContent = null;
+        }
+        internal void ShowSettings()
+        {
+            if (!IsShowingSettings)
+            {
+                SwitchOverlayContent<SettingsViewModel>();
+            }
+        }
+        internal void ShowProject()
+        {
+            if (!IsShowingProject)
+            {
+                SwitchOverlayContent<ProjectViewModel>();
+            }
+        }
+        internal T CreateContent<T>()
+            where T : ContentViewModel
+        {
+            var contentScope = scope.ServiceProvider.CreateScope();
+            T viewModel = contentScope.ServiceProvider.GetService<T>() ?? throw new Exception($"Failed creating {typeof(T).Name} ViewModel");
+            viewModel.AssignScope(contentScope);
+            return viewModel;
+        }
+        internal void SwitchContent<T>()
+            where T: ContentViewModel
+        {
+            Content?.Dispose();
+            Content = CreateContent<T>();
+        }
+        internal void SwitchOverlayContent<T>()
+            where T : ContentViewModel
+        {
+            OverlayContent?.Dispose();
+            OverlayContent = CreateContent<T>();
         }
         void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -189,7 +247,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             return false;
         }
 
-        internal string GetPdbPath(string prgPath) => Path.Combine(Path.GetDirectoryName(prgPath) ?? "", $"{Path.GetFileNameWithoutExtension(prgPath)}.pdb");
+        internal string GetPdbPath(string prgPath) => Path.Combine(globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "", $"{Path.GetFileNameWithoutExtension(prgPath)}.pdb");
 
         internal async Task<AcmePdb?> ParsePdbAsync(string pdbPath)
         {
@@ -235,6 +293,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     break;
                 case nameof(Project):
                     CloseProjectCommand.RaiseCanExecuteChanged();
+                    ShowProjectCommand.RaiseCanExecuteChanged();
+                    break;
+                case nameof(OverlayContent):
+                    ShowSettingsCommand.RaiseCanExecuteChanged();
+                    ShowProjectCommand.RaiseCanExecuteChanged();
                     break;
             }
         }

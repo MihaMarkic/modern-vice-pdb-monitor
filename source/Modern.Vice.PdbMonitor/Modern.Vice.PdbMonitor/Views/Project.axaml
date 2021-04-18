@@ -4,21 +4,20 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:DataType="vm:SettingsViewModel"
-             x:Class="Modern.Vice.PdbMonitor.Views.Settings">
+             x:DataType="vm:ProjectViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.Project">
   <DockPanel LastChildFill="True">
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right">
-      <Button Command="{Binding VerifyValuesCommand}">Verify values</Button>
       <Button Command="{Binding CloseCommand}">Close</Button>
     </StackPanel>
     <StackPanel Orientation="Vertical">
-      <TextBlock Classes="h1">Settings</TextBlock>
-      <TextBlock Classes="label">VICE directory</TextBlock>
+      <TextBlock Classes="h1" Text="{Binding ProjectFile, StringFormat={} Project {0}}" />
+      <TextBlock Classes="label">PRG path</TextBlock>
       <DockPanel LastChildFill="True">
-        <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenViceDirectory">...</Button>
-        <TextBox Text="{Binding Settings.VicePath}" Margin="0,0,4,0" />
+        <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenPrgFile">...</Button>
+        <TextBox Text="{Binding PrgPath}" Margin="0,0,4,0" />
       </DockPanel>
-      <CheckBox IsChecked="{Binding IsVicePathGood}" IsEnabled="false">Valid directory</CheckBox>
+      <CheckBox IsChecked="{Binding IsPrgPathValid}" IsEnabled="false">Valid file</CheckBox>
     </StackPanel>
   </DockPanel>
 </UserControl>

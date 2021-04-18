@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:ProjectExplorerViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
+  <DockPanel LastChildFill="True">
+    <TextBlock DockPanel.Dock="Top">Project Explorer</TextBlock>
+    <TreeView Items="{Binding Nodes}">
+      <TreeView.DataTemplates>
+        <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
+          <TextBlock Text="{Binding Name}" />
+        </TreeDataTemplate >
+        <TreeDataTemplate  DataType="m:AcmePdbFile">
+          <TextBlock Text="{Binding Path}" />
+        </TreeDataTemplate >
+        <TreeDataTemplate  DataType="m:AcmePdbInclude">
+          <TextBlock Text="{Binding Path}" />
+        </TreeDataTemplate >
+        <TreeDataTemplate  DataType="m:AcmePdbLabel">
+          <TextBlock>
+            <TextBlock.Text>
+              <MultiBinding StringFormat="{}{0} [${1:x4}]">
+                <Binding Path="Name" />
+                <Binding Path="Address" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </TreeDataTemplate >
+      </TreeView.DataTemplates>
+    </TreeView>
+  </DockPanel>
+</UserControl>

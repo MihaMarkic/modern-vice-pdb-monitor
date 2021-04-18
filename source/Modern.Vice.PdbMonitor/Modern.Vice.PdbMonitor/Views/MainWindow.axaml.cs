@@ -9,7 +9,6 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
-using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using Righthand.MessageBus;
 
