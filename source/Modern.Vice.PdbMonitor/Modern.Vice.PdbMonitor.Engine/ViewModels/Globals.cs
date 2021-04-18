@@ -16,6 +16,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public Project? Project { get; set; }
         public string? ProjectFile => Settings.RecentProjects.Count > 0 ? Settings.RecentProjects[0] : null;
         public string? ProjectDirectory => Settings.RecentProjects.Count > 0 ? Path.GetDirectoryName(Settings.RecentProjects[0]) : null;
+        public string? FullPrgPath => IsPrgSet ? Path.Combine(ProjectDirectory!, Project!.PrgPath!) : null;
+        public bool IsPrgSet => string.IsNullOrWhiteSpace(Project?.PrgPath);
         public AcmePdb? Pdb { get; set; }
         public Globals(ILogger<Globals> logger, ISettingsManager settingsManager)
         {

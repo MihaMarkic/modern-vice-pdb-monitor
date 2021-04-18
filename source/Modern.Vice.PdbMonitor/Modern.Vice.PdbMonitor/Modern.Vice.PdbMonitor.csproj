@@ -6,10 +6,20 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\Icons\cog.svg" />
+    <None Remove="Assets\Icons\disabled_link.svg" />
+    <None Remove="Assets\Icons\link.svg" />
+    <None Remove="Assets\Icons\pause.svg" />
+    <None Remove="Assets\Icons\play.svg" />
+    <None Remove="Assets\Icons\stop.svg" />
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\Icons\cog.svg" />
+    <AvaloniaResource Include="Assets\Icons\disabled_link.svg" />
+    <AvaloniaResource Include="Assets\Icons\link.svg" />
+    <AvaloniaResource Include="Assets\Icons\pause.svg" />
+    <AvaloniaResource Include="Assets\Icons\play.svg" />
+    <AvaloniaResource Include="Assets\Icons\stop.svg" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaXaml Include="Styles\AppStyles.xaml">
@@ -26,10 +36,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="NLog.Extensions.Logging" Version="1.7.2" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.2" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.3" />
    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

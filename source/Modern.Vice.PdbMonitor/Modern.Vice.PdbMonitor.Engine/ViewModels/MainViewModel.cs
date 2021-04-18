@@ -8,15 +8,17 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic.CompilerServices;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
+using Righthand.ViceMonitor.Bridge;
+using Righthand.ViceMonitor.Bridge.Responses;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using ViceBridgeCommand = Righthand.ViceMonitor.Bridge.Commands;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -28,6 +30,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IDispatcher dispatcher;
         readonly ISettingsManager settingsManager;
         readonly IServiceScope scope;
+        readonly IViceBridge viceBridge;
         public string AppName => "Modern VICE PDB Monitor";
         readonly Subscription closeOverlaySubscription;
         public Project? Project => globals.Project;
@@ -42,6 +45,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RelayCommand CloseProjectCommand { get; }
         public RelayCommand ExitCommand { get; }
         public RelayCommand ToggleErrorsVisibilityCommand { get; }
+        public RelayCommand RunCommand { get; }
+        public RelayCommand StopCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
         public Action? CloseApp { get; set; }
@@ -49,10 +54,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool IsShowingProject => OverlayContent is ProjectViewModel;
         public bool IsShowingErrors { get; set; }
         public bool IsBusy { get; private set; }
+        public bool IsRunning { get; private set; }
         public bool IsOverlayVisible => OverlayContent is not null;
+        public bool IsViceConnected { get; private set; }
         public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
         public ContentViewModel Content { get; private set; } = default!;
         public ContentViewModel? OverlayContent { get; private set; }
+        Process? viceProcess;
+        CancellationTokenSource? startDebuggingCts;
         public string Caption
         {
             get
@@ -68,7 +77,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
-            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope)
+            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
@@ -76,18 +85,21 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.dispatcher = dispatcher;
             this.settingsManager = settingsManager;
             this.scope = scope;
+            this.viceBridge = viceBridge;
             closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
             ErrorMessagesViewModel = errorMessagesViewModel;
             ShowSettingsCommand = new RelayCommand(ShowSettings, () => !IsShowingSettings);
             ShowProjectCommand = new(ShowProject, () => !IsShowingProject && IsProjectOpen);
             TestCommand = new RelayCommand(Test, () => !IsBusy);
-            CreateProjectCommand = new RelayCommand(CreateProject, () => !IsBusy);
-            OpenProjectFromPathCommand = new RelayCommand<string>(OpenProjectFromPath, _ => !IsBusy);
-            OpenProjectCommand = new RelayCommand(OpenProject, () => !IsBusy);
+            CreateProjectCommand = new RelayCommand(CreateProject, () => !IsBusy && !IsRunning);
+            OpenProjectFromPathCommand = new RelayCommand<string>(OpenProjectFromPath, _ => !IsBusy && !IsRunning);
+            OpenProjectCommand = new RelayCommand(OpenProject, () => !IsBusy && !IsRunning);
             globals.PropertyChanged += Globals_PropertyChanged;
-            CloseProjectCommand = new RelayCommand(CloseProject, () => Project is not null);
+            CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectOpen && !IsRunning);
             ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
             ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
+            RunCommand = new(StartDebuggingAsync, () => IsProjectOpen && !IsRunning);
+            StopCommand = new(StopDebugging, () => IsRunning);
             if (!Directory.Exists(globals.Settings.VicePath))
             {
                 SwitchContent<SettingsViewModel>();
@@ -95,7 +107,90 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             else
             {
                 SwitchContent<DebuggerViewModel>();
+                // by default opens most recent project
+                if (globals.Settings.RecentProjects.Count > 0)
+                {
+                    OpenProjectFromPath(globals.Settings.RecentProjects[0]);
+                }
             }
+            viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
+            viceBridge.Start();
+        }
+
+        void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
+        {
+            IsViceConnected = e.IsConnected;
+        }
+
+        internal void StopDebugging()
+        {
+            _ = ClearAfterDebugging();
+        }
+        internal async void StartDebuggingAsync()
+        {
+            const string Title = "Start debugging";
+            viceProcess = StartVice();
+            if (viceProcess is null)
+            {
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, Title, "Failed to start debugging"));
+            }
+            IsBusy = true;
+            IsRunning = true;
+            try
+            {
+                startDebuggingCts = new CancellationTokenSource();
+                if (!viceBridge.IsConnected)
+                {
+                    await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                await ClearAfterDebugging();
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+        internal async Task ClearAfterDebugging()
+        {
+            logger.LogDebug("Cleaning after debugging");
+            if (viceProcess is not null)
+            {
+                if (viceBridge.IsConnected)
+                {
+                    logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
+                    var quitCommand = new ViceBridgeCommand.QuitCommand();
+                    viceBridge.EnqueueCommand(quitCommand);
+                    (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
+                    bool isQuitSuccess = true;
+                    if (!success)
+                    {
+                        logger.LogDebug("Timeout while waiting for VICE response to Quit command");
+                        isQuitSuccess = false;
+                    }
+                    else
+                    {
+                        if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
+                        {
+                            logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
+                            isQuitSuccess = false;
+                        }
+                    }
+                    if (!isQuitSuccess)
+                    {
+                        viceProcess.Kill();
+                    }
+                    bool waitForKillSuccess = viceProcess.WaitForExit(5000);
+                    if (!waitForKillSuccess)
+                    {
+                        logger.LogWarning("Couldn't kill VICE process");
+                    }
+                    viceProcess.Dispose();
+                }
+            }
+            IsRunning = false;
         }
         internal void CloseOverlay(object sender, CloseOverlayMessage message)
         {
@@ -150,6 +245,27 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             globals.Project = null;
             globals.Pdb = null;
+        }
+        internal Process? StartVice()
+        {
+            if (!string.IsNullOrWhiteSpace(globals.Settings.VicePath))
+            {
+                string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
+                try
+                {
+                    return Process.Start(path, $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}");
+                }
+                catch (Exception ex)
+                {
+                    dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Starting VICE", ex.Message));
+                    return null;
+                }
+            }
+            else
+            {
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Starting VICE", "VICE path is not set in settings"));
+                return null;
+            }
         }
         void Test()
         {
@@ -294,12 +410,30 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case nameof(Project):
                     CloseProjectCommand.RaiseCanExecuteChanged();
                     ShowProjectCommand.RaiseCanExecuteChanged();
+                    RunCommand.RaiseCanExecuteChanged();
                     break;
                 case nameof(OverlayContent):
                     ShowSettingsCommand.RaiseCanExecuteChanged();
                     ShowProjectCommand.RaiseCanExecuteChanged();
                     break;
+                case nameof(IsRunning):
+                    CloseProjectCommand.RaiseCanExecuteChanged();
+                    CreateProjectCommand.RaiseCanExecuteChanged();
+                    OpenProjectCommand.RaiseCanExecuteChanged();
+                    OpenProjectFromPathCommand.RaiseCanExecuteChanged();
+                    RunCommand.RaiseCanExecuteChanged();
+                    StopCommand.RaiseCanExecuteChanged();
+                    break; 
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
+            }
+            base.Dispose(disposing);
         }
     }
 }

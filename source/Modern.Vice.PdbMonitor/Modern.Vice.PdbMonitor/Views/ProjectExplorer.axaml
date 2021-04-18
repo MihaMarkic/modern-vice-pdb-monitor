@@ -8,30 +8,32 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
-  <DockPanel LastChildFill="True">
-    <TextBlock DockPanel.Dock="Top">Project Explorer</TextBlock>
-    <TreeView Items="{Binding Nodes}">
-      <TreeView.DataTemplates>
-        <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
-          <TextBlock Text="{Binding Name}" />
-        </TreeDataTemplate >
-        <TreeDataTemplate  DataType="m:AcmePdbFile">
-          <TextBlock Text="{Binding Path}" />
-        </TreeDataTemplate >
-        <TreeDataTemplate  DataType="m:AcmePdbInclude">
-          <TextBlock Text="{Binding Path}" />
-        </TreeDataTemplate >
-        <TreeDataTemplate  DataType="m:AcmePdbLabel">
-          <TextBlock>
-            <TextBlock.Text>
-              <MultiBinding StringFormat="{}{0} [${1:x4}]">
-                <Binding Path="Name" />
-                <Binding Path="Address" />
-              </MultiBinding>
-            </TextBlock.Text>
-          </TextBlock>
-        </TreeDataTemplate >
-      </TreeView.DataTemplates>
-    </TreeView>
-  </DockPanel>
+  <Border BorderThickness="1" BorderBrush="Black" Padding="4">
+    <DockPanel LastChildFill="True">
+      <TextBlock DockPanel.Dock="Top">Project Explorer</TextBlock>
+      <TreeView Items="{Binding Nodes}">
+        <TreeView.DataTemplates>
+          <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
+            <TextBlock Text="{Binding Name}" />
+          </TreeDataTemplate >
+          <TreeDataTemplate  DataType="m:AcmePdbFile">
+            <TextBlock Text="{Binding Path}" />
+          </TreeDataTemplate >
+          <TreeDataTemplate  DataType="m:AcmePdbInclude">
+            <TextBlock Text="{Binding Path}" />
+          </TreeDataTemplate >
+          <TreeDataTemplate  DataType="m:AcmePdbLabel">
+            <TextBlock>
+              <TextBlock.Text>
+                <MultiBinding StringFormat="{}{0} [${1:x4}]">
+                  <Binding Path="Name" />
+                  <Binding Path="Address" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+          </TreeDataTemplate >
+        </TreeView.DataTemplates>
+      </TreeView>
+    </DockPanel>
+  </Border>
 </UserControl>

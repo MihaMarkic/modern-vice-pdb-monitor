@@ -13,7 +13,17 @@
         x:DataType="vm:MainViewModel"
         Title="{Binding Caption}">
   <Window.Resources>
+    <SolidColorBrush x:Key="DisabledBrush">#c6c6c6</SolidColorBrush>
     <c:FirstNonNullConverter x:Key="FirstNonNullConverter" />
+    <c:BoolToColorConverter x:Key="IsConnectedToForegroundConverter" OnTrue="Black" OnFalse="{StaticResource DisabledBrush}" />
+    <c:BoolToSvgImageConverter x:Key="IsConnectedToSvgImageConverter">
+      <c:BoolToSvgImageConverter.OnTrue>
+        <svg:SvgImage Source="/Assets/Icons/link.svg" />
+      </c:BoolToSvgImageConverter.OnTrue>
+      <c:BoolToSvgImageConverter.OnFalse>
+        <svg:SvgImage Source="/Assets/Icons/disabled_link.svg" />
+      </c:BoolToSvgImageConverter.OnFalse>
+    </c:BoolToSvgImageConverter>
   </Window.Resources>
   <Window.Styles>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
@@ -29,7 +39,7 @@
       <v:Debugger />
     </DataTemplate>
   </Window.DataTemplates>
-  <DockPanel LastChildFill="True">
+  <DockPanel LastChildFill="True" Margin="4">
     <Menu x:Name="Menu" DockPanel.Dock="Top">
       <MenuItem Header="_File">
         <MenuItem Header="_New..." Command="{Binding CreateProjectCommand}"/>
@@ -52,6 +62,26 @@
         <Separator/>
         <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
       </MenuItem>
+      <MenuItem Header="_Debug">
+        <MenuItem Header="_Run" Command="{Binding RunCommand}">
+          <MenuItem.Icon>
+            <Image>
+              <Image.Source>
+                <svg:SvgImage Source="/Assets/Icons/play.svg"/>
+              </Image.Source>
+            </Image>
+          </MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="_Stop" Command="{Binding StopCommand}">
+          <MenuItem.Icon>
+            <Image>
+              <Image.Source>
+                <svg:SvgImage Source="/Assets/Icons/stop.svg"/>
+              </Image.Source>
+            </Image>
+          </MenuItem.Icon>
+        </MenuItem>
+      </MenuItem>
       <!--<MenuItem Header="_Window">
         <MenuItem Command="{Binding ToggleErrorsVisibilityCommand}">
           <MenuItem.Icon>
@@ -64,24 +94,48 @@
         </MenuItem>
       </MenuItem>-->
     </Menu>
-    <!--<DockPanel LastChildFill="False" DockPanel.Dock="Top" Margin="4,0">
-      <ToggleButton DockPanel.Dock="Right" ToolTip.Tip="Settings" IsChecked="{Binding IsShowingSettings}">
-        <Image Width="32" Height="32">
-          <Image.Source>
-            <svg:SvgImage Source="/Assets/Icons/cog.svg"/>
-          </Image.Source>
-        </Image>
-      </ToggleButton>
-    </DockPanel>-->
+    <DockPanel DockPanel.Dock="Top" Margin="4,0,4,4" LastChildFill="False" HorizontalAlignment="Stretch">
+      <DockPanel.Styles>
+        <Style Selector="Button">
+          <Setter Property="Margin" Value="4,0" />
+        </Style>
+        <Style Selector="Image">
+          <Setter Property="Margin" Value="4,0" />
+          <Setter Property="Height" Value="14" />
+          <Setter Property="Width" Value="14" />
+        </Style>
+      </DockPanel.Styles>
+      <Button ToolTip.Tip="Starts debugging" Command="{Binding RunCommand}" DockPanel.Dock="Left">
+        <StackPanel Orientation="Horizontal">
+          <Image>
+            <Image.Source>
+              <svg:SvgImage Source="/Assets/Icons/play.svg"/>
+            </Image.Source>
+          </Image>
+          <TextBlock Margin="4,0,0,0">Run</TextBlock>
+        </StackPanel>
+      </Button>
+      <Button ToolTip.Tip="Stops debugging" Command="{Binding StopCommand}" DockPanel.Dock="Left">
+        <StackPanel Orientation="Horizontal">
+          <Image>
+            <Image.Source>
+              <svg:SvgImage Source="/Assets/Icons/stop.svg"/>
+            </Image.Source>
+          </Image>
+          <TextBlock Margin="4,0,0,0">Stop</TextBlock>
+        </StackPanel>
+      </Button>
+      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+        <Image Source="{Binding IsViceConnected, Converter={StaticResource IsConnectedToSvgImageConverter}}" />
+        <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Connection status to VICE" 
+          Foreground="{Binding IsViceConnected, Converter={StaticResource IsConnectedToForegroundConverter}}">VICE</TextBlock>
+      </StackPanel>
+    </DockPanel>
     <TabControl DockPanel.Dock="Bottom" Height="200">
       <TabItem Header="Errors">
         <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
       </TabItem>
     </TabControl>
-    <!--<Panel>
-      <TextBlock IsVisible="{Binding !IsShowingSettings}">Content</TextBlock>
-      <v:Settings IsVisible="{Binding DataContext.IsShowingSettings, ElementName=Menu}" DataContext="{Binding SettingsViewModel}" Margin="4"></v:Settings>
-    </Panel>-->
     <ContentControl>
       <ContentControl.Content>
         <MultiBinding Converter="{StaticResource FirstNonNullConverter}">

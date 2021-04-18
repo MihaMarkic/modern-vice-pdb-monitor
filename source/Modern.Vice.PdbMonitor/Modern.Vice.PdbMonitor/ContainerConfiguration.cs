@@ -23,7 +23,6 @@ namespace Modern.Vice.PdbMonitor
                 builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddNLog(config);
             });
-            services.AddEngineServices();
             services.AddEngine();
             return services;
         }
