@@ -9,6 +9,6 @@
              x:DataType="vm:DebuggerViewModel">
   <DockPanel LastChildFill="True">
     <v:ProjectExplorer DataContext="{Binding ProjectExplorer}" Width="200" />
-    <TextBlock Text="Debugger"/>
+    <v:SourceFilesViewer DataContext="{Binding SourceFileViewerViewModel}" />
   </DockPanel>
 </UserControl>

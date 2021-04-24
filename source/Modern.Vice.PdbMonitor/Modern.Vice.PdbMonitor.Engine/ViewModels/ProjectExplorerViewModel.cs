@@ -1,28 +1,36 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
+using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
     public class ProjectExplorerViewModel : NotifiableObject
     {
         readonly ILogger<ProjectExplorerViewModel> logger;
+        readonly IDispatcher dispatcher;
         readonly Globals globals;
         public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
         public Project? Project => globals.Project;
         public ImmutableArray<ProjectExplorerHeaderNode> Nodes { get; private set; }
-        public ProjectExplorerViewModel(ILogger<ProjectExplorerViewModel> logger, Globals globals)
+        public RelayCommand<object> OpenSourceFileCommand { get; }
+        public ProjectExplorerViewModel(IDispatcher dispatcher, ILogger<ProjectExplorerViewModel> logger, Globals globals)
         {
+            this.dispatcher = dispatcher;
             this.logger = logger;
             this.globals = globals;
+            OpenSourceFileCommand = new RelayCommand<object>(OpenSourceFile, canExecute: o => o is AcmePdbFile);
             globals.PropertyChanged += Globals_PropertyChanged;
             UpdateNodes();
         }
 
-        void Globals_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -32,7 +40,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     break;
             }
         }
-
+        internal void OpenSourceFile(object? message)
+        {
+            dispatcher.Dispatch(new OpenSourceFileMessage((AcmePdbFile)message!));
+        }
         internal void UpdateNodes()
         {
             if (Project is not null)

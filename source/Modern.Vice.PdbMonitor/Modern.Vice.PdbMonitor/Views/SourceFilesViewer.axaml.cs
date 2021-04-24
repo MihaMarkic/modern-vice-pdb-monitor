@@ -1,11 +1,12 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
-    public class ProjectExplorer : UserControl
+    public class SourceFilesViewer : UserControl
     {
-        public ProjectExplorer()
+        public SourceFilesViewer()
         {
             InitializeComponent();
         }

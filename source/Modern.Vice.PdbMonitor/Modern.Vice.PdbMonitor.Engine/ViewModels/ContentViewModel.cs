@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
-using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Engine.Messages;
-using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {

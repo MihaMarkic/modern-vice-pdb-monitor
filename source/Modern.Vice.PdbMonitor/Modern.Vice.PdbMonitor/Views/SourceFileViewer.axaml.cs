@@ -3,9 +3,10 @@ using Avalonia.Markup.Xaml;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
-    public class ProjectExplorer : UserControl
+    // TODO make font settable
+    public class SourceFileViewer : UserControl
     {
-        public ProjectExplorer()
+        public SourceFileViewer()
         {
             InitializeComponent();
         }

@@ -43,6 +43,11 @@
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Views\SourceFilesViewer.axaml.cs">
+      <DependentUpon>SourceFilesViewer.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <None Update="nlog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

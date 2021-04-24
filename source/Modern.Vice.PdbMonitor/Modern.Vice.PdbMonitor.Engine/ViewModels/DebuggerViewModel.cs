@@ -12,11 +12,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public Project? Project => globals.Project;
         public bool IsOpenProject => Project is not null;
         public ProjectExplorerViewModel ProjectExplorer { get; }
-        public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel)
+        public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
+        public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
+            SourceFileViewerViewModel sourceFileViewerViewModel)
         {
             this.logger = logger;
             this.globals = globals;
             ProjectExplorer = projectExplorerViewModel;
+            SourceFileViewerViewModel = sourceFileViewerViewModel;
             globals.PropertyChanged += Globals_PropertyChanged;
         }
 

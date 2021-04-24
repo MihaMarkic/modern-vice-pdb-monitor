@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             x:DataType="vm:SourceFileViewModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Modern.Vice.PdbMonitor.Views.SourceFileViewer">
+  <ScrollViewer>
+    <ScrollViewer.Resources>
+      <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
+    </ScrollViewer.Resources>
+    <ItemsRepeater Items="{Binding Lines}">
+      <ItemsRepeater.ItemTemplate>
+        <DataTemplate DataType="vm:Line">
+          <StackPanel Orientation="Horizontal">
+            <StackPanel.Styles>
+              <Style Selector="TextBlock">
+                <Setter Property="FontFamily" Value="Fira Coda" />
+              </Style>
+            </StackPanel.Styles>
+            <TextBlock Text="{Binding Row}" Width="40" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Content, Converter={StaticResource TabsToSpacesConverter}}" Margin="8,0,0,0" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+  </ScrollViewer>
+</UserControl>

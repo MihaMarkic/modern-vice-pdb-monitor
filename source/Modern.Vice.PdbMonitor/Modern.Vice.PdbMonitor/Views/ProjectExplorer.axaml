@@ -5,19 +5,21 @@
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
   <Border BorderThickness="1" BorderBrush="Black" Padding="4">
     <DockPanel LastChildFill="True">
       <TextBlock DockPanel.Dock="Top">Project Explorer</TextBlock>
-      <TreeView Items="{Binding Nodes}">
+      <TreeView x:Name="Tree" Items="{Binding Nodes}" b:DoubleTappedBehavior.Command="{Binding OpenSourceFileCommand}"
+              b:DoubleTappedBehavior.CommandParameter="{Binding #Tree.SelectedItem}">
         <TreeView.DataTemplates>
           <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
             <TextBlock Text="{Binding Name}" />
           </TreeDataTemplate >
           <TreeDataTemplate  DataType="m:AcmePdbFile">
-            <TextBlock Text="{Binding Path}" />
+            <TextBlock Text="{Binding Path}"/>
           </TreeDataTemplate >
           <TreeDataTemplate  DataType="m:AcmePdbInclude">
             <TextBlock Text="{Binding Path}" />
