@@ -45,7 +45,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     Files.Add(item);
                 }
             }
-            Selected = item;
+            if (item is not null)
+            {
+                if (message.Line.HasValue)
+                {
+                    item.CursorRow = message.Line.Value;
+                }
+                Selected = item;
+            }
         }
         void CloseSourceFile(SourceFileViewModel? sourceFile)
         {

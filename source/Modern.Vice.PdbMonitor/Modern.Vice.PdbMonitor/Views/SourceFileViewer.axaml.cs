@@ -12,6 +12,7 @@ namespace Modern.Vice.PdbMonitor.Views
     public class SourceFileViewer : UserControl
     {
         int cursorRow;
+        double itemHeight;
         readonly ItemsRepeater lines;
         readonly ScrollViewer scroller;
         public static DirectProperty<SourceFileViewer, int> CursorRowProperty =
@@ -24,6 +25,21 @@ namespace Modern.Vice.PdbMonitor.Views
             InitializeComponent();
             lines = this.Find<ItemsRepeater>("lines");
             scroller = this.Find<ScrollViewer>("scroller");
+            scroller.ScrollChanged += Scroller_ScrollChanged;
+        }
+
+        void Scroller_ScrollChanged(object? sender, ScrollChangedEventArgs e)
+        {
+            var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
+            // TODO find a way to determine current top line
+            //if (firstVisibleChild is not null)
+            //{
+            //    cursorRow = lines.GetElementIndex((IControl)firstVisibleChild);
+            //}
+            //else
+            {
+                cursorRow = -1;
+            }
         }
 
         public int CursorRow
@@ -54,18 +70,32 @@ namespace Modern.Vice.PdbMonitor.Views
                 lines.ElementPrepared -= Lines_ElementPrepared;
             }
         }
-
-        bool ScrollToCursorRow()
+        void CalculateItemHeight()
         {
+            if (itemHeight > 0)
+            {
+                return;
+            }
             var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
             if (firstVisibleChild is not null)
             {
-                double itemHeight = firstVisibleChild.Bounds.Height;
-                if (itemHeight > 0)
-                {
-                    scroller.Offset = scroller.Offset.WithY(itemHeight * (CursorRow-1));
-                    return true;
-                }
+                itemHeight = firstVisibleChild.Bounds.Height;
+            }
+        }
+        bool ScrollToCursorRow()
+        {
+            //if (CursorRow == actualCursorRow)
+            //{
+            //    return true;
+            //}
+            if (itemHeight == 0)
+            {
+                CalculateItemHeight();
+            }
+            if (itemHeight > 0)
+            {
+                scroller.Offset = scroller.Offset.WithY(itemHeight * (CursorRow-1));
+                return true;
             }
             return false;
         }
