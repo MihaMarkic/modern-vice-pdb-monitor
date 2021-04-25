@@ -4,7 +4,7 @@ using Modern.Vice.PdbMonitor.Engine.Models;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class DebuggerViewModel: ContentViewModel
+    public class DebuggerViewModel: ScopedViewModel
     {
         readonly ILogger<DebuggerViewModel> logger;
         readonly Globals globals;

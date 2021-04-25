@@ -10,14 +10,14 @@
              x:DataType="vm:SourceFileViewModel"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Modern.Vice.PdbMonitor.Views.SourceFileViewer">
-  <ScrollViewer>
+  <ScrollViewer x:Name="scroller">
     <ScrollViewer.Resources>
       <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
     </ScrollViewer.Resources>
-    <ItemsRepeater Items="{Binding Lines}">
+    <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
       <ItemsRepeater.ItemTemplate>
         <DataTemplate DataType="vm:Line">
-          <StackPanel Orientation="Horizontal">
+          <StackPanel Orientation="Horizontal" Height="18">
             <StackPanel.Styles>
               <Style Selector="TextBlock">
                 <Setter Property="FontFamily" Value="Fira Coda" />

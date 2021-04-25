@@ -15,15 +15,18 @@
     
   </UserControl.Resources>
 
-  <TabControl Items="{Binding Files}" SelectedItem="{Binding Selected}">
+  <TabControl x:Name="files" Items="{Binding Files}" SelectedItem="{Binding Selected}">
     <TabControl.ItemTemplate>
       <DataTemplate>
-        <TextBlock VerticalAlignment="Center" Text="{Binding Path}" />
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Path}" />
+          <Button Command="{Binding $parent[TabControl].DataContext.CloseSourceFileCommand}" CommandParameter="{Binding}">X</Button>
+        </StackPanel>
       </DataTemplate>
     </TabControl.ItemTemplate>
     <TabControl.ContentTemplate>
-      <DataTemplate>
-        <v:SourceFileViewer />
+      <DataTemplate DataType="vm:SourceFileViewModel">
+        <v:SourceFileViewer CursorRow="{Binding CursorRow}" />
       </DataTemplate>
     </TabControl.ContentTemplate>
   </TabControl>

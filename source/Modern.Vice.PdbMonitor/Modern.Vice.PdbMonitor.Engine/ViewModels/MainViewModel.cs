@@ -58,8 +58,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool IsOverlayVisible => OverlayContent is not null;
         public bool IsViceConnected { get; private set; }
         public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
-        public ContentViewModel Content { get; private set; } = default!;
-        public ContentViewModel? OverlayContent { get; private set; }
+        public ScopedViewModel Content { get; private set; } = default!;
+        public ScopedViewModel? OverlayContent { get; private set; }
         Process? viceProcess;
         CancellationTokenSource? startDebuggingCts;
         public string Caption
@@ -211,25 +211,17 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 SwitchOverlayContent<ProjectViewModel>();
             }
         }
-        internal T CreateContent<T>()
-            where T : ContentViewModel
-        {
-            var contentScope = scope.ServiceProvider.CreateScope();
-            T viewModel = contentScope.ServiceProvider.GetService<T>() ?? throw new Exception($"Failed creating {typeof(T).Name} ViewModel");
-            viewModel.AssignScope(contentScope);
-            return viewModel;
-        }
         internal void SwitchContent<T>()
-            where T: ContentViewModel
+            where T: ScopedViewModel
         {
             Content?.Dispose();
-            Content = CreateContent<T>();
+            Content = scope.ServiceProvider.CreateScopedContent<T>();
         }
         internal void SwitchOverlayContent<T>()
-            where T : ContentViewModel
+            where T : ScopedViewModel
         {
             OverlayContent?.Dispose();
-            OverlayContent = CreateContent<T>();
+            OverlayContent = scope.ServiceProvider.CreateScopedContent<T>();
         }
         void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {

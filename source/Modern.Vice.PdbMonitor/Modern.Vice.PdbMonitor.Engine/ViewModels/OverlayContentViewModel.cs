@@ -4,7 +4,7 @@ using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public abstract class OverlayContentViewModel : ContentViewModel
+    public abstract class OverlayContentViewModel : ScopedViewModel
     {
         protected readonly IDispatcher dispatcher;
         public RelayCommand CloseCommand { get; }

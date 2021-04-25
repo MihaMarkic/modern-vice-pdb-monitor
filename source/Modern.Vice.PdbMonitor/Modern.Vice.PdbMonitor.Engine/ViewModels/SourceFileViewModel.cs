@@ -1,9 +1,8 @@
 ﻿using System.Collections.Immutable;
-using Modern.Vice.PdbMonitor.Core;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class SourceFileViewModel : NotifiableObject
+    public class SourceFileViewModel : ScopedViewModel
     {
         public string Path { get; }
         public ImmutableArray<Line> Lines { get; }
