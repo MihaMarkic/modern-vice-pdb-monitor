@@ -16,7 +16,6 @@ using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
-using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 using ViceBridgeCommand = Righthand.ViceMonitor.Bridge.Commands;
 
@@ -31,8 +30,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly ISettingsManager settingsManager;
         readonly IServiceScope scope;
         readonly IViceBridge viceBridge;
+        readonly IProjectPdbFileWatcher projectPdbFileWatcher;
         public string AppName => "Modern VICE PDB Monitor";
         readonly Subscription closeOverlaySubscription;
+        readonly Subscription pdbFileChangedSubscription;
         public Project? Project => globals.Project;
         public bool IsProjectOpen => Project is not null;
         public ObservableCollection<string> RecentProjects => globals.Settings.RecentProjects;
@@ -47,21 +48,30 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RelayCommand ToggleErrorsVisibilityCommand { get; }
         public RelayCommand RunCommand { get; }
         public RelayCommand StopCommand { get; }
+        public RelayCommand UpdatePdbCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
         public Action? CloseApp { get; set; }
         public bool IsShowingSettings => OverlayContent is SettingsViewModel;
         public bool IsShowingProject => OverlayContent is ProjectViewModel;
         public bool IsShowingErrors { get; set; }
-        public bool IsBusy { get; private set; }
+        public bool IsOpeningProject { get; private set; }
+        public bool IsStartingDebugging { get; private set; }
+        public bool IsParsingPdb { get; private set; }
+        public bool IsBusy => IsOpeningProject || IsStartingDebugging || IsParsingPdb;
         public bool IsRunning { get; private set; }
         public bool IsOverlayVisible => OverlayContent is not null;
         public bool IsViceConnected { get; private set; }
+        /// <summary>
+        /// True when pdb file was changed.
+        /// </summary>
+        public bool IsUpdatedPdbAvailable { get; private set; }
         public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
         public ScopedViewModel Content { get; private set; } = default!;
         public ScopedViewModel? OverlayContent { get; private set; }
         Process? viceProcess;
         CancellationTokenSource? startDebuggingCts;
+        readonly TaskFactory uiFactory;
         public string Caption
         {
             get
@@ -77,7 +87,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
-            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge)
+            ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
+            IProjectPdbFileWatcher projectPdbFileWatcher)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
@@ -86,7 +97,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.settingsManager = settingsManager;
             this.scope = scope;
             this.viceBridge = viceBridge;
+            this.projectPdbFileWatcher = projectPdbFileWatcher;
+            uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
+            pdbFileChangedSubscription = dispatcher.Subscribe<AcmePdbFileChangedMessage>(PdbFileChanged);
             ErrorMessagesViewModel = errorMessagesViewModel;
             ShowSettingsCommand = new RelayCommand(ShowSettings, () => !IsShowingSettings);
             ShowProjectCommand = new(ShowProject, () => !IsShowingProject && IsProjectOpen);
@@ -100,6 +114,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
             RunCommand = new(StartDebuggingAsync, () => IsProjectOpen && !IsRunning);
             StopCommand = new(StopDebugging, () => IsRunning);
+            UpdatePdbCommand = new(() => _ = UpdatePdbAsync(), () => !IsBusy);
             if (!Directory.Exists(globals.Settings.VicePath))
             {
                 SwitchContent<SettingsViewModel>();
@@ -116,7 +131,32 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
             viceBridge.Start();
         }
-
+        void PdbFileChanged(object sender, AcmePdbFileChangedMessage message)
+        {
+            _ = uiFactory.StartNew(() => IsUpdatedPdbAvailable = true);
+        }
+        async Task UpdatePdbAsync()
+        {
+            IsParsingPdb = true;
+            try
+            {
+                if (Project!.PrgPath is not null)
+                {
+                    await Task.Delay(5000);
+                    string pdbPath = GetPdbPath(Project.PrgPath);
+                    globals.Pdb = await ParsePdbAsync(pdbPath);
+                    IsUpdatedPdbAvailable = false;
+                }
+                else
+                {
+                    globals.Pdb = null;
+                }
+            }
+            finally
+            {
+                IsParsingPdb = false;
+            }
+        }
         void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
         {
             IsViceConnected = e.IsConnected;
@@ -134,7 +174,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, Title, "Failed to start debugging"));
             }
-            IsBusy = true;
+            IsStartingDebugging = true;
             IsRunning = true;
             try
             {
@@ -150,7 +190,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             finally
             {
-                IsBusy = false;
+                IsStartingDebugging = false;
             }
         }
         internal async Task ClearAfterDebugging()
@@ -275,7 +315,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 return false;
             }
-            IsBusy = true;
+            IsOpeningProject = true;
             try
             {
                 if (!File.Exists(path))
@@ -285,12 +325,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     //globals.Pdb = await ParsePdbAsync(GetPdbPath(prgPath));
                 }
                 var project = settingsManager.Load<Project>(path)!;
-                if (project.PrgPath is not null)
+                globals.Project = project;
+                if (project!.PrgPath is not null)
                 {
                     string pdbPath = GetPdbPath(project.PrgPath);
                     globals.Pdb = await ParsePdbAsync(pdbPath);
                 }
-                globals.Project = project;
                 globals.Settings.AddRecentProject(path);
             }
             catch (Exception ex)
@@ -299,7 +339,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             finally
             {
-                IsBusy = false;
+                IsOpeningProject = false;
             }
             return false;
         }
@@ -355,7 +395,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             return false;
         }
 
-        internal string GetPdbPath(string prgPath) => Path.Combine(globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "", $"{Path.GetFileNameWithoutExtension(prgPath)}.pdb");
+        internal string GetPdbPath(string prgPath) => Path.Combine(globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "", globals.GetPdbFileName(prgPath));
 
         internal async Task<AcmePdb?> ParsePdbAsync(string pdbPath)
         {
@@ -364,7 +404,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Failed parsing PDB", $"PDB file {pdbPath} does not exist"));
                 return null;
             }
-            IsBusy = true;
+            IsParsingPdb = true;
             try
             {
                 var result = await Task.Run(() => acmePdbParser.ParseAsync(pdbPath));
@@ -386,7 +426,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             finally
             {
-                IsBusy = false;
+                IsParsingPdb = false;
             }
         }
 
@@ -398,11 +438,20 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case nameof(IsBusy):
                     CreateProjectCommand.RaiseCanExecuteChanged();
                     OpenProjectFromPathCommand.RaiseCanExecuteChanged();
+                    UpdatePdbCommand.RaiseCanExecuteChanged();
                     break;
                 case nameof(Project):
                     CloseProjectCommand.RaiseCanExecuteChanged();
                     ShowProjectCommand.RaiseCanExecuteChanged();
                     RunCommand.RaiseCanExecuteChanged();
+                    if (Project?.PrgPath is not null)
+                    {
+                        projectPdbFileWatcher.Start(globals.ProjectDirectory!, globals.GetPdbFileName(Project.PrgPath));
+                    }
+                    else
+                    {
+                        projectPdbFileWatcher.Stop();
+                    }
                     break;
                 case nameof(OverlayContent):
                     ShowSettingsCommand.RaiseCanExecuteChanged();
@@ -424,6 +473,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (disposing)
             {
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
+                closeOverlaySubscription.Dispose();
+                pdbFileChangedSubscription.Dispose();
             }
             base.Dispose(disposing);
         }

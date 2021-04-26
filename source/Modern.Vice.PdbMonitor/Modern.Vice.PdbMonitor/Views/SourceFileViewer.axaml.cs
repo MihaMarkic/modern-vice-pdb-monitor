@@ -15,7 +15,7 @@ namespace Modern.Vice.PdbMonitor.Views
         double itemHeight;
         readonly ItemsRepeater lines;
         readonly ScrollViewer scroller;
-        public static DirectProperty<SourceFileViewer, int> CursorRowProperty =
+        public static readonly DirectProperty<SourceFileViewer, int> CursorRowProperty =
             AvaloniaProperty.RegisterDirect<SourceFileViewer, int>(nameof(CursorRow),
                 o => o.CursorRow, 
                 (o, v) => o.CursorRow = v, 

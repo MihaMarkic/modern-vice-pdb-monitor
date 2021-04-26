@@ -7,10 +7,13 @@
   <ItemGroup>
     <None Remove="Assets\Icons\cog.svg" />
     <None Remove="Assets\Icons\disabled_link.svg" />
+    <None Remove="Assets\Icons\disabled_sync.svg" />
     <None Remove="Assets\Icons\link.svg" />
     <None Remove="Assets\Icons\pause.svg" />
     <None Remove="Assets\Icons\play.svg" />
     <None Remove="Assets\Icons\stop.svg" />
+    <None Remove="Assets\Icons\sync-solid.svg" />
+    <None Remove="Assets\Icons\sync.svg" />
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +23,8 @@
     <AvaloniaResource Include="Assets\Icons\pause.svg" />
     <AvaloniaResource Include="Assets\Icons\play.svg" />
     <AvaloniaResource Include="Assets\Icons\stop.svg" />
+    <AvaloniaResource Include="Assets\Icons\disabled_sync.svg" />
+    <AvaloniaResource Include="Assets\Icons\sync.svg" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaXaml Include="Styles\AppStyles.xaml">

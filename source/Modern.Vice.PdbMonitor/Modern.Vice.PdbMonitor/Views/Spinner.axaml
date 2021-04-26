@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             ToolTip.Tip="Busy"
+             x:Class="Modern.Vice.PdbMonitor.Views.Spinner"
+             x:Name="host">
+  <UserControl.Resources>
+    <c:BoolToSvgImageConverter x:Key="SpinnerEnabledConverter">
+      <c:BoolToSvgImageConverter.OnTrue>
+        <svg:SvgImage Source="/Assets/Icons/sync.svg" />
+      </c:BoolToSvgImageConverter.OnTrue>
+      <c:BoolToSvgImageConverter.OnFalse>
+        <svg:SvgImage Source="/Assets/Icons/disabled_sync.svg" />
+      </c:BoolToSvgImageConverter.OnFalse>
+    </c:BoolToSvgImageConverter>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Image.active">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE">
+          <KeyFrame Cue="0%">
+            <Setter Property="RotateTransform.Angle" Value="0.0"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="RotateTransform.Angle" Value="360.0"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+  <Image x:Name="image" Source="{Binding Path=$parent[v:Spinner].IsActive, Converter={StaticResource SpinnerEnabledConverter}}" 
+    b:ToggleClassOnBoolChangeBehavior.Trigger="{Binding $parent[v:Spinner].IsActive}" b:ToggleClassOnBoolChangeBehavior.Class="active" />
+</UserControl>

@@ -5,6 +5,7 @@ using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -24,6 +25,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.logger = logger;
             this.settingsManager = settingsManager;
         }
+        internal string GetPdbFileName(string prgPath) => $"{Path.GetFileNameWithoutExtension(prgPath)}.pdb";
         public void Load()
         {
             Settings = settingsManager.LoadSettings();

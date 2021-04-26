@@ -33,7 +33,7 @@ namespace Modern.Vice.PdbMonitor.Views
                 if (result?.Length > 0)
                 {
                     var viewModel = (ProjectViewModel)DataContext!;
-                    viewModel.AssignPrgFulPath(result[0]);
+                    viewModel.AssignPrgFullPath(result[0]);
                 }
             }
         }

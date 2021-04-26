@@ -33,13 +33,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             globals.PropertyChanged += Globals_PropertyChanged;
             UpdateNodes();
         }
-
+        
         void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
                 case nameof(Globals.Project):
                     OnPropertyChanged(nameof(Project));
+                    UpdateNodes();
+                    break;
+                case nameof(Globals.Pdb):
                     UpdateNodes();
                     break;
             }

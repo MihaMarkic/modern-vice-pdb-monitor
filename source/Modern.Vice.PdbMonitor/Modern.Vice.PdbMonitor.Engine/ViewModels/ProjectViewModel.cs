@@ -12,6 +12,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
     {
         readonly Globals globals;
         readonly ISettingsManager settingsManager;
+        readonly IProjectPdbFileWatcher projectPdbFileWatcher;
         public Project Project => globals.Project!;
         public string ProjectFile => globals.ProjectFile!;
         public string? PrgPath
@@ -19,18 +20,21 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             get => Project.PrgPath;
             set => Project.PrgPath = value;
         }
-        public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher) : base(dispatcher)
+        public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher,
+            IProjectPdbFileWatcher projectPdbFileWatcher) : base(dispatcher)
         {
             this.globals = globals;
             this.settingsManager = settingsManager;
+            this.projectPdbFileWatcher = projectPdbFileWatcher;
         }
-        public void AssignPrgFulPath(string value)
+        public void AssignPrgFullPath(string value)
         {
             try
             {
-                var projectDirectory = new Uri(Path.Combine($"{globals.ProjectDirectory}{Path.DirectorySeparatorChar}"));
                 var prgPath = new Uri(value);
+                var projectDirectory = new Uri(Path.Combine($"{globals.ProjectDirectory}{Path.DirectorySeparatorChar}"));
                 PrgPath = projectDirectory.MakeRelativeUri(prgPath).ToString();
+                projectPdbFileWatcher.Start(globals.ProjectDirectory!, globals.GetPdbFileName(value));
             }
             catch (Exception ex)
             {

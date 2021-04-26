@@ -23,6 +23,7 @@ namespace Modern.Vice.PdbMonitor.Engine
             services.AddSingleton<IAcmePdbParser, AcmePdbParser>();
             services.AddSingleton<ISettingsManager, SettingsManager>();
             services.AddSingleton<IDispatcher, Dispatcher>();
+            services.AddSingleton<IProjectPdbFileWatcher, ProjectPdbFileWatcher>();
             services.AddViceBridge();
             services.AddTransient(sp => sp.CreateScope());
         }

@@ -24,6 +24,14 @@
         <svg:SvgImage Source="/Assets/Icons/disabled_link.svg" />
       </c:BoolToSvgImageConverter.OnFalse>
     </c:BoolToSvgImageConverter>
+    <c:BoolToSvgImageConverter x:Key="IsUpdatedPdbAvailableConverter">
+      <c:BoolToSvgImageConverter.OnTrue>
+        <svg:SvgImage Source="/Assets/Icons/sync.svg" />
+      </c:BoolToSvgImageConverter.OnTrue>
+      <c:BoolToSvgImageConverter.OnFalse>
+        <svg:SvgImage Source="/Assets/Icons/disabled_sync.svg" />
+      </c:BoolToSvgImageConverter.OnFalse>
+    </c:BoolToSvgImageConverter>
   </Window.Resources>
   <Window.Styles>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
@@ -125,10 +133,27 @@
           <TextBlock Margin="4,0,0,0">Stop</TextBlock>
         </StackPanel>
       </Button>
-      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+      <Button ToolTip.Tip="Update PDB" Command="{Binding UpdatePdbCommand}">
+        <StackPanel Orientation="Horizontal">
+          <Image>
+            <Image.Source>
+              <svg:SvgImage Source="/Assets/Icons/sync.svg"/>
+            </Image.Source>
+          </Image>
+          <TextBlock Margin="4,0,0,0">PDB</TextBlock>
+        </StackPanel>
+      </Button>
+      <!-- busy spinner -->
+      <v:Spinner IsActive="{Binding IsBusy}" DockPanel.Dock="Right" Margin="4,0" />
+      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
         <Image Source="{Binding IsViceConnected, Converter={StaticResource IsConnectedToSvgImageConverter}}" />
         <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Connection status to VICE" 
           Foreground="{Binding IsViceConnected, Converter={StaticResource IsConnectedToForegroundConverter}}">VICE</TextBlock>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
+        <Image Source="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsUpdatedPdbAvailableConverter}}" />
+        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="4,0,0,0"
+          Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">PDB sync</TextBlock>
       </StackPanel>
     </DockPanel>
     <TabControl DockPanel.Dock="Bottom" Height="200">
