@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
@@ -19,8 +20,15 @@
     <TabControl.ItemTemplate>
       <DataTemplate>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Path}" />
-          <Button Command="{Binding $parent[TabControl].DataContext.CloseSourceFileCommand}" CommandParameter="{Binding}">X</Button>
+          <TextBlock Text="{Binding Path}" FontSize="15" VerticalAlignment="Center"/>
+          <Button Command="{Binding $parent[TabControl].DataContext.CloseSourceFileCommand}" CommandParameter="{Binding}" VerticalAlignment="Top"
+            Padding="4" Background="Transparent">
+            <Image Height="12">
+              <Image.Source>
+                <svg:SvgImage Source="/Assets/Icons/times.svg"/>
+              </Image.Source>
+            </Image>
+          </Button>
         </StackPanel>
       </DataTemplate>
     </TabControl.ItemTemplate>

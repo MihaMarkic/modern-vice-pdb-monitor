@@ -10,4 +10,8 @@
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Margin" Value="0,0,0,2" />
     </Style>
+
+    <Style Selector="TabItem">
+        <Setter Property="FontSize" Value="15"/>
+    </Style>
 </Styles>

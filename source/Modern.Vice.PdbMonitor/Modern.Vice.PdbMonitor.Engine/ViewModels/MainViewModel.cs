@@ -142,7 +142,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 if (Project!.PrgPath is not null)
                 {
+#if DEBUG
                     await Task.Delay(5000);
+#endif
                     string pdbPath = GetPdbPath(Project.PrgPath);
                     globals.Pdb = await ParsePdbAsync(pdbPath);
                     IsUpdatedPdbAvailable = false;
@@ -173,11 +175,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (viceProcess is null)
             {
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, Title, "Failed to start debugging"));
+                return;
             }
             IsStartingDebugging = true;
             IsRunning = true;
             try
             {
+                if (IsUpdatedPdbAvailable)
+                {
+                    await UpdatePdbAsync();
+                }
                 startDebuggingCts = new CancellationTokenSource();
                 if (!viceBridge.IsConnected)
                 {
