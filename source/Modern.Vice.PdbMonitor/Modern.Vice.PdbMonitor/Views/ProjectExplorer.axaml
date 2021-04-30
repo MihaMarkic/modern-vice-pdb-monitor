@@ -25,14 +25,10 @@
             <TextBlock Text="{Binding Path}" />
           </TreeDataTemplate >
           <TreeDataTemplate  DataType="m:AcmePdbLabel">
-            <TextBlock>
-              <TextBlock.Text>
-                <MultiBinding StringFormat="{}{0} [${1:x4}]">
-                  <Binding Path="Name" />
-                  <Binding Path="Address" />
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="{Binding Address, StringFormat={}${0:x4}}" Foreground="Gray" FontFamily="Fira Coda" />
+              <TextBlock Text="{Binding Name}" Margin="2,0,0,0" />
+            </StackPanel>
           </TreeDataTemplate >
         </TreeView.DataTemplates>
       </TreeView>
