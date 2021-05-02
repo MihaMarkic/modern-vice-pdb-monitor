@@ -71,11 +71,20 @@
         <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
       </MenuItem>
       <MenuItem Header="_Debug">
-        <MenuItem Header="_Run" Command="{Binding RunCommand}">
+        <MenuItem Header="{Binding RunMenuCommandTitle}" Command="{Binding RunCommand}">
           <MenuItem.Icon>
             <Image>
               <Image.Source>
                 <svg:SvgImage Source="/Assets/Icons/play.svg"/>
+              </Image.Source>
+            </Image>
+          </MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="_Pause" Command="{Binding PauseCommand}">
+          <MenuItem.Icon>
+            <Image>
+              <Image.Source>
+                <svg:SvgImage Source="/Assets/Icons/pause.svg"/>
               </Image.Source>
             </Image>
           </MenuItem.Icon>
@@ -113,14 +122,24 @@
           <Setter Property="Width" Value="14" />
         </Style>
       </DockPanel.Styles>
-      <Button ToolTip.Tip="Starts debugging" Command="{Binding RunCommand}" DockPanel.Dock="Left">
+      <Button ToolTip.Tip="Starts or continues debugging" Command="{Binding RunCommand}" DockPanel.Dock="Left">
         <StackPanel Orientation="Horizontal">
           <Image>
             <Image.Source>
               <svg:SvgImage Source="/Assets/Icons/play.svg"/>
             </Image.Source>
           </Image>
-          <TextBlock Margin="4,0,0,0">Run</TextBlock>
+          <TextBlock Margin="4,0,0,0" Text="{Binding RunCommandTitle}" />
+        </StackPanel>
+      </Button>
+      <Button ToolTip.Tip="Pauses debugging" Command="{Binding PauseCommand}" DockPanel.Dock="Left">
+        <StackPanel Orientation="Horizontal">
+          <Image>
+            <Image.Source>
+              <svg:SvgImage Source="/Assets/Icons/pause.svg"/>
+            </Image.Source>
+          </Image>
+          <TextBlock Margin="4,0,0,0">Pause</TextBlock>
         </StackPanel>
       </Button>
       <Button ToolTip.Tip="Stops debugging" Command="{Binding StopCommand}" DockPanel.Dock="Left">

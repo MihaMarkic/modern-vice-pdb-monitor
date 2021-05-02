@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Windows.Input;
 
 namespace Modern.Vice.PdbMonitor.Core.Common
 {
-    public class RelayCommand<T> : ICommand
+    public class RelayCommand<T> : ICommandEx
     {
         private readonly Func<T?, bool>? canExecute;
         private readonly Action<T?> execute;

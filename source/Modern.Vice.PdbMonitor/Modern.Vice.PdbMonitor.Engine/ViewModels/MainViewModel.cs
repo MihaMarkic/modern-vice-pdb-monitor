@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,12 +17,13 @@ using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
+using Righthand.ViceMonitor.Bridge.Commands;
+using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
-using ViceBridgeCommand = Righthand.ViceMonitor.Bridge.Commands;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class MainViewModel: NotifiableObject
+    public class MainViewModel : NotifiableObject
     {
         readonly ILogger<MainViewModel> logger;
         readonly IAcmePdbParser acmePdbParser;
@@ -31,6 +33,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IServiceScope scope;
         readonly IViceBridge viceBridge;
         readonly IProjectPdbFileWatcher projectPdbFileWatcher;
+        readonly CommandsManager commandsManager;
         public string AppName => "Modern VICE PDB Monitor";
         readonly Subscription closeOverlaySubscription;
         readonly Subscription pdbFileChangedSubscription;
@@ -46,9 +49,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RelayCommand CloseProjectCommand { get; }
         public RelayCommand ExitCommand { get; }
         public RelayCommand ToggleErrorsVisibilityCommand { get; }
-        public RelayCommand RunCommand { get; }
+        public RelayCommandAsync RunCommand { get; }
+        public RelayCommand PauseCommand { get; }
         public RelayCommand StopCommand { get; }
-        public RelayCommand UpdatePdbCommand { get; }
+        public RelayCommandAsync UpdatePdbCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
         public Action? CloseApp { get; set; }
@@ -59,9 +63,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool IsStartingDebugging { get; private set; }
         public bool IsParsingPdb { get; private set; }
         public bool IsBusy => IsOpeningProject || IsStartingDebugging || IsParsingPdb;
-        public bool IsRunning { get; private set; }
+        public bool IsDebugging { get; private set; }
         public bool IsOverlayVisible => OverlayContent is not null;
         public bool IsViceConnected { get; private set; }
+        public bool IsDebuggingPaused { get; private set; }
+        public string RunCommandTitle => IsDebugging ? "Continue" : "Run";
+        public string RunMenuCommandTitle => IsDebugging ? "_Continue" : "_Run";
         /// <summary>
         /// True when pdb file was changed.
         /// </summary>
@@ -98,23 +105,25 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.scope = scope;
             this.viceBridge = viceBridge;
             this.projectPdbFileWatcher = projectPdbFileWatcher;
+            commandsManager = new CommandsManager(this);
             uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
             pdbFileChangedSubscription = dispatcher.Subscribe<AcmePdbFileChangedMessage>(PdbFileChanged);
             ErrorMessagesViewModel = errorMessagesViewModel;
-            ShowSettingsCommand = new RelayCommand(ShowSettings, () => !IsShowingSettings);
-            ShowProjectCommand = new(ShowProject, () => !IsShowingProject && IsProjectOpen);
-            TestCommand = new RelayCommand(Test, () => !IsBusy);
-            CreateProjectCommand = new RelayCommand(CreateProject, () => !IsBusy && !IsRunning);
-            OpenProjectFromPathCommand = new RelayCommand<string>(OpenProjectFromPath, _ => !IsBusy && !IsRunning);
-            OpenProjectCommand = new RelayCommand(OpenProject, () => !IsBusy && !IsRunning);
+            ShowSettingsCommand = commandsManager.CreateRelayCommand(ShowSettings, () => !IsShowingSettings);
+            ShowProjectCommand = commandsManager.CreateRelayCommand(ShowProject, () => !IsShowingProject && IsProjectOpen);
+            TestCommand = commandsManager.CreateRelayCommand(Test, () => !IsBusy);
+            CreateProjectCommand = commandsManager.CreateRelayCommand(CreateProject, () => !IsBusy && !IsDebugging);
+            OpenProjectFromPathCommand = commandsManager.CreateRelayCommand<string>(OpenProjectFromPath, _ => !IsBusy && !IsDebugging);
+            OpenProjectCommand = commandsManager.CreateRelayCommand(OpenProject, () => !IsBusy && !IsDebugging);
             globals.PropertyChanged += Globals_PropertyChanged;
-            CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectOpen && !IsRunning);
+            CloseProjectCommand = commandsManager.CreateRelayCommand(CloseProject, () => IsProjectOpen && !IsDebugging);
             ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
             ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
-            RunCommand = new(StartDebuggingAsync, () => IsProjectOpen && !IsRunning);
-            StopCommand = new(StopDebugging, () => IsRunning);
-            UpdatePdbCommand = new(() => _ = UpdatePdbAsync(), () => !IsBusy);
+            RunCommand = commandsManager.CreateRelayCommandAsync(StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused));
+            StopCommand = commandsManager.CreateRelayCommand(StopDebugging, () => IsDebugging);
+            PauseCommand = commandsManager.CreateRelayCommand(PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected);
+            UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
             if (!Directory.Exists(globals.Settings.VicePath))
             {
                 SwitchContent<SettingsViewModel>();
@@ -129,8 +138,27 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
         }
+
+        void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
+        {
+            Debug.WriteLine($"Got unbounded {e.Response.GetType().Name}");
+            uiFactory.StartNew(() =>
+            {
+                switch (e.Response)
+                {
+                    case StoppedResponse:
+                        IsDebuggingPaused = true;
+                        break;
+                    case ResumedResponse:
+                        IsDebuggingPaused = false;
+                        break;
+                }
+            });
+        }
+
         void PdbFileChanged(object sender, AcmePdbFileChangedMessage message)
         {
             _ = uiFactory.StartNew(() => IsUpdatedPdbAvailable = true);
@@ -161,83 +189,154 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
         {
-            IsViceConnected = e.IsConnected;
+            uiFactory.StartNew(() =>
+            {
+                IsViceConnected = e.IsConnected;
+            });
         }
-
         internal void StopDebugging()
         {
-            _ = ClearAfterDebugging();
+            ClearAfterDebugging();
         }
-        internal async void StartDebuggingAsync()
+        internal void PauseDebugging()
         {
-            const string Title = "Start debugging";
-            viceProcess = StartVice();
-            if (viceProcess is null)
+            if (!IsDebuggingPaused)
             {
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, Title, "Failed to start debugging"));
-                return;
+                viceBridge.EnqueueCommand(new PingCommand());
             }
-            IsStartingDebugging = true;
-            IsRunning = true;
+        }
+        internal async Task StartDebuggingAsync()
+        {
+            if (IsDebugging)
+            {
+                await ExitViceMonitorAsync();
+            }
+            else
+            {
+                const string title = "Start debugging";
+                if (!IsViceConnected)
+                {
+                    if (viceProcess is null)
+                    {
+                        viceProcess = StartVice();
+                        if (viceProcess is null)
+                        {
+                            dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, title, "Failed to start debugging"));
+                            return;
+                        }
+                        viceProcess.Exited += ViceProcess_Exited;
+                    }
+                }
+                IsStartingDebugging = true;
+                IsDebugging = true;
+                try
+                {
+                    if (IsUpdatedPdbAvailable)
+                    {
+                        await UpdatePdbAsync();
+                    }
+                    startDebuggingCts = new CancellationTokenSource();
+                    if (!viceBridge.IsConnected)
+                    {
+                        await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
+                    }
+                    // make sure vice isn't in paused state
+                    if (IsDebuggingPaused)
+                    {
+                        await ExitViceMonitorAsync();
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearAfterDebugging();
+                }
+                finally
+                {
+                    IsStartingDebugging = false;
+                }
+            }
+        }
+        internal async Task ExitViceMonitorAsync()
+        {
+            await EnqueueCommandAndWaitForResponseAsync(new ExitCommand());
+        }
+
+        internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
+            where TResponse: ViceResponse
+        {
+            const string title = "Execute VICE command";
+            viceBridge.EnqueueCommand(command);
             try
             {
-                if (IsUpdatedPdbAvailable)
-                {
-                    await UpdatePdbAsync();
-                }
-                startDebuggingCts = new CancellationTokenSource();
-                if (!viceBridge.IsConnected)
-                {
-                    await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
-                }
+                return await AwaitWithTimeoutAsync(command.Response, timeout);
             }
-            catch (OperationCanceledException)
+            catch(TimeoutException)
             {
-                await ClearAfterDebugging();
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, title, $"Timeout while executing {command.GetType().Name}"));
+                logger.Log(LogLevel.Warning, "Timeout while executing {Command}", command.GetType().Name);
+                return null;
             }
-            finally
+            catch (Exception ex)
             {
-                IsStartingDebugging = false;
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, title, $"General failure while executing {command.GetType().Name}"));
+                logger.Log(LogLevel.Warning, ex, "General failure while executing {Command}", command.GetType().Name);
+                return null;
             }
         }
-        internal async Task ClearAfterDebugging()
+        internal async Task<T> AwaitWithTimeoutAsync<T>(Task<T> task, TimeSpan? timeout = default)
+        {
+            bool success = await Task.WhenAny(task, Task.Delay(timeout ?? TimeSpan.FromSeconds(5))) == task;
+            if (!success)
+            {
+                throw new TimeoutException();
+            }
+            return task.Result;
+        }
+        void ViceProcess_Exited(object? sender, EventArgs e)
+        {
+            viceProcess!.Exited -= ViceProcess_Exited;
+            viceProcess = null;
+            StopDebugging();
+        }
+
+        internal void ClearAfterDebugging()
         {
             logger.LogDebug("Cleaning after debugging");
-            if (viceProcess is not null)
-            {
-                if (viceBridge.IsConnected)
-                {
-                    logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
-                    var quitCommand = new ViceBridgeCommand.QuitCommand();
-                    viceBridge.EnqueueCommand(quitCommand);
-                    (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
-                    bool isQuitSuccess = true;
-                    if (!success)
-                    {
-                        logger.LogDebug("Timeout while waiting for VICE response to Quit command");
-                        isQuitSuccess = false;
-                    }
-                    else
-                    {
-                        if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
-                        {
-                            logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
-                            isQuitSuccess = false;
-                        }
-                    }
-                    if (!isQuitSuccess)
-                    {
-                        viceProcess.Kill();
-                    }
-                    bool waitForKillSuccess = viceProcess.WaitForExit(5000);
-                    if (!waitForKillSuccess)
-                    {
-                        logger.LogWarning("Couldn't kill VICE process");
-                    }
-                    viceProcess.Dispose();
-                }
-            }
-            IsRunning = false;
+            //if (viceProcess is not null)
+            //{
+            //    if (viceBridge.IsConnected)
+            //    {
+            //        logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
+            //        var quitCommand = new ViceBridgeCommand.QuitCommand();
+            //        viceBridge.EnqueueCommand(quitCommand);
+            //        (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
+            //        bool isQuitSuccess = true;
+            //        if (!success)
+            //        {
+            //            logger.LogDebug("Timeout while waiting for VICE response to Quit command");
+            //            isQuitSuccess = false;
+            //        }
+            //        else
+            //        {
+            //            if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
+            //            {
+            //                logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
+            //                isQuitSuccess = false;
+            //            }
+            //        }
+            //        if (!isQuitSuccess)
+            //        {
+            //            viceProcess.Kill();
+            //        }
+            //        bool waitForKillSuccess = viceProcess.WaitForExit(5000);
+            //        if (!waitForKillSuccess)
+            //        {
+            //            logger.LogWarning("Couldn't kill VICE process");
+            //        }
+            //        viceProcess.Dispose();
+            //    }
+            //}
+            IsDebugging = false;
         }
         internal void CloseOverlay(object sender, CloseOverlayMessage message)
         {
@@ -259,7 +358,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
         internal void SwitchContent<T>()
-            where T: ScopedViewModel
+            where T : ScopedViewModel
         {
             Content?.Dispose();
             Content = scope.ServiceProvider.CreateScopedContent<T>();
@@ -292,7 +391,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
                 try
                 {
-                    return Process.Start(path, $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}");
+                    string arguments = $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}";
+                    return Process.Start(path, arguments);
                 }
                 catch (Exception ex)
                 {
@@ -376,7 +476,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
         }
-
         internal bool CreateProject(string projectPath)
         {
             if (File.Exists(projectPath))
@@ -401,9 +500,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             return false;
         }
-
         internal string GetPdbPath(string prgPath) => Path.Combine(globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "", globals.GetPdbFileName(prgPath));
-
         internal async Task<AcmePdb?> ParsePdbAsync(string pdbPath)
         {
             if (!File.Exists(pdbPath))
@@ -436,43 +533,50 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 IsParsingPdb = false;
             }
         }
-
-        protected override void OnPropertyChanged([CallerMemberName]string name = default!)
+        protected override void OnPropertyChanged([CallerMemberName] string name = default!)
         {
             base.OnPropertyChanged(name);
-            switch (name)
-            {
-                case nameof(IsBusy):
-                    CreateProjectCommand.RaiseCanExecuteChanged();
-                    OpenProjectFromPathCommand.RaiseCanExecuteChanged();
-                    UpdatePdbCommand.RaiseCanExecuteChanged();
-                    break;
-                case nameof(Project):
-                    CloseProjectCommand.RaiseCanExecuteChanged();
-                    ShowProjectCommand.RaiseCanExecuteChanged();
-                    RunCommand.RaiseCanExecuteChanged();
-                    if (Project?.PrgPath is not null)
-                    {
-                        projectPdbFileWatcher.Start(globals.ProjectDirectory!, globals.GetPdbFileName(Project.PrgPath));
-                    }
-                    else
-                    {
-                        projectPdbFileWatcher.Stop();
-                    }
-                    break;
-                case nameof(OverlayContent):
-                    ShowSettingsCommand.RaiseCanExecuteChanged();
-                    ShowProjectCommand.RaiseCanExecuteChanged();
-                    break;
-                case nameof(IsRunning):
-                    CloseProjectCommand.RaiseCanExecuteChanged();
-                    CreateProjectCommand.RaiseCanExecuteChanged();
-                    OpenProjectCommand.RaiseCanExecuteChanged();
-                    OpenProjectFromPathCommand.RaiseCanExecuteChanged();
-                    RunCommand.RaiseCanExecuteChanged();
-                    StopCommand.RaiseCanExecuteChanged();
-                    break; 
-            }
+            //switch (name)
+            //{
+            //    case nameof(IsBusy):
+            //        CreateProjectCommand.RaiseCanExecuteChanged();
+            //        OpenProjectFromPathCommand.RaiseCanExecuteChanged();
+            //        UpdatePdbCommand.RaiseCanExecuteChanged();
+            //        break;
+            //    case nameof(Project):
+            //        CloseProjectCommand.RaiseCanExecuteChanged();
+            //        ShowProjectCommand.RaiseCanExecuteChanged();
+            //        RunCommand.RaiseCanExecuteChanged();
+            //        if (Project?.PrgPath is not null)
+            //        {
+            //            projectPdbFileWatcher.Start(globals.ProjectDirectory!, globals.GetPdbFileName(Project.PrgPath));
+            //        }
+            //        else
+            //        {
+            //            projectPdbFileWatcher.Stop();
+            //        }
+            //        break;
+            //    case nameof(OverlayContent):
+            //        ShowSettingsCommand.RaiseCanExecuteChanged();
+            //        ShowProjectCommand.RaiseCanExecuteChanged();
+            //        break;
+            //    case nameof(IsDebugging):
+            //        CloseProjectCommand.RaiseCanExecuteChanged();
+            //        CreateProjectCommand.RaiseCanExecuteChanged();
+            //        OpenProjectCommand.RaiseCanExecuteChanged();
+            //        OpenProjectFromPathCommand.RaiseCanExecuteChanged();
+            //        RunCommand.RaiseCanExecuteChanged();
+            //        StopCommand.RaiseCanExecuteChanged();
+            //        PauseCommand.RaiseCanExecuteChanged();
+            //        break;
+            //    case nameof(IsDebuggingPaused):
+            //        RunCommand.RaiseCanExecuteChanged();
+            //        PauseCommand.RaiseCanExecuteChanged();
+            //        break;
+            //    case nameof(IsViceConnected):
+            //        uiFactory.StartNew(PauseCommand.RaiseCanExecuteChanged);
+            //        break;
+            //}
         }
 
         protected override void Dispose(bool disposing)
@@ -480,6 +584,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (disposing)
             {
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
+                viceBridge.ViceResponse -= ViceBridge_ViceResponse;
                 closeOverlaySubscription.Dispose();
                 pdbFileChangedSubscription.Dispose();
             }

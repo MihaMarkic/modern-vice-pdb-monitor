@@ -266,3 +266,4 @@ __pycache__/
 /distribution
 nogit.config
 !/src/Globus.Kiosk/Binaries/*.dll
+nuget.config

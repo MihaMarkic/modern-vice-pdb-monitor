@@ -1,37 +1,35 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Modern.Vice.PdbMonitor.Core.Common
 {
-    public class RelayCommand : ICommandEx
+    public class RelayCommandAsync : ICommandEx
     {
         private readonly Func<bool>? canExecute;
-        private readonly Action execute;
+        private readonly Func<Task> execute;
 
         public event EventHandler? CanExecuteChanged;
 
-        public RelayCommand(Action execute) : this(execute, null)
+        public RelayCommandAsync(Func<Task> execute) : this(execute, null)
         {
         }
 
-        public RelayCommand(Action execute, Func<bool>? canExecute)
+        public RelayCommandAsync(Func<Task> execute, Func<bool>? canExecute)
         {
             this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            if (canExecute != null)
-            {
-                this.canExecute = new Func<bool>(canExecute);
-            }
+            this.canExecute = canExecute;
         }
 
         public virtual bool CanExecute(object? parameter)
         {
-            if (canExecute == null)
+            if (canExecute is null)
             {
                 return true;
             }
             return canExecute();
         }
 
-        public virtual void Execute(object? parameter) => execute();
+        public virtual void Execute(object? parameter) => _ = execute();
         public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }
