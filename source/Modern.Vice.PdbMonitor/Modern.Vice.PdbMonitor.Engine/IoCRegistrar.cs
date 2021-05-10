@@ -18,6 +18,8 @@ namespace Modern.Vice.PdbMonitor.Engine
             services.AddScoped<ProjectExplorerViewModel>();
             services.AddScoped<ProjectViewModel>();
             services.AddScoped<SourceFileViewerViewModel>();
+            services.AddSingleton<RegistersViewModel>();
+            services.AddSingleton<RegistersMapping>();
             services.AddTransient<SourceFileViewModel>();
             services.AddSingleton<Globals>();
             services.AddSingleton<IAcmePdbParser, AcmePdbParser>();

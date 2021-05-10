@@ -4,22 +4,24 @@ using Modern.Vice.PdbMonitor.Engine.Models;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class DebuggerViewModel: ScopedViewModel
+    public class DebuggerViewModel : ScopedViewModel
     {
         readonly ILogger<DebuggerViewModel> logger;
         readonly Globals globals;
+        public RegistersViewModel Registers {get;}
         public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
         public Project? Project => globals.Project;
         public bool IsOpenProject => Project is not null;
         public ProjectExplorerViewModel ProjectExplorer { get; }
         public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
         public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
-            SourceFileViewerViewModel sourceFileViewerViewModel)
+            SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers)
         {
             this.logger = logger;
             this.globals = globals;
             ProjectExplorer = projectExplorerViewModel;
             SourceFileViewerViewModel = sourceFileViewerViewModel;
+            Registers = registers;
             globals.PropertyChanged += Globals_PropertyChanged;
         }
 

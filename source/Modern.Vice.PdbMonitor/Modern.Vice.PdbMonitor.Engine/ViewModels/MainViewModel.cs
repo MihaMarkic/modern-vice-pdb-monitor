@@ -34,6 +34,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IViceBridge viceBridge;
         readonly IProjectPdbFileWatcher projectPdbFileWatcher;
         readonly CommandsManager commandsManager;
+        readonly Regis
         public string AppName => "Modern VICE PDB Monitor";
         readonly Subscription closeOverlaySubscription;
         readonly Subscription pdbFileChangedSubscription;
@@ -141,7 +142,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
         }
-
+        /// <summary>
+        /// Unbound responses
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
         {
             Debug.WriteLine($"Got unbounded {e.Response.GetType().Name}");
@@ -154,6 +159,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         break;
                     case ResumedResponse:
                         IsDebuggingPaused = false;
+                        break;
+                    case RegistersResponse registers:
+                        if (registers.ism)
                         break;
                 }
             });
