@@ -179,6 +179,9 @@
       <TabItem Header="Errors">
         <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
       </TabItem>
+      <TabItem Header="Registers">
+        <v:Registers DataContext="{Binding RegistersViewModel}" />
+      </TabItem>
     </TabControl>
     <ContentControl>
       <ContentControl.Content>

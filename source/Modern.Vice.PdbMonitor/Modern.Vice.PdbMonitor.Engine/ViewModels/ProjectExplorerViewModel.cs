@@ -22,14 +22,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public Project? Project => globals.Project;
         public ImmutableArray<ProjectExplorerHeaderNode> Nodes { get; private set; }
         public RelayCommand<object> OpenSourceFileCommand { get; }
-        ImmutableDictionary<int, AcmePdbAddress> addresses = ImmutableDictionary<int, AcmePdbAddress>.Empty;
-        ImmutableArray<AcmePdbFile> files = ImmutableArray<AcmePdbFile>.Empty;
+        //ImmutableDictionary<int, AcmePdbAddress> addresses = ImmutableDictionary<int, AcmePdbAddress>.Empty;
+        ImmutableArray<AcmeFile> files = ImmutableArray<AcmeFile>.Empty;
         public ProjectExplorerViewModel(IDispatcher dispatcher, ILogger<ProjectExplorerViewModel> logger, Globals globals)
         {
             this.dispatcher = dispatcher;
             this.logger = logger;
             this.globals = globals;
-            OpenSourceFileCommand = new RelayCommand<object>(OpenSourceFile, canExecute: o => o is AcmePdbFile || o is AcmePdbLabel);
+            OpenSourceFileCommand = new RelayCommand<object>(OpenSourceFile, canExecute: o => o is AcmeFile || o is AcmeLabel);
             globals.PropertyChanged += Globals_PropertyChanged;
             UpdateNodes();
         }
@@ -51,14 +51,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             switch (message)
             {
-                case AcmePdbFile pdbFile:
-                    dispatcher.Dispatch(new OpenSourceFileMessage(pdbFile));
+                case AcmeFile acmeFile:
+                    dispatcher.Dispatch(new OpenSourceFileMessage(acmeFile));
                     break;
-                case AcmePdbLabel label:
-                    if (addresses.TryGetValue(label.Address, out var address))
-                    {
-                        dispatcher.Dispatch(new OpenSourceFileMessage(files[address.FileIndex], address.Line));
-                    }
+                case AcmeLabel label:
+                    //if (addresses.TryGetValue(label.Address, out var address))
+                    //{
+                    //    dispatcher.Dispatch(new OpenSourceFileMessage(files[address.FileIndex], address.Line));
+                    //}
                     break;
             }
         }
@@ -66,19 +66,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (Project is not null)
             {
-                var addresses = globals.Pdb?.Addresses ?? ImmutableArray<AcmePdbAddress>.Empty;
-                files = globals.Pdb?.Files ?? ImmutableArray<AcmePdbFile>.Empty;
+                //var addresses = globals.Pdb?.Addresses ?? ImmutableArray<AcmePdbAddress>.Empty;
+                files = globals.Pdb?.Files.Values.ToImmutableArray() ?? ImmutableArray<AcmeFile>.Empty;
                 Nodes = ImmutableArray<ProjectExplorerHeaderNode>.Empty
                     .Add(new ProjectExplorerHeaderNode("Files", files))
-                    .Add(new ProjectExplorerHeaderNode("Labels", globals.Pdb?.Labels ?? ImmutableArray<AcmePdbLabel>.Empty))
-                    .Add(new ProjectExplorerHeaderNode("Includes", globals.Pdb?.Includes ?? ImmutableArray<AcmePdbInclude>.Empty));
-                this.addresses = addresses.ToImmutableDictionary(a => a.Address);
+                    .Add(new ProjectExplorerHeaderNode("Labels", globals.Pdb?.Labels.Values.ToImmutableArray() ?? ImmutableArray<AcmeLabel>.Empty));
             }
             else
             {
                 Nodes = Nodes.Clear();
-                addresses = ImmutableDictionary<int, AcmePdbAddress>.Empty;
-                files = ImmutableArray<AcmePdbFile>.Empty;
+                files = ImmutableArray<AcmeFile>.Empty;
             }
         }
 

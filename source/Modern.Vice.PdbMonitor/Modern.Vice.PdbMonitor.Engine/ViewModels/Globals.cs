@@ -5,7 +5,6 @@ using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
-using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -25,7 +24,19 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.logger = logger;
             this.settingsManager = settingsManager;
         }
-        internal string GetPdbFileName(string prgPath) => $"{Path.GetFileNameWithoutExtension(prgPath)}.pdb";
+        /// <summary>
+        /// Report file has name with extension .rep
+        /// </summary>
+        /// <param name="prgPath"></param>
+        /// <returns></returns>
+        internal string GetReportFileName(string prgPath) => GetRelatedFileName(prgPath,"rep");
+        /// <summary>
+        /// Labels file has name with extension .lbl
+        /// </summary>
+        /// <param name="prgPath"></param>
+        /// <returns></returns>
+        internal string GetLabelsFileName(string prgPath) => GetRelatedFileName(prgPath, "lbl");
+        internal string GetRelatedFileName(string prgPath, string extension) => $"{Path.GetFileNameWithoutExtension(prgPath)}.{extension}";
         public void Load()
         {
             Settings = settingsManager.LoadSettings();

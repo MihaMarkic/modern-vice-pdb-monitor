@@ -12,7 +12,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
     {
         readonly Globals globals;
         readonly ISettingsManager settingsManager;
-        readonly IProjectPdbFileWatcher projectPdbFileWatcher;
+        readonly IProjectPrgFileWatcher projectPrgFileWatcher;
         public Project Project => globals.Project!;
         public string ProjectFile => globals.ProjectFile!;
         public string? PrgPath
@@ -21,11 +21,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             set => Project.PrgPath = value;
         }
         public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher,
-            IProjectPdbFileWatcher projectPdbFileWatcher) : base(dispatcher)
+            IProjectPrgFileWatcher projectPrgFileWatcher) : base(dispatcher)
         {
             this.globals = globals;
             this.settingsManager = settingsManager;
-            this.projectPdbFileWatcher = projectPdbFileWatcher;
+            this.projectPrgFileWatcher = projectPrgFileWatcher;
         }
         public void AssignPrgFullPath(string value)
         {
@@ -34,11 +34,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 var prgPath = new Uri(value);
                 var projectDirectory = new Uri(Path.Combine($"{globals.ProjectDirectory}{Path.DirectorySeparatorChar}"));
                 PrgPath = projectDirectory.MakeRelativeUri(prgPath).ToString();
-                projectPdbFileWatcher.Start(globals.ProjectDirectory!, globals.GetPdbFileName(value));
+                dispatcher.Dispatch(new PrgFilePathChangedMessage());
+                projectPrgFileWatcher.Start(globals.ProjectDirectory!, value);
             }
             catch (Exception ex)
             {
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Assigning PRG", ex.Message));
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Assigning PRG (.o)", ex.Message));
             }
         }
         public bool IsPrgPathValid

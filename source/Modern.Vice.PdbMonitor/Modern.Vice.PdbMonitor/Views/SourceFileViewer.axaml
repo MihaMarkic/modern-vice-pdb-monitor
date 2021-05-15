@@ -13,6 +13,7 @@
   <ScrollViewer x:Name="scroller">
     <ScrollViewer.Resources>
       <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
+      <c:HexAddressConverter x:Key="HexAddressConverter" />
     </ScrollViewer.Resources>
     <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
       <ItemsRepeater.ItemTemplate>
@@ -20,10 +21,11 @@
           <StackPanel Orientation="Horizontal" Height="18">
             <StackPanel.Styles>
               <Style Selector="TextBlock">
-                <Setter Property="FontFamily" Value="Fira Coda" />
+                <Setter Property="FontFamily" Value="Fira Code" />
               </Style>
             </StackPanel.Styles>
-            <TextBlock Text="{Binding Row}" Width="40" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Row}" Width="50" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Address, Converter={StaticResource HexAddressConverter}}" Width="50" TextAlignment="Right" Foreground="Gray" Margin="8,0,0,0" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Content, Converter={StaticResource TabsToSpacesConverter}}" Margin="8,0,0,0" VerticalAlignment="Center" />
           </StackPanel>
         </DataTemplate>

@@ -2,7 +2,7 @@
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Abstract
 {
-    public interface IProjectPdbFileWatcher
+    public interface IProjectPrgFileWatcher
     {
         void Start(string path, string filter);
         void Stop();

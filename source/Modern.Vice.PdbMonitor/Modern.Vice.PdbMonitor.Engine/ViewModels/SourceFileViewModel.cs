@@ -24,5 +24,5 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
     }
 
-    public record Line(int Row, string Content);
+    public record Line(int Row, ushort? Address, string Content);
 }

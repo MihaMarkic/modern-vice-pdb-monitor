@@ -5,12 +5,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
-using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
@@ -80,24 +78,6 @@ namespace Modern.Vice.PdbMonitor.Views
         }
 
         public MainViewModel ViewModel => (MainViewModel)DataContext!;
-        //async void CreateProject(object sender, RoutedEventArgs e)
-        //{
-        //    var dialog = new OpenFileDialog
-        //    {
-        //        Title = "PRG file selection",
-        //        AllowMultiple = false,
-        //    };
-        //    dialog.Filters.Add(new FileDialogFilter { Name = "ACME .prg", Extensions = { "prg" } });
-
-        //    if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        //    {
-        //        var result = await dialog.ShowAsync(desktop.MainWindow);
-        //        if (result.Length == 1)
-        //        {
-        //            ViewModel.CreateProject result[0]);
-        //        }
-        //    }
-        //}
 
         protected override void OnClosed(EventArgs e)
         {

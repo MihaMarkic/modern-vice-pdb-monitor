@@ -1,213 +1,265 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
+using Righthand.ViceMonitor.Bridge.Shared;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
 {
     public class AcmePdbParser : IAcmePdbParser
     {
-        public class Context
+        public interface IContext
         {
-            public List<AcmePdbParseError> Errors { get; set; } = new List<AcmePdbParseError>();
+            abstract void AddError(AcmePdbParseError error);
+            abstract ImmutableArray<AcmePdbParseError> Errors { get; }
         }
-        public async Task<AcmePdbParseResult> ParseAsync(string path, CancellationToken ct = default)
+        public class Context: IContext
+        {
+            List<AcmePdbParseError> errors = new List<AcmePdbParseError>();
+            public void AddError(AcmePdbParseError error) => errors.Add(error);
+            public ImmutableArray<AcmePdbParseError> Errors => errors.ToImmutableArray();
+        }
+        public class ThreadSafeContext: IContext
+        {
+            readonly ConcurrentBag<AcmePdbParseError> errors = new ConcurrentBag<AcmePdbParseError>();
+            public void AddError(AcmePdbParseError error) => errors.Add(error);
+            public ImmutableArray<AcmePdbParseError> Errors => errors.ToImmutableArray();
+        }
+        public async Task<AcmePdbParseResult<AcmePdb>> ParseAsync(DebugFiles debugFiles, CancellationToken ct = default)
+        {
+            var reportTask = Task.Run(() => ParseReport(debugFiles.Report), ct);
+            var labels = await Task.Run(() => ParseLabels(debugFiles.Labels, ct), ct);
+            var report = await reportTask;
+
+            var context = new ThreadSafeContext();
+            var acmePdb = CreatePdb(report.ParsedData, labels.ParsedData, context);
+            var errors = context.Errors;
+            var allErrors = errors.Union(report.Errors).Union(labels.Errors).ToImmutableArray();
+
+            return AcmePdbParseResultBuilder.Create(acmePdb, allErrors);
+        }
+        /// <summary>
+        /// Maps report lines into files and nested lines and returns AcmePdb
+        /// </summary>
+        /// <param name="report"></param>
+        /// <param name="labels"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        internal AcmePdb CreatePdb(ImmutableArray<ReportLine> report, ImmutableDictionary<string, AcmeLabel> labels, IContext context)
+        {
+            var linesBuilder = ImmutableArray.CreateBuilder<AcmeLine>();
+            var filesBuilder = ImmutableDictionary.CreateBuilder<string, AcmeFile>();
+            AcmeFile? file = null;
+            foreach (var reportLine in report)
+            {
+                switch (reportLine)
+                {
+                    case ReportSource reportSource:
+                        if (!filesBuilder.TryGetValue(reportSource.RelativePath, out file))
+                        {
+                            file = new AcmeFile(reportSource.RelativePath);
+                            filesBuilder.Add(file.RelativePath, file);
+                        }
+                        break;
+                    case ReportCodeLine reportCodeLine:
+                        if (file is not null)
+                        {
+                            var line = new AcmeLine(file, reportCodeLine.LineNumber, reportCodeLine.StartAddress, reportCodeLine.Data, reportCodeLine.IsMoreData,
+                                reportCodeLine.Text);
+                            linesBuilder.Add(line);
+                        }
+                        else
+                        {
+                            context.AddError(new AcmePdbParseError(reportCodeLine.LineNumber, reportCodeLine.Text, "No assigned file"));
+                        }
+                        break;
+                }
+            }
+            var files = filesBuilder.Values.ToImmutableArray();
+            var lines = linesBuilder.ToImmutable();
+            AcmeFile[] acmeFiles = new AcmeFile[files.Length];
+            if (acmeFiles.Length > 1)
+            {
+                Parallel.For(0, files.Length, (index, loopState) =>
+                {
+                    acmeFiles[index] = CreateAcmeFile(files[index], lines);
+                });
+            }
+            else
+            {
+                acmeFiles[0] = files[0] with { RelativePath = BeautifyRelativePath(files[0].RelativePath), Lines = lines };
+            }
+            return new AcmePdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels);
+        }
+        internal AcmeFile CreateAcmeFile(AcmeFile source, ImmutableArray<AcmeLine> lines)
+        {
+            var fileLines = lines.Where(l => l.File == source).ToImmutableArray();
+            return source with { RelativePath = BeautifyRelativePath(source.RelativePath), Lines = fileLines };
+        }
+        internal string BeautifyRelativePath(string path)
+        {
+            if (path.StartsWith(@".\"))
+            {
+                return path.Substring(2);
+            }
+            return path;
+        }
+        internal AcmePdbParseResult<ImmutableDictionary<string, AcmeLabel>> ParseLabels(string path, CancellationToken ct)
         {
             using (var stream = File.OpenRead(path))
             {
-                return await ParseAsync(stream, ct);
+                var labels = ParseLabels(stream);
+                var dictionary = labels.ParsedData.ToImmutableDictionary(l => l.Name, l => l);
+                return AcmePdbParseResultBuilder.Create(dictionary, labels.Errors);
             }
         }
-        public async Task<AcmePdbParseResult> ParseAsync(Stream stream, CancellationToken ct = default)
+        internal AcmePdbParseResult<ImmutableArray<AcmeLabel>> ParseLabels(Stream stream)
         {
-            var result = AcmePdb.Empty;
+            var builder = ImmutableArray.CreateBuilder<AcmeLabel>();
             Context context = new();
-            int lineNumber = 0;
-            using (var sr = new StreamReader(stream, Encoding.ASCII))
+            using (var sr = new StreamReader(stream, Encoding.UTF8))
             {
                 string? line;
-                while (context.Errors.Count == 0 && (line = await sr.ReadLineAsync()) is not null)
+                int lineNumber = 0;
+                while ((line = sr.ReadLine()) is not null)
                 {
-                    var caption = ParseCaption(lineNumber, line, context);
-                    if (caption is null)
+                    var label = ParseLabel(line, lineNumber, context);
+                    if (label is not null)
                     {
-                        break;
-                    }
-                    switch (caption.Value.Caption)
-                    {
-                        case "INCLUDES":
-                            result = result with
-                            {
-                                Includes = await GetItemsAsync<AcmePdbInclude>(lineNumber + 1, caption.Value.Count, sr, context, (_, line, _) => new(line), ct)
-                            };
-                            lineNumber += result.Includes.Length;
-                            break;
-                        case "FILES":
-                            result = result with
-                            {
-                                Files = await GetItemsAsync(lineNumber + 1, caption.Value.Count, sr, context, GetFile, ct)
-                            };
-                            lineNumber += result.Files.Length;
-                            break;
-                        case "ADDRS":
-                            result = result with
-                            {
-                                Addresses = await GetItemsAsync(lineNumber + 1, caption.Value.Count, sr, context, GetAddress, ct)
-                            };
-                            lineNumber += result.Addresses.Length;
-                            break;
-                        case "LABELS":
-                            result = result with
-                            {
-                                Labels = await GetItemsAsync(lineNumber + 1, caption.Value.Count, sr, context, GetLabel, ct)
-                            };
-                            lineNumber += result.Labels.Length;
-                            break;
-                        default:
-                            context.Errors.Add(new AcmePdbParseError(lineNumber, line, "Expected header line"));
-                            break;
+                        builder.Add(label);
                     }
                 }
-                return new AcmePdbParseResult(result, context.Errors.ToImmutableArray());
+            }
+            return AcmePdbParseResultBuilder.Create(builder.ToImmutable(), context.Errors.ToImmutableArray());
+        }
+        internal AcmeLabel? ParseLabel(ReadOnlySpan<char> text, int lineNumber, Context context)
+        {
+            if (text.IsWhiteSpace())
+            {
+                return null;
+            }
+            else
+            {
+                if (!ushort.TryParse(text[5..9], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort value))
+                {
+                    context.Errors.Add(new AcmePdbParseError(lineNumber, text.ToString(), "Failed parsing label address"));
+                    return null;
+                }
+                return new AcmeLabel(value, text[11..].ToString());
             }
         }
-        internal async Task<ImmutableArray<T>> GetItemsAsync<T>(int startLineNumber, int count, StreamReader sr, Context context,
-            Func<int, string, Context, T?> getItem, CancellationToken ct = default)
+        internal AcmePdbParseResult<ImmutableArray<ReportLine>> ParseReport(string path)
         {
-            var result = new List<T>(count);
-            for (int i = 0; i < count; i++)
+            const int ParallelThreshold = 100;
+            var sourceLines = File.ReadAllLines(path).Where(l => !string.IsNullOrWhiteSpace(l)).ToImmutableArray();
+            ReportLine?[] reportLines = new ReportLine[sourceLines.Length];
+            IContext context;
+            if (sourceLines.Length < ParallelThreshold)
             {
-                string? line = await sr.ReadLineAsync();
-                if (line is null)
+                context = new Context();
+                ProcessSourceLines(reportLines, sourceLines, 0, sourceLines.Length, context);
+            }
+            else
+            {
+                context = new ThreadSafeContext();
+                var partitioner = Partitioner.Create(0, sourceLines.Length);
+                Parallel.ForEach(partitioner, (range, loopState) =>
                 {
-                    context.Errors.Add(new AcmePdbParseError(startLineNumber + i, string.Empty, "Failed reading line for includes"));
-                    break;
+                    ProcessSourceLines(reportLines, sourceLines, range.Item1, range.Item2, context);
+                });
+            }
+            return AcmePdbParseResultBuilder.Create(reportLines.Where(l => l is not null).Select(l => l!).ToImmutableArray(), context.Errors);
+        }
+        internal void ProcessSourceLines(ReportLine?[] reportLines, ImmutableArray<string> sourceLines, int fromInclusive, int toExclusive, IContext context)
+        {
+            for (int i = 0; i < sourceLines.Length; i++)
+            {
+                reportLines[i] = ParseCodeLine(sourceLines[i], i, context);
+            }
+        }
+        /// <summary>
+        /// Parses line of code and returns either <see cref="ReportSource"/> or <see cref="ReportCodeLine"/>
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="lineNumber"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        internal ReportLine? ParseCodeLine(string line, int lineNumber, IContext context)
+        {
+            const string SourcePrefix = "; ******** Source: ";
+            if (line.StartsWith(SourcePrefix))
+            {
+                return new ReportSource(line.Substring(SourcePrefix.Length));
+            }
+            else
+            {
+                var span = line.AsSpan();
+                ushort? startAddress;
+                var fileLineNumberText = span[0..6];
+                if (!int.TryParse(fileLineNumberText, out int fileLineNumber))
+                {
+                    context.AddError(new AcmePdbParseError(lineNumber, line, "Failed to parse line number"));
+                    return null;
+                }
+                var addressText = span[8..12];
+                if (!addressText.IsWhiteSpace())
+{
+                    if (!ushort.TryParse(addressText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort address))
+                    {
+                        context.AddError(new AcmePdbParseError(lineNumber, line, "Failed parsing address"));
+                        return null;
+                    }
+                    else
+                    {
+                        startAddress = address;
+                    }
                 }
                 else
                 {
-                    var item = getItem(startLineNumber + i, line, context);
-                    if (item is not null)
-                    {
-                        result.Add(item);
-                    }
-                    // an error occurred
-                    else
-                    {
-                        break;
-                    }
+                    startAddress = null;
                 }
+                var bytesBuilder = ImmutableArray.CreateBuilder<byte>(8);
+                bool? isMoreData;
+                if (startAddress.HasValue)
+                {
+                    for (int i = 13; i < 29; i+=2)
+                    {
+                        var byteText = span[i..(i + 2)];
+                        if (!byteText.IsWhiteSpace())
+                        {
+                            if (!byte.TryParse(byteText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte byteValue))
+                            {
+                                context.Errors.Add(new AcmePdbParseError(lineNumber, line, "Failed parsing bytes"));
+                                return null;
+                            }
+                            bytesBuilder.Add(byteValue);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    var moreText = span[29..32];
+                    isMoreData = moreText.Equals("...", StringComparison.Ordinal);
+                }
+                else
+                {
+                    isMoreData = null;
+                }
+                return new ReportCodeLine(fileLineNumber, startAddress, bytesBuilder.ToImmutable(), isMoreData, line.Substring(32));
             }
-            return result.ToImmutableArray();
-        }
-        internal AcmePdbFile? GetFile(int lineNumber, string line, Context context)
-        {
-            string[] parts = line.Split(':');
-            if (parts.Length != 2)
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "File item should have two parts separated by ':'"));
-                return null;
-            }
-            if (!int.TryParse(parts[0], out var fileIndex))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), $"File item index '{parts[0]}' is invalid number"));
-                return null;
-            }
-            return new(fileIndex, parts[1]);
-        }
-        internal AcmePdbAddress? GetAddress(int lineNumber, string line, Context context)
-        {
-            string[] parts = line.Split(':');
-            if (parts.Length != 4)
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "Address item should have four parts separated by ':'"));
-                return null;
-            }
-            if (!parts[0].StartsWith('$'))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "Address item address value should start with '$'"));
-                return null;
-            }
-            var addressText = parts[0].AsSpan()[1..];
-            if (!int.TryParse(addressText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var address))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), $"Address item address '{addressText.ToString()}' is invalid hex number"));
-                return null;
-            }
-            if (!ParseInt(lineNumber, parts[1], "Address", context, out var zone))
-            {
-                return null;
-            }
-            if (!ParseInt(lineNumber, parts[2], "Address", context, out var fileIndex))
-            {
-                return null;
-            }
-            if (!ParseInt(lineNumber, parts[3], "Address", context, out var sourceLine))
-            {
-                return null;
-            }
-            return new(address, zone, fileIndex, sourceLine);
-        }
-        internal AcmePdbLabel? GetLabel(int lineNumber, string line, Context context)
-        {
-            const string ItemType = "Label";
-            string[] parts = line.Split(':');
-            if (parts.Length != 5)
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), $"{ItemType} item should have four parts separated by ':'"));
-                return null;
-            }
-            if (!parts[0].StartsWith('$'))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), $"{ItemType} item address value should start with '$'"));
-                return null;
-            }
-            var addressText = parts[0].AsSpan()[1..];
-            if (!int.TryParse(addressText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var address))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), $"{ItemType} item address '{addressText.ToString()}' is invalid hex number"));
-                return null;
-            }
-            if (!ParseInt(lineNumber, parts[1], ItemType, context, out var zone))
-            {
-                return null;
-            }
-            return new(address, zone, parts[2], parts[3] == "1", parts[4] == "1");
-        }
-        internal bool ParseInt(int lineNumber, string text, string itemType, Context context, out int value)
-        {
-            if (!int.TryParse(text, out value))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, text, $"{itemType} item index '{text}' is invalid number"));
-                return false;
-            }
-            return true;
-        }
-        internal (string Caption, int Count)? ParseCaption(int lineNumber, string line, Context context)
-        {
-            int separator = line.IndexOf(':');
-            if (separator < 0)
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "Caption does not contain a separator ':'"));
-                return null;
-            }
-            if (line.AsSpan().Slice(separator + 1).IndexOf(':') >= 0)
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "Caption contains more than one separator ':'"));
-                return null;
-            }
-            if (!int.TryParse(line.AsSpan()[(separator + 1)..^0], out int count))
-            {
-                context.Errors.Add(new AcmePdbParseError(lineNumber, line.ToString(), "Caption does not contain number of items"));
-                return null;
-            }
-            return (line.Substring(0, separator), count);
         }
     }
+
+    public abstract record ReportLine;
+    public record ReportCodeLine(int LineNumber, ushort? StartAddress, ImmutableArray<byte> Data, bool? IsMoreData, string Text): ReportLine;
+    public record ReportSource(string RelativePath): ReportLine;
 }

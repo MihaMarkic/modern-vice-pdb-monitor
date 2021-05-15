@@ -23,10 +23,10 @@ namespace Modern.Vice.PdbMonitor.Views
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Open PRG file",
+                Title = "Open output file",
                 AllowMultiple = false,
             };
-            dialog.Filters.Add(new FileDialogFilter { Name = "ACME Compiled .prg", Extensions = { "prg" } });
+            dialog.Filters.Add(new FileDialogFilter { Name = "ACME Compiled .o", Extensions = { "o" } });
             if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var result = await dialog.ShowAsync(desktop.MainWindow);

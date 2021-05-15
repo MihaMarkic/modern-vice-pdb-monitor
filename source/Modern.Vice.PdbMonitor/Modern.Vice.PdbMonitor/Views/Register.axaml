@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             mc:Ignorable="d" d:DesignWidth="80" d:DesignHeight="50"
+             x:Class="Modern.Vice.PdbMonitor.Views.Register">
+  <StackPanel Orientation="Vertical">
+    <StackPanel.Resources>
+      <c:HexValueConverter x:Key="HexValueConverter" />
+    </StackPanel.Resources>
+    <TextBlock Text="{Binding $parent[v:Register].Value, Converter={StaticResource HexValueConverter}}" FontFamily="Fira Code" HorizontalAlignment="Center" />
+    <TextBlock Text="{Binding $parent[v:Register].Caption}" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" />
+  </StackPanel>
+</UserControl>

@@ -11,12 +11,12 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
     /// <summary>
     /// Watches for PDB file changes
     /// </summary>
-    public sealed class ProjectPdbFileWatcher : DisposableObject, IProjectPdbFileWatcher
+    public sealed class ProjectPrgFileWatcher : DisposableObject, IProjectPrgFileWatcher
     {
-        readonly ILogger<ProjectPdbFileWatcher> logger;
+        readonly ILogger<ProjectPrgFileWatcher> logger;
         readonly IDispatcher dispatcher;
         FileSystemWatcher? watcher;
-        public ProjectPdbFileWatcher(ILogger<ProjectPdbFileWatcher> logger, IDispatcher dispatcher)
+        public ProjectPrgFileWatcher(ILogger<ProjectPrgFileWatcher> logger, IDispatcher dispatcher)
         {
             this.logger = logger;
             this.dispatcher = dispatcher;
@@ -50,7 +50,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             switch (e.ChangeType)
             {
                 case WatcherChangeTypes.Changed:
-                    dispatcher.Dispatch(new AcmePdbFileChangedMessage());
+                    dispatcher.Dispatch(new PrgFileChangedMessage());
                     break;
             }
         }

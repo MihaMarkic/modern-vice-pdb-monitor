@@ -16,10 +16,12 @@ namespace Modern.Vice.PdbMonitor.Core
     public class CommandsManager: DisposableObject
     {
         readonly NotifiableObject owner;
+        readonly TaskFactory uiFactory;
         ImmutableDictionary<string, ImmutableArray<ICommandEx>> commands;
-        public CommandsManager(NotifiableObject owner)
+        public CommandsManager(NotifiableObject owner, TaskFactory uiFactory)
         {
             this.owner = owner;
+            this.uiFactory = uiFactory;
             commands = ImmutableDictionary<string, ImmutableArray<ICommandEx>>.Empty;
             owner.PropertyChanged += Owner_PropertyChanged;
         }
@@ -30,10 +32,14 @@ namespace Modern.Vice.PdbMonitor.Core
             {
                 if (commands.TryGetValue(e.PropertyName!, out var data))
                 {
-                    foreach (var cmd in data)
+                    // always notify in UI thread
+                    uiFactory.StartNew(() =>
                     {
-                        cmd.RaiseCanExecuteChanged();
-                    }
+                        foreach (var cmd in data)
+                        {
+                            cmd.RaiseCanExecuteChanged();
+                        }
+                    });
                 }
             }
         }

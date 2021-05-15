@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Modern.Vice.PdbMonitor.Core.Test
@@ -13,7 +14,7 @@ namespace Modern.Vice.PdbMonitor.Core.Test
         public void SetUp()
         {
             owner = new CommandsManagerTestOwner();
-            target = new CommandsManager(owner);
+            target = new CommandsManager(owner, new TaskFactory());
         }
         Expression GetBodyExpression(Expression<Func<object, bool>> expression) => expression.Body;
         [TestFixture]

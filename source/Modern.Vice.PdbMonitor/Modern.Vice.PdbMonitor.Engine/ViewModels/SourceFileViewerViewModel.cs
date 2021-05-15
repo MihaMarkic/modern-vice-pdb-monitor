@@ -31,19 +31,15 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         internal void OpenSourceFile(object sender, OpenSourceFileMessage? message)
         {
-            var pdbFile = message!.File;
-            var item = Files.FirstOrDefault(f => string.Equals(f.Path, pdbFile.Path, StringComparison.Ordinal));
+            var acmeFile = message!.File;
+            var item = Files.FirstOrDefault(f => string.Equals(f.Path, acmeFile.RelativePath, StringComparison.Ordinal));
             if (item is null)
             {
-                string path = Path.Combine(globals.ProjectDirectory!, pdbFile.Path);
-                if (File.Exists(path))
-                {
-                    var content = File.ReadAllLines(path)
-                        .Select((l, i) => new Line(i + 1, l))
-                        .ToImmutableArray();
-                    item = serviceProvider.CreateScopedSourceFileViewModel(pdbFile.Path, content);
-                    Files.Add(item);
-                }
+                var content = acmeFile.Lines
+                    .Select((l, i) => new Line(l.LineNumber, l.StartAddress, l.Text))
+                    .ToImmutableArray();
+                item = serviceProvider.CreateScopedSourceFileViewModel(acmeFile.RelativePath, content);
+                Files.Add(item);
             }
             if (item is not null)
             {

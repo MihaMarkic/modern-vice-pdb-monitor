@@ -18,19 +18,16 @@
           <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
             <TextBlock Text="{Binding Name}" />
           </TreeDataTemplate >
-          <TreeDataTemplate  DataType="m:AcmePdbFile">
-            <TextBlock Text="{Binding Path}"/>
+          <TreeDataTemplate  DataType="m:AcmeFile">
+            <TextBlock Text="{Binding RelativePath}"/>
           </TreeDataTemplate >
-          <TreeDataTemplate  DataType="m:AcmePdbInclude">
-            <TextBlock Text="{Binding Path}" />
-          </TreeDataTemplate >
-          <TreeDataTemplate  DataType="m:AcmePdbLabel">
+          <TreeDataTemplate  DataType="m:AcmeLabel">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="{Binding Address, StringFormat={}${0:x4}}" Foreground="Gray" FontFamily="Fira Coda" />
               <TextBlock Text="{Binding Name}" Margin="2,0,0,0" />
             </StackPanel>
           </TreeDataTemplate >
-        </TreeView.DataTemplates>
+          </TreeView.DataTemplates>
       </TreeView>
     </DockPanel>
   </Border>
