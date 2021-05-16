@@ -48,7 +48,7 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract
             catch (TimeoutException)
             {
                 logger.LogError("Timeout occurred while executing {Command}", command.GetType().Name);
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {command.GetType().Name
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {command.GetType().Name}"));
                 return default;
             }
         }

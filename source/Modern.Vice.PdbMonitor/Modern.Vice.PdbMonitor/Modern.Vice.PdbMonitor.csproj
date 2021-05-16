@@ -49,7 +49,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="NLog.Extensions.Logging" Version="1.7.2" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.5" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.6" />
    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />

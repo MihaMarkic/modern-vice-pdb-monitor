@@ -259,6 +259,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         await ExitViceMonitorAsync();
                     }
                     await RegistersViewModel.InitAsync();
+                    var command = viceBridge.EnqueueCommand(new AutoStartCommand(runAfterLoading: false, 0, globals.FullPrgPath!));
+                    await command.Response;
                 }
                 catch (OperationCanceledException)
                 {
@@ -269,6 +271,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     IsStartingDebugging = false;
                 }
             }
+        }
+        internal async Task ResetViceAsync(CancellationToken ct)
+        {
+            var command = viceBridge.EnqueueCommand(new ResetCommand(ResetMode.Soft));
+            await command.Response;
         }
         internal async Task ExitViceMonitorAsync()
         {

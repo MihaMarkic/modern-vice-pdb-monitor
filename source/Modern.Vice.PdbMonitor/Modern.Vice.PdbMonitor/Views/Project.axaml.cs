@@ -26,7 +26,7 @@ namespace Modern.Vice.PdbMonitor.Views
                 Title = "Open output file",
                 AllowMultiple = false,
             };
-            dialog.Filters.Add(new FileDialogFilter { Name = "ACME Compiled .o", Extensions = { "o" } });
+            dialog.Filters.Add(new FileDialogFilter { Name = "ACME Compiled CBM file .prg", Extensions = { "prg" } });
             if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var result = await dialog.ShowAsync(desktop.MainWindow);
