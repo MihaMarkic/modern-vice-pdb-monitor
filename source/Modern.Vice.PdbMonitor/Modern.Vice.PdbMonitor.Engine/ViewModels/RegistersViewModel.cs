@@ -1,9 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
+using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
@@ -17,32 +19,31 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IViceBridge viceBridge;
         readonly RegistersMapping mapping;
         readonly CommandsManager commandsManager;
+        readonly IDispatcher dispatcher;
         public Registers6510 Current { get; private set; } = Registers6510.Empty;
         public Registers6510 Previous { get; private set; } = Registers6510.Empty;
         public bool IsLoadingMappings { get; private set; }
         public bool IsLoadingRegisters { get; private set; }
         public RelayCommandAsync UpdateCommand { get; }
-        public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping)
+        public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping, IDispatcher dispatcher)
         {
             this.logger = logger;
             this.viceBridge = viceBridge;
             this.mapping = mapping;
+            this.dispatcher = dispatcher;
             commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             UpdateCommand = commandsManager.CreateRelayCommandAsync(Update, () => !IsLoadingMappings && IsLoadingRegisters);
         }
         public async Task InitAsync()
         {
-            var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory));
-            var response = await command.Response;
-            mapping.Init(response);
-
+            await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersAvailableCommand(MemSpace.MainMemory),
+                (Action<RegistersAvailableResponse>)mapping.Init);
         }
         async Task Update()
         {
-            var command = viceBridge.EnqueueCommand(new RegistersGetCommand(MemSpace.MainMemory));
-            var response = await command.Response;
-            await UpdateRegistersFromResponse(response);
+            await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersGetCommand(MemSpace.MainMemory), 
+                (Func<RegistersResponse, Task>)UpdateRegistersFromResponseAsync);
         }
 
         void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
@@ -52,12 +53,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case RegistersResponse registerResponse:
                     if (!IsLoadingMappings)
                     {
-                        _ = UpdateRegistersFromResponse(registerResponse);
+                        _ = UpdateRegistersFromResponseAsync(registerResponse);
                     }
                     break;
             }
         }
-        async Task UpdateRegistersFromResponse(RegistersResponse response)
+        async Task UpdateRegistersFromResponseAsync(RegistersResponse response)
         {
             if (mapping.IsMappingAvailable)
             {
@@ -69,15 +70,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 IsLoadingMappings = true;
                 try
                 {
-                    var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory));
-                    var availableResponse = await command.Response;
-                    mapping.Init(availableResponse);
+                    await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersAvailableCommand(MemSpace.MainMemory),
+                        (Action<RegistersAvailableResponse>)mapping.Init);
                 }
                 finally
                 {
                     IsLoadingMappings = false;
                 }
-                await UpdateRegistersFromResponse(response);
+                await UpdateRegistersFromResponseAsync(response);
             }
         }
         public void Reset()

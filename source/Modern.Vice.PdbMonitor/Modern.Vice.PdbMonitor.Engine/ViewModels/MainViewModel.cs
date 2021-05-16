@@ -282,7 +282,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.EnqueueCommand(command);
             try
             {
-                return await AwaitWithTimeoutAsync(command.Response, timeout);
+                return await command.Response.AwaitWithTimeoutAsync(timeout ?? TimeSpan.FromSeconds(5), ct);
             }
             catch(TimeoutException)
             {
@@ -296,15 +296,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 logger.Log(LogLevel.Warning, ex, "General failure while executing {Command}", command.GetType().Name);
                 return null;
             }
-        }
-        internal async Task<T> AwaitWithTimeoutAsync<T>(Task<T> task, TimeSpan? timeout = default)
-        {
-            bool success = await Task.WhenAny(task, Task.Delay(timeout ?? TimeSpan.FromSeconds(5))) == task;
-            if (!success)
-            {
-                throw new TimeoutException();
-            }
-            return task.Result;
         }
         void ViceProcess_Exited(object? sender, EventArgs e)
         {
@@ -406,7 +397,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
                 try
                 {
-                    string arguments = $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}";
+                    //string arguments = $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}";
+                    string arguments = $"-binarymonitor";
                     return Process.Start(path, arguments);
                 }
                 catch (Exception ex)
@@ -585,6 +577,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 viceBridge.ViceResponse -= ViceBridge_ViceResponse;
                 closeOverlaySubscription.Dispose();
                 prgFileChangedSubscription.Dispose();
+                prgFilePathChangedSubscription.Dispose();
             }
             base.Dispose(disposing);
         }

@@ -2,17 +2,14 @@
 {
     public static class TaskExtension
     {
-        public static async Task<(bool Success, T? Result)> AwaitWithTimeout<T>(this Task<T> task, TimeSpan timeout, CancellationToken ct = default)
+        public static async Task<T> AwaitWithTimeoutAsync<T>(this Task<T> task, TimeSpan timeout, CancellationToken ct = default)
         {
             bool success = await Task.WhenAny(task, Task.Delay(timeout, ct)) == task;
-            if (success)
+            if (!success)
             {
-                return (true, task.Result);
+                throw new TimeoutException();
             }
-            else
-            {
-                return (false, default);
-            }
+            return task.Result;
         }
     }
 }
