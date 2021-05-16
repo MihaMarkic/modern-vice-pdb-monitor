@@ -8,11 +8,8 @@ namespace Modern.Vice.PdbMonitor.Views
     {
         object? value;
         string? caption;
-        //int digits = 2;
         public static readonly DirectProperty<Register, object?> ValueProperty =
             AvaloniaProperty.RegisterDirect<Register, object?>(nameof(Value), o => o.Value, (o, v) => o.Value = v);
-        //public static readonly DirectProperty<Register, int> DigitsProperty =
-        //    AvaloniaProperty.RegisterDirect<Register, int>(nameof(Digits), o => o.Digits, (o, v) => o.Digits = v);
         public static readonly DirectProperty<Register, string?> CaptionProperty =
             AvaloniaProperty.RegisterDirect<Register, string?>(nameof(Caption), o => o.Caption, (o, v) => o.Caption = v);
         public Register()
@@ -33,10 +30,5 @@ namespace Modern.Vice.PdbMonitor.Views
             get => caption;
             set => SetAndRaise(CaptionProperty, ref caption, value);
         }
-        //public int Digits
-        //{
-        //    get => digits;
-        //    set => SetAndRaise(DigitsProperty, ref digits, value);
-        //}
     }
 }

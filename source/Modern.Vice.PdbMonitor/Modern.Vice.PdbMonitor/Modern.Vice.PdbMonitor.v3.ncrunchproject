@@ -1,5 +1,8 @@
 ﻿<ProjectConfiguration>
   <Settings>
-    <IgnoreThisComponentCompletely>True</IgnoreThisComponentCompletely>
+    <AdditionalFilesToIncludeForProject>
+      <Value>Assets\**.*</Value>
+      <Value>Styles\**.*</Value>
+    </AdditionalFilesToIncludeForProject>
   </Settings>
 </ProjectConfiguration>

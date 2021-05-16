@@ -8,8 +8,20 @@
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
       <ColumnDefinition Width="Auto" />
@@ -18,11 +30,39 @@
     <Grid.Styles>
       <Style Selector="v|Register">
         <Setter Property="Margin" Value="4" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+      </Style>
+      <Style Selector="v|Flags">
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
       </Style>
     </Grid.Styles>
-    <v:Register Grid.Column="0" Caption="PC" Value="{Binding Current.PC}" />
-    <v:Register Grid.Column="1" Caption="A" Value="{Binding Current.A}" />
-    <v:Register Grid.Column="2" Caption="X" Value="{Binding Current.X}" />
-    <v:Register Grid.Column="3" Caption="Y" Value="{Binding Current.Y}" />
+    <!-- Row 0 -->
+    <v:Register Grid.Column="0" Grid.ColumnSpan="2" Caption="PC" Value="{Binding Current.PC}" />
+    <v:Register Grid.Column="2" Caption="A" Value="{Binding Current.A}" />
+    <v:Register Grid.Column="3" Caption="X" Value="{Binding Current.X}" />
+    <v:Register Grid.Column="4" Caption="Y" Value="{Binding Current.Y}" />
+    <v:Register Grid.Column="5" Caption="SP" Value="{Binding Current.SP}" />
+    <v:Register Grid.Column="6" Caption="00" Value="{Binding Current.Zero}" />
+    <v:Register Grid.Column="7" Caption="01" Value="{Binding Current.One}" />
+    <v:Flags Grid.Column="8" Grid.ColumnSpan="3" Value="{Binding Current.Flags}" />
+    <v:Register Grid.Column="11" Grid.ColumnSpan="2" Caption="LIN" Value="{Binding Current.Lin}" />
+    <v:Register Grid.Column="13" Grid.ColumnSpan="2" Caption="CYC" Value="{Binding Current.Cyc}" />
+    <!-- Row 1 -->
+    <v:Register Grid.Row="1" Grid.Column="0" Caption="R3" Value="{Binding Current.R3}" />
+    <v:Register Grid.Row="1" Grid.Column="1" Caption="R3" Value="{Binding Current.R4}" />
+    <v:Register Grid.Row="1" Grid.Column="2" Caption="R3" Value="{Binding Current.R5}" />
+    <v:Register Grid.Row="1" Grid.Column="3" Caption="R3" Value="{Binding Current.R6}" />
+    <v:Register Grid.Row="1" Grid.Column="4" Caption="R3" Value="{Binding Current.R7}" />
+    <v:Register Grid.Row="1" Grid.Column="5" Caption="R3" Value="{Binding Current.R8}" />
+    <v:Register Grid.Row="1" Grid.Column="6" Caption="R3" Value="{Binding Current.R9}" />
+    <v:Register Grid.Row="1" Grid.Column="7" Caption="R3" Value="{Binding Current.R10}" />
+    <v:Register Grid.Row="1" Grid.Column="8" Caption="R3" Value="{Binding Current.R11}" />
+    <v:Register Grid.Row="1" Grid.Column="9" Caption="R3" Value="{Binding Current.R12}" />
+    <v:Register Grid.Row="1" Grid.Column="10" Caption="R3" Value="{Binding Current.R13}" />
+    <v:Register Grid.Row="1" Grid.Column="11" Caption="R3" Value="{Binding Current.R14}" />
+    <v:Register Grid.Row="1" Grid.Column="12" Caption="R3" Value="{Binding Current.R15}" />
+    <v:Register Grid.Row="1" Grid.Column="13" Caption="ACM" Value="{Binding Current.Acm}" />
+    <v:Register Grid.Row="1" Grid.Column="14" Caption="YXM" Value="{Binding Current.Yxm}" />
   </Grid>
 </UserControl>

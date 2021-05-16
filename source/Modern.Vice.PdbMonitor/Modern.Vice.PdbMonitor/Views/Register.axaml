@@ -10,7 +10,7 @@
     <StackPanel.Resources>
       <c:HexValueConverter x:Key="HexValueConverter" />
     </StackPanel.Resources>
-    <TextBlock Text="{Binding $parent[v:Register].Value, Converter={StaticResource HexValueConverter}}" FontFamily="Fira Code" HorizontalAlignment="Center" />
-    <TextBlock Text="{Binding $parent[v:Register].Caption}" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" />
+    <TextBlock Classes="registry_value" Text="{Binding $parent[v:Register].Value, Converter={StaticResource HexValueConverter}}" />
+    <TextBlock Classes="register_label" Text="{Binding $parent[v:Register].Caption}" />
   </StackPanel>
 </UserControl>

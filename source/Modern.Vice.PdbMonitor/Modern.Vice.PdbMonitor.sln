@@ -18,7 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\..\.gitignore = ..\..\.gitignore
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modern.Vice.PdbMonitor.Core.Test", "Test\Modern.Vice.PdbMonitor.Core.Test\Modern.Vice.PdbMonitor.Core.Test.csproj", "{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Core.Test", "Test\Modern.Vice.PdbMonitor.Core.Test\Modern.Vice.PdbMonitor.Core.Test.csproj", "{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modern.Vice.PdbMonitor.Test", "Test\Modern.Vice.PdbMonitor.Test\Modern.Vice.PdbMonitor.Test.csproj", "{ACF16C52-ACE0-471A-92A3-BDD188C9714D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,10 @@ Global
 		{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACF16C52-ACE0-471A-92A3-BDD188C9714D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACF16C52-ACE0-471A-92A3-BDD188C9714D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACF16C52-ACE0-471A-92A3-BDD188C9714D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACF16C52-ACE0-471A-92A3-BDD188C9714D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +59,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{261DEC40-D65B-4C28-99EA-56D2DF133FBA} = {CB9786A7-6B63-4434-A234-BC93974D7B34}
 		{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B} = {CB9786A7-6B63-4434-A234-BC93974D7B34}
+		{ACF16C52-ACE0-471A-92A3-BDD188C9714D} = {CB9786A7-6B63-4434-A234-BC93974D7B34}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {78BCB63E-7156-40A1-92FB-77484223EE10}

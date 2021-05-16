@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Modern.Vice.PdbMonitor.Views.Flags">
+  <UserControl.Resources>
+    <c:FlagsConverter x:Key="FlagsConverter" />
+    <c:BoolToColorConverter x:Key="FlagForegroundConverter" OnTrue="Black" OnFalse="Gray" />
+    <c:BoolToFontWeightConverter x:Key="FlagFontWeightConverter" OnTrue="Bold" OnFalse="Normal" />
+  </UserControl.Resources>
+  <StackPanel Orientation="Vertical">
+    <ItemsRepeater Items="{Binding $parent[v:Flags].Value, Converter={StaticResource FlagsConverter}}">
+      <ItemsRepeater.Layout>
+        <StackLayout Orientation="Horizontal" Spacing="0" />
+      </ItemsRepeater.Layout>
+      <ItemsRepeater.ItemTemplate>
+        <DataTemplate x:DataType="m:FlagModel">
+          <TextBlock Classes="register_value" Text="{Binding Name, Mode=OneTime}" Foreground="{Binding Value, Converter={StaticResource FlagForegroundConverter}}"
+            FontWeight="{Binding Value, Converter={StaticResource FlagFontWeightConverter}}"/>
+        </DataTemplate>
+      </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+    <TextBlock Classes="register_label" Text="Flags" />
+  </StackPanel>
+</UserControl>

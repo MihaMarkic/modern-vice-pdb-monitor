@@ -34,6 +34,12 @@
     </AvaloniaXaml>
   </ItemGroup>
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(AssemblyName).Test</_Parameter1>
+      <!-- We use the value of AssemblyName to declare the value of the attribute -->
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.10.4" />
     <PackageReference Include="Avalonia.Desktop" Version="0.10.4" />
     <PackageReference Include="Avalonia.Diagnostics" Version="0.10.4" />
