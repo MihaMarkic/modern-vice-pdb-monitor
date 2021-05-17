@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Righthand.ViceMonitor.Bridge.Responses;
@@ -14,6 +15,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
     {
         readonly ILogger<RegistersMapping> logger;
         ImmutableDictionary<byte, Register6510> map = ImmutableDictionary<byte, Register6510>.Empty;
+        ImmutableDictionary<Register6510, byte> inverseMap = ImmutableDictionary<Register6510, byte>.Empty;
         public RegistersMapping(ILogger<RegistersMapping> logger)
         {
             this.logger = logger;
@@ -111,6 +113,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                 }
             }
             map = result.ToImmutableDictionary();
+            inverseMap = map.ToImmutableDictionary(p => p.Value, p => p.Key);
         }
         public Registers6510 MapValues(RegistersResponse response)
         {
@@ -204,6 +207,14 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                 }
             }
             return result;
+        }
+        public byte? GetRegisterId(Register6510 register)
+        {
+            if (inverseMap.TryGetValue(register, out var result))
+            {
+                return result;
+            }
+            return null;
         }
     }
 }

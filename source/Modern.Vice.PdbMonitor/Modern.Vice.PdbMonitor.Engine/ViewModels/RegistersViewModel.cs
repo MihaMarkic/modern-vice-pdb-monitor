@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Immutable;
+using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Righthand.MessageBus;
@@ -10,6 +14,7 @@ using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using Righthand.ViceMonitor.Bridge.Shared;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -86,7 +91,32 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             Current = Registers6510.Empty;
             Previous = Registers6510.Empty;
         }
-
+        internal async Task<bool> SetRegisters((Register6510 RegisterCode, ushort Value) item, params (Register6510 RegisterCode, ushort Value)[] others)
+        {
+            var items = ImmutableArray<(Register6510 RegisterCode, ushort Value)>.Empty.Add(item).AddRange(others);
+            var builder = ImmutableArray.CreateBuilder<RegisterItem>(items.Length);
+            foreach (var i in items)
+            {
+                var registerId = mapping.GetRegisterId(i.RegisterCode);
+                if (!registerId.HasValue)
+                {
+                    logger.LogError("Failed to get {RegisterCode} register id", i.RegisterCode);
+                    dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Setting start address", $"Failed to get {i.RegisterCode} register id"));
+                    return false;
+                }
+                builder.Add(new RegisterItem(registerId.Value, i.Value));
+            }
+            var registers = builder.ToImmutable();
+            var response = await viceBridge.ExecuteCommandAsync<RegistersSetCommand, RegistersResponse>(dispatcher, logger, new RegistersSetCommand(MemSpace.MainMemory, registers),
+                r => { });
+            bool success = response?.ErrorCode == ErrorCode.OK;
+            if (success)
+            {
+                await UpdateRegistersFromResponseAsync(response!);
+            }
+            return success;
+        }
+        internal async Task<bool> SetStartAddressAsync(CancellationToken ct) => await SetRegisters(new(Register6510.PC, 0xC000));
         protected override void Dispose(bool disposing)
         {
             if (disposing)

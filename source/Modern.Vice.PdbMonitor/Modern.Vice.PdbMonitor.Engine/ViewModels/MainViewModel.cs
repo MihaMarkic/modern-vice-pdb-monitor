@@ -21,6 +21,7 @@ using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using Righthand.ViceMonitor.Bridge.Shared;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -79,6 +80,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public ScopedViewModel Content { get; private set; } = default!;
         public RegistersViewModel RegistersViewModel { get; private set; } = default!;
         public ScopedViewModel? OverlayContent { get; private set; }
+        TaskCompletionSource stoppedExecution;
         Process? viceProcess;
         CancellationTokenSource? startDebuggingCts;
         readonly TaskFactory uiFactory;
@@ -142,6 +144,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     OpenProjectFromPath(globals.Settings.RecentProjects[0]);
                 }
             }
+            stoppedExecution = new TaskCompletionSource();
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
@@ -160,9 +163,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 {
                     case StoppedResponse:
                         IsDebuggingPaused = true;
+                        stoppedExecution.SetResult();
                         break;
                     case ResumedResponse:
                         IsDebuggingPaused = false;
+                        stoppedExecution = new TaskCompletionSource();
                         break;
                 }
             });
@@ -261,6 +266,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     await RegistersViewModel.InitAsync();
                     var command = viceBridge.EnqueueCommand(new AutoStartCommand(runAfterLoading: false, 0, globals.FullPrgPath!));
                     await command.Response;
+                    await stoppedExecution.Task;
+                    await Task.Delay(1000);
+                    //await ExitViceMonitorAsync();
+                    await RegistersViewModel.SetStartAddressAsync(default);
                 }
                 catch (OperationCanceledException)
                 {

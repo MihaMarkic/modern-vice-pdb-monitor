@@ -22,7 +22,10 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract
             try
             {
                 response = await command.Response.AwaitWithTimeoutAsync(TimeSpan.FromSeconds(5));
-                await action(response);
+                if (LogResponseErrors<TCommand>(dispatcher, logger, response))
+                {
+                    await action(response);
+                }
                 return response;
             }
             catch (TimeoutException)
@@ -31,6 +34,18 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {command.GetType().Name}"));
                 return default;
             }
+        }
+        static bool LogResponseErrors<TCommand>(IDispatcher dispatcher, ILogger logger, ViceResponse response)
+            where TCommand: IViceCommand
+        {
+            if (response.ErrorCode != ErrorCode.OK)
+            {
+                logger.LogError("Response for command {Command} returned error code {ErrorCode}", typeof(TCommand).Name, response.ErrorCode);
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", 
+                    $"Response for command {typeof(TCommand).Name} returned error code {response.ErrorCode}"));
+                return false;
+            }
+            return true;
         }
         public static async Task<TResponse?> ExecuteCommandAsync<TCommand, TResponse>(this IViceBridge viceBridge, IDispatcher dispatcher, ILogger logger, TCommand command, Action<TResponse> action,
             TimeSpan timeout = default, CancellationToken ct = default)
@@ -42,13 +57,16 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract
             try
             {
                 response = await command.Response.AwaitWithTimeoutAsync(TimeSpan.FromSeconds(5));
-                action(response);
+                if (LogResponseErrors<TCommand>(dispatcher, logger, response))
+                {
+                    action(response);
+                }
                 return response;
             }
             catch (TimeoutException)
             {
-                logger.LogError("Timeout occurred while executing {Command}", command.GetType().Name);
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {command.GetType().Name}"));
+                logger.LogError("Timeout occurred while executing {Command}", typeof(TCommand).Name);
+                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {typeof(TCommand).Name}"));
                 return default;
             }
         }
