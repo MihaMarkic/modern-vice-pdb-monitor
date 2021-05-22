@@ -42,13 +42,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         public async Task InitAsync()
         {
-            await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersAvailableCommand(MemSpace.MainMemory),
-                (Action<RegistersAvailableResponse>)mapping.Init);
+            var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory));
+            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
         }
         async Task Update()
         {
-            await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersGetCommand(MemSpace.MainMemory), 
-                (Func<RegistersResponse, Task>)UpdateRegistersFromResponseAsync);
+            var command = viceBridge.EnqueueCommand(new RegistersGetCommand(MemSpace.MainMemory));
+            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, UpdateRegistersFromResponseAsync);
         }
 
         void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
@@ -75,8 +75,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 IsLoadingMappings = true;
                 try
                 {
-                    await viceBridge.ExecuteCommandAsync(dispatcher, logger, new RegistersAvailableCommand(MemSpace.MainMemory),
-                        (Action<RegistersAvailableResponse>)mapping.Init);
+                    var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory));
+                    await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
                 }
                 finally
                 {
@@ -107,9 +107,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 builder.Add(new RegisterItem(registerId.Value, i.Value));
             }
             var registers = builder.ToImmutable();
-            var response = await viceBridge.ExecuteCommandAsync<RegistersSetCommand, RegistersResponse>(dispatcher, logger, new RegistersSetCommand(MemSpace.MainMemory, registers),
-                r => { });
-            bool success = response?.ErrorCode == ErrorCode.OK;
+            var command = viceBridge.EnqueueCommand(new RegistersSetCommand(MemSpace.MainMemory, registers));
+            var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            bool success = response is not null;
             if (success)
             {
                 await UpdateRegistersFromResponseAsync(response!);

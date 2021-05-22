@@ -11,64 +11,98 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract
 {
     public static class ViceBridgeExtension
     {
-        public static async Task<TResponse?> ExecuteCommandAsync<TCommand, TResponse>(this IViceBridge viceBridge, IDispatcher dispatcher, ILogger logger, 
+        public static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
+        public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, 
             TCommand command, Func<TResponse, Task> action, 
-            TimeSpan timeout = default, CancellationToken ct = default)
+            TimeSpan? timeout = default, CancellationToken ct = default)
             where TCommand: ViceCommand<TResponse>
             where TResponse : ViceResponse
         {
-            viceBridge.EnqueueCommand(command);
             TResponse response;
             try
             {
-                response = await command.Response.AwaitWithTimeoutAsync(TimeSpan.FromSeconds(5));
-                if (LogResponseErrors<TCommand>(dispatcher, logger, response))
+                var cr = await command.Response.AwaitWithTimeoutAsync(timeout ?? DefaultTimeout, ct);
+                if (LogResponseErrors<TCommand, TResponse>(dispatcher, logger, cr))
                 {
-                    await action(response);
+                    response = cr.Response!;
+                    {
+                        await action(response);
+                    }
+                    return response;
                 }
-                return response;
+                return default;
             }
             catch (TimeoutException)
             {
-                logger.LogError("Timeout occurred while executing {Command}", command.GetType().Name);
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {command.GetType().Name}"));
+                LogTimeout<TCommand>(dispatcher, logger);
                 return default;
             }
         }
-        static bool LogResponseErrors<TCommand>(IDispatcher dispatcher, ILogger logger, ViceResponse response)
+        static bool LogResponseErrors<TCommand, TResponse>(IDispatcher dispatcher, ILogger logger, CommandResponse<TResponse> cr)
             where TCommand: IViceCommand
+            where TResponse : ViceResponse
         {
-            if (response.ErrorCode != ErrorCode.OK)
+            if (!cr.IsSuccess)
             {
-                logger.LogError("Response for command {Command} returned error code {ErrorCode}", typeof(TCommand).Name, response.ErrorCode);
+                logger.LogError("Response for command {Command} returned error code {ErrorCode}", typeof(TCommand).Name, cr.ErrorCode);
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", 
-                    $"Response for command {typeof(TCommand).Name} returned error code {response.ErrorCode}"));
+                    $"Response for command {typeof(TCommand).Name} returned error code {cr.ErrorCode}"));
                 return false;
             }
             return true;
         }
-        public static async Task<TResponse?> ExecuteCommandAsync<TCommand, TResponse>(this IViceBridge viceBridge, IDispatcher dispatcher, ILogger logger, TCommand command, Action<TResponse> action,
-            TimeSpan timeout = default, CancellationToken ct = default)
+        public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command, 
+            Action<TResponse> action,
+            TimeSpan? timeout = default, CancellationToken ct = default)
             where TCommand : ViceCommand<TResponse>
             where TResponse : ViceResponse
         {
-            viceBridge.EnqueueCommand(command);
             TResponse response;
             try
             {
-                response = await command.Response.AwaitWithTimeoutAsync(TimeSpan.FromSeconds(5));
-                if (LogResponseErrors<TCommand>(dispatcher, logger, response))
+                var cr = await command.Response.AwaitWithTimeoutAsync(timeout ?? DefaultTimeout, ct);
+                if (LogResponseErrors<TCommand, TResponse>(dispatcher, logger, cr))
                 {
-                    action(response);
+                    response = cr.Response!;
+                    {
+                        action(response);
+                    }
+                    return response;
                 }
-                return response;
+                return default;
             }
             catch (TimeoutException)
             {
-                logger.LogError("Timeout occurred while executing {Command}", typeof(TCommand).Name);
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {typeof(TCommand).Name}"));
+                LogTimeout<TCommand>(dispatcher, logger);
                 return default;
             }
+        }
+
+        public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command,
+            TimeSpan? timeout = default, CancellationToken ct = default)
+            where TCommand: ViceCommand<TResponse>
+            where TResponse: ViceResponse
+        {
+            try
+            {
+                var cr = await task.AwaitWithTimeoutAsync(timeout ?? DefaultTimeout, ct);
+                if (LogResponseErrors<TCommand, TResponse>(dispatcher, logger, cr))
+                {
+                    return cr.Response!;
+                }
+                return default;
+            }
+            catch (TimeoutException)
+            {
+                LogTimeout<TCommand>(dispatcher, logger);
+                return default;
+            }
+        }
+
+        internal static void LogTimeout<TCommand>(IDispatcher dispatcher, ILogger logger)
+        {
+            logger.LogError("Timeout occurred while executing {Command}", typeof(TCommand).Name);
+            dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Communication", $"Timeout occurred while executing {typeof(TCommand).Name}"));
         }
     }
 }

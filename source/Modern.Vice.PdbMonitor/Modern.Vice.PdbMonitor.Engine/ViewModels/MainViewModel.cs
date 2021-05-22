@@ -36,6 +36,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IViceBridge viceBridge;
         readonly IProjectPrgFileWatcher projectPdbFileWatcher;
         readonly CommandsManager commandsManager;
+        readonly ExecutionStatusViewModel executionStatusViewModel;
         public string AppName => "Modern VICE PDB Monitor";
         readonly Subscription closeOverlaySubscription;
         readonly Subscription prgFileChangedSubscription;
@@ -63,15 +64,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool IsShowingProject => OverlayContent is ProjectViewModel;
         public bool IsShowingErrors { get; set; }
         public bool IsOpeningProject { get; private set; }
-        public bool IsStartingDebugging { get; private set; }
         public bool IsParsingPdb { get; private set; }
-        public bool IsBusy => IsOpeningProject || IsStartingDebugging || IsParsingPdb;
-        public bool IsDebugging { get; private set; }
+        public bool IsBusy => IsOpeningProject || executionStatusViewModel.IsStartingDebugging || IsParsingPdb;
+        public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
+        public bool IsDebugging => executionStatusViewModel.IsDebugging;
+        public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
         public bool IsOverlayVisible => OverlayContent is not null;
         public bool IsViceConnected { get; private set; }
-        public bool IsDebuggingPaused { get; private set; }
-        public string RunCommandTitle => IsDebugging ? "Continue" : "Run";
-        public string RunMenuCommandTitle => IsDebugging ? "_Continue" : "_Run";
+        
+        public string RunCommandTitle => executionStatusViewModel.IsDebugging ? "Continue" : "Run";
+        public string RunMenuCommandTitle => executionStatusViewModel.IsDebugging ? "_Continue" : "_Run";
         /// <summary>
         /// True when pdb file was changed.
         /// </summary>
@@ -81,6 +83,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RegistersViewModel RegistersViewModel { get; private set; } = default!;
         public ScopedViewModel? OverlayContent { get; private set; }
         TaskCompletionSource stoppedExecution;
+        TaskCompletionSource resumedExecution;
         Process? viceProcess;
         CancellationTokenSource? startDebuggingCts;
         readonly TaskFactory uiFactory;
@@ -100,7 +103,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
             ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
-            IProjectPrgFileWatcher projectPdbFileWatcher, RegistersMapping registersMapping, RegistersViewModel registers)
+            IProjectPrgFileWatcher projectPdbFileWatcher, RegistersMapping registersMapping, RegistersViewModel registers, 
+            ExecutionStatusViewModel executionStatusViewModel)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
@@ -110,7 +114,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.scope = scope;
             this.viceBridge = viceBridge;
             this.projectPdbFileWatcher = projectPdbFileWatcher;
+            this.executionStatusViewModel = executionStatusViewModel;
             RegistersViewModel = registers;
+            executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
             uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             commandsManager = new CommandsManager(this, uiFactory);
             closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
@@ -145,10 +151,32 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
             stoppedExecution = new TaskCompletionSource();
+            resumedExecution = new TaskCompletionSource();
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
         }
+        /// <summary>
+        /// Relays execution status
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(ExecutionStatusViewModel.IsStartingDebugging):
+                    OnPropertyChanged(nameof(IsStartingDebugging));
+                    break;
+                case nameof(ExecutionStatusViewModel.IsDebugging):
+                    OnPropertyChanged(nameof(IsDebugging));
+                    break;
+                case nameof(ExecutionStatusViewModel.IsDebuggingPaused):
+                    OnPropertyChanged(nameof(IsDebuggingPaused));
+                    break;
+            }
+        }
+
         /// <summary>
         /// Unbound responses
         /// </summary>
@@ -162,12 +190,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 switch (e.Response)
                 {
                     case StoppedResponse:
-                        IsDebuggingPaused = true;
+                        executionStatusViewModel.IsDebuggingPaused = true;
                         stoppedExecution.SetResult();
+                        stoppedExecution = new TaskCompletionSource();
                         break;
                     case ResumedResponse:
-                        IsDebuggingPaused = false;
-                        stoppedExecution = new TaskCompletionSource();
+                        executionStatusViewModel.IsDebuggingPaused = false;
+                        resumedExecution.SetResult();
+                        resumedExecution = new TaskCompletionSource();
                         break;
                 }
             });
@@ -214,7 +244,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         internal void StopDebugging()
         {
-            ClearAfterDebugging();
+            _ = ClearAfterDebuggingAsync();
         }
         internal void PauseDebugging()
         {
@@ -245,8 +275,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         viceProcess.Exited += ViceProcess_Exited;
                     }
                 }
-                IsStartingDebugging = true;
-                IsDebugging = true;
+                executionStatusViewModel.IsStartingDebugging = true;
+                executionStatusViewModel.IsDebugging = true;
                 try
                 {
                     if (IsUpdatedPdbAvailable)
@@ -267,17 +297,17 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     var command = viceBridge.EnqueueCommand(new AutoStartCommand(runAfterLoading: false, 0, globals.FullPrgPath!));
                     await command.Response;
                     await stoppedExecution.Task;
-                    await Task.Delay(1000);
+                    //await Task.Delay(1000);
                     //await ExitViceMonitorAsync();
                     await RegistersViewModel.SetStartAddressAsync(default);
                 }
                 catch (OperationCanceledException)
                 {
-                    ClearAfterDebugging();
+                    await ClearAfterDebuggingAsync();
                 }
                 finally
                 {
-                    IsStartingDebugging = false;
+                    executionStatusViewModel.IsStartingDebugging = false;
                 }
             }
         }
@@ -294,24 +324,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
             where TResponse: ViceResponse
         {
-            const string title = "Execute VICE command";
             viceBridge.EnqueueCommand(command);
-            try
-            {
-                return await command.Response.AwaitWithTimeoutAsync(timeout ?? TimeSpan.FromSeconds(5), ct);
-            }
-            catch(TimeoutException)
-            {
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, title, $"Timeout while executing {command.GetType().Name}"));
-                logger.Log(LogLevel.Warning, "Timeout while executing {Command}", command.GetType().Name);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, title, $"General failure while executing {command.GetType().Name}"));
-                logger.Log(LogLevel.Warning, ex, "General failure while executing {Command}", command.GetType().Name);
-                return null;
-            }
+            return await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
         }
         void ViceProcess_Exited(object? sender, EventArgs e)
         {
@@ -320,44 +334,49 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             StopDebugging();
         }
 
-        internal void ClearAfterDebugging()
+        internal async Task ClearAfterDebuggingAsync()
         {
             logger.LogDebug("Cleaning after debugging");
-            //if (viceProcess is not null)
-            //{
-            //    if (viceBridge.IsConnected)
-            //    {
-            //        logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
-            //        var quitCommand = new ViceBridgeCommand.QuitCommand();
-            //        viceBridge.EnqueueCommand(quitCommand);
-            //        (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
-            //        bool isQuitSuccess = true;
-            //        if (!success)
-            //        {
-            //            logger.LogDebug("Timeout while waiting for VICE response to Quit command");
-            //            isQuitSuccess = false;
-            //        }
-            //        else
-            //        {
-            //            if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
-            //            {
-            //                logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
-            //                isQuitSuccess = false;
-            //            }
-            //        }
-            //        if (!isQuitSuccess)
-            //        {
-            //            viceProcess.Kill();
-            //        }
-            //        bool waitForKillSuccess = viceProcess.WaitForExit(5000);
-            //        if (!waitForKillSuccess)
-            //        {
-            //            logger.LogWarning("Couldn't kill VICE process");
-            //        }
-            //        viceProcess.Dispose();
-            //    }
-            //}
-            IsDebugging = false;
+            if (viceBridge?.IsConnected ?? false)
+            {
+                var command = viceBridge.EnqueueCommand(new ExitCommand());
+                await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            }
+                //if (viceProcess is not null)
+                //{
+                //    if (viceBridge.IsConnected)
+                //    {
+                //        logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
+                //        var quitCommand = new ViceBridgeCommand.QuitCommand();
+                //        viceBridge.EnqueueCommand(quitCommand);
+                //        (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
+                //        bool isQuitSuccess = true;
+                //        if (!success)
+                //        {
+                //            logger.LogDebug("Timeout while waiting for VICE response to Quit command");
+                //            isQuitSuccess = false;
+                //        }
+                //        else
+                //        {
+                //            if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
+                //            {
+                //                logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
+                //                isQuitSuccess = false;
+                //            }
+                //        }
+                //        if (!isQuitSuccess)
+                //        {
+                //            viceProcess.Kill();
+                //        }
+                //        bool waitForKillSuccess = viceProcess.WaitForExit(5000);
+                //        if (!waitForKillSuccess)
+                //        {
+                //            logger.LogWarning("Couldn't kill VICE process");
+                //        }
+                //        viceProcess.Dispose();
+                //    }
+                //}
+                executionStatusViewModel.IsDebugging = false;
         }
         internal void CloseOverlay(object sender, CloseOverlayMessage message)
         {
@@ -591,6 +610,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
                 viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+                executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+                globals.PropertyChanged -= Globals_PropertyChanged;
                 closeOverlaySubscription.Dispose();
                 prgFileChangedSubscription.Dispose();
                 prgFilePathChangedSubscription.Dispose();

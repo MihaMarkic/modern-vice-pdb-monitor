@@ -13,6 +13,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly Globals globals;
         readonly ISettingsManager settingsManager;
         readonly IProjectPrgFileWatcher projectPrgFileWatcher;
+        readonly ExecutionStatusViewModel executionStatusViewModel;
         public Project Project => globals.Project!;
         public string ProjectFile => globals.ProjectFile!;
         public string? PrgPath
@@ -20,13 +21,41 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             get => Project.PrgPath;
             set => Project.PrgPath = value;
         }
+        public bool AutoStart
+        {
+            get => Project.AutoStart;
+            set => Project.AutoStart = value;
+        }
+        public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
+        public bool IsDebugging => executionStatusViewModel.IsDebugging;
+        public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
+        public bool IsEditable => !IsStartingDebugging && !IsDebugging;
         public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher,
-            IProjectPrgFileWatcher projectPrgFileWatcher) : base(dispatcher)
+            IProjectPrgFileWatcher projectPrgFileWatcher, ExecutionStatusViewModel executionStatusViewModel) : base(dispatcher)
         {
             this.globals = globals;
             this.settingsManager = settingsManager;
             this.projectPrgFileWatcher = projectPrgFileWatcher;
+            this.executionStatusViewModel = executionStatusViewModel;
+            executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         }
+
+        void ExecutionStatusViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(ExecutionStatusViewModel.IsStartingDebugging):
+                    OnPropertyChanged(nameof(IsStartingDebugging));
+                    break;
+                case nameof(ExecutionStatusViewModel.IsDebugging):
+                    OnPropertyChanged(nameof(IsDebugging));
+                    break;
+                case nameof(ExecutionStatusViewModel.IsDebuggingPaused):
+                    OnPropertyChanged(nameof(IsDebuggingPaused));
+                    break;
+            }
+        }
+
         public void AssignPrgFullPath(string value)
         {
             try
@@ -70,6 +99,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     break;
             }
             base.OnPropertyChanged(name);
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+            }
+            base.Dispose(disposing);
         }
     }
 }

@@ -14,10 +14,12 @@
       <TextBlock Classes="h1" Text="{Binding ProjectFile, StringFormat={} Project {0}}" />
       <TextBlock Classes="label">ACME output file</TextBlock>
       <DockPanel LastChildFill="True">
-        <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenPrgFile">...</Button>
-        <TextBox Text="{Binding PrgPath}" Margin="0,0,4,0" />
+        <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenPrgFile" IsEnabled="{Binding IsEditable}">...</Button>
+        <TextBox Text="{Binding PrgPath}" Margin="0,0,4,0" IsEnabled="{Binding IsEditable}" />
       </DockPanel>
       <CheckBox IsChecked="{Binding IsPrgPathValid}" IsEnabled="false">Valid file</CheckBox>
+      <CheckBox IsChecked="{Binding AutoStart}" IsEnabled="{Binding IsEditable}" 
+        ToolTip.Tip="When enabled, the application will be started from first available address">Auto start</CheckBox>
     </StackPanel>
   </DockPanel>
 </UserControl>
