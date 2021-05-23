@@ -6,6 +6,7 @@
         /// <summary>
         /// When enabled, the application will be started from first available address
         /// </summary>
-        public bool AutoStart { get; set; }
+        public DebugAutoStartMode AutoStartMode { get; set; }
+        public string? StopAtLabel { get; set; }
     }
 }

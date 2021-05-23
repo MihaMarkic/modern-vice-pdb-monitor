@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models
 {

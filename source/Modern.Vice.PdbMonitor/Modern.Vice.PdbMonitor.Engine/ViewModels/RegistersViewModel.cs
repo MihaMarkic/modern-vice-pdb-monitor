@@ -116,7 +116,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             return success;
         }
-        internal async Task<bool> SetStartAddressAsync(CancellationToken ct) => await SetRegisters(new(Register6510.PC, 0xC000));
+        internal async Task<bool> SetStartAddressAsync(ushort address, CancellationToken ct) => await SetRegisters(new(Register6510.PC, address));
         protected override void Dispose(bool disposing)
         {
             if (disposing)

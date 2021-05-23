@@ -3,6 +3,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.Project">
@@ -10,16 +14,38 @@
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right">
       <Button Command="{Binding CloseCommand}">Close</Button>
     </StackPanel>
-    <StackPanel Orientation="Vertical">
-      <TextBlock Classes="h1" Text="{Binding ProjectFile, StringFormat={} Project {0}}" />
-      <TextBlock Classes="label">ACME output file</TextBlock>
-      <DockPanel LastChildFill="True">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="4" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.ColumnSpan="3" Classes="h1" Text="{Binding ProjectFile, StringFormat={} Project {0}}" />
+
+      <TextBlock Grid.Row="1" Classes="label">ACME output file</TextBlock>
+      <DockPanel Grid.Row="1" Grid.Column="2" LastChildFill="True">
         <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenPrgFile" IsEnabled="{Binding IsEditable}">...</Button>
         <TextBox Text="{Binding PrgPath}" Margin="0,0,4,0" IsEnabled="{Binding IsEditable}" />
       </DockPanel>
-      <CheckBox IsChecked="{Binding IsPrgPathValid}" IsEnabled="false">Valid file</CheckBox>
-      <CheckBox IsChecked="{Binding AutoStart}" IsEnabled="{Binding IsEditable}" 
-        ToolTip.Tip="When enabled, the application will be started from first available address">Auto start</CheckBox>
-    </StackPanel>
+
+      <CheckBox Grid.Row="2" Grid.Column="2" IsChecked="{Binding IsPrgPathValid}" IsEnabled="false">Valid file</CheckBox>
+
+      <TextBlock Grid.Row="3" Classes="label">Auto Start</TextBlock>
+      <ComboBox Grid.Row="3" Grid.Column="2" MinWidth="350" SelectedIndex="{Binding AutoStartMode}" >
+        <i:Interaction.Behaviors>
+          <b:PopulateEnumBehavior Type="{x:Type m:DebugAutoStartMode}" />
+        </i:Interaction.Behaviors>
+      </ComboBox>
+
+      <TextBlock Grid.Row="4" Classes="label">Stop at label</TextBlock>
+      <ComboBox Grid.Row="4" Grid.Column="2" Margin="0,4,0,0" MinWidth="350" SelectedItem="{Binding StopAtLabel}" Items="{Binding AllLabels}"/>
+    </Grid>
   </DockPanel>
 </UserControl>

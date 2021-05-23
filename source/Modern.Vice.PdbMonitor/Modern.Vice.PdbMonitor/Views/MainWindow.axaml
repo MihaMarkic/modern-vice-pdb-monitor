@@ -33,9 +33,6 @@
       </c:BoolToSvgImageConverter.OnFalse>
     </c:BoolToSvgImageConverter>
   </Window.Resources>
-  <Window.Styles>
-    <StyleInclude Source="/Styles/AppStyles.xaml"/>
-  </Window.Styles>
   <Window.DataTemplates>
     <DataTemplate DataType="vm:SettingsViewModel">
       <v:Settings />
@@ -98,6 +95,9 @@
             </Image>
           </MenuItem.Icon>
         </MenuItem>
+        <Separator />
+        <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" />
+        <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" />
       </MenuItem>
       <!--<MenuItem Header="_Window">
         <MenuItem Command="{Binding ToggleErrorsVisibilityCommand}">
@@ -151,6 +151,12 @@
           </Image>
           <TextBlock Margin="4,0,0,0">Stop</TextBlock>
         </StackPanel>
+      </Button>
+      <Button ToolTip.Tip="Step Into" Command="{Binding StepIntoCommand}" DockPanel.Dock="Left">
+        <TextBlock Margin="4,0,0,0">Step Into</TextBlock>
+      </Button>
+      <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" DockPanel.Dock="Left">
+        <TextBlock Margin="4,0,0,0">Step Over</TextBlock>
       </Button>
       <Button ToolTip.Tip="Update PDB" Command="{Binding UpdatePdbCommand}">
         <StackPanel Orientation="Horizontal">

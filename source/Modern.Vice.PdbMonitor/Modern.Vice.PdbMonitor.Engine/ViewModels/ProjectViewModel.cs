@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.IO;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
@@ -21,15 +22,22 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             get => Project.PrgPath;
             set => Project.PrgPath = value;
         }
-        public bool AutoStart
+        public DebugAutoStartMode AutoStartMode
         {
-            get => Project.AutoStart;
-            set => Project.AutoStart = value;
+            get => Project.AutoStartMode;
+            set => Project.AutoStartMode = value;
+        }
+        public string? StopAtLabel
+        {
+            get => Project.StopAtLabel;
+            set => Project.StopAtLabel = value;
         }
         public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
         public bool IsDebugging => executionStatusViewModel.IsDebugging;
         public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
         public bool IsEditable => !IsStartingDebugging && !IsDebugging;
+        public ImmutableArray<string> AllLabels =>
+            ImmutableArray<string>.Empty.Add("[None]").AddRange(globals.Pdb?.Labels.Keys.ToImmutableArray() ?? ImmutableArray<string>.Empty);
         public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher,
             IProjectPrgFileWatcher projectPrgFileWatcher, ExecutionStatusViewModel executionStatusViewModel) : base(dispatcher)
         {
@@ -83,11 +91,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 return false;
             }
         }
-        protected override void OnPropertyChanged([CallerMemberName] string name = null!)
+        protected override void OnPropertyChanged(string name = null!)
         {
             switch (name)
             {
                 case nameof(PrgPath):
+                case nameof(AutoStartMode):
+                case nameof(StopAtLabel):
                     try
                     {
                         settingsManager.Save(Project, globals.Settings.RecentProjects[0], createDirectory: false);

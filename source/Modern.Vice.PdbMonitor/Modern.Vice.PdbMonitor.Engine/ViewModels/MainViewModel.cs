@@ -56,6 +56,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RelayCommandAsync RunCommand { get; }
         public RelayCommand PauseCommand { get; }
         public RelayCommand StopCommand { get; }
+        public RelayCommandAsync StepIntoCommand { get; }
+        public RelayCommandAsync StepOverCommand { get; }
         public RelayCommandAsync UpdatePdbCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
@@ -136,6 +138,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             RunCommand = commandsManager.CreateRelayCommandAsync(StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused));
             StopCommand = commandsManager.CreateRelayCommand(StopDebugging, () => IsDebugging);
             PauseCommand = commandsManager.CreateRelayCommand(PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected);
+            StepIntoCommand = commandsManager.CreateRelayCommandAsync(StepIntoAsync, () => IsDebugging && IsDebuggingPaused);
+            StepOverCommand = commandsManager.CreateRelayCommandAsync(StepOverAsync, () => IsDebugging && IsDebuggingPaused);
             UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
             if (!Directory.Exists(globals.Settings.VicePath))
             {
@@ -294,12 +298,44 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         await ExitViceMonitorAsync();
                     }
                     await RegistersViewModel.InitAsync();
-                    var command = viceBridge.EnqueueCommand(new AutoStartCommand(runAfterLoading: false, 0, globals.FullPrgPath!));
-                    await command.Response;
+
+                    var command = viceBridge.EnqueueCommand(
+                        new AutoStartCommand(runAfterLoading: Project!.AutoStartMode == DebugAutoStartMode.Vice, 0, globals.FullPrgPath!));
+                    await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
                     await stoppedExecution.Task;
-                    //await Task.Delay(1000);
-                    //await ExitViceMonitorAsync();
-                    await RegistersViewModel.SetStartAddressAsync(default);
+
+                    if (Project!.StopAtLabel != "[None]")
+                    {
+                        if (!string.IsNullOrWhiteSpace(Project!.StopAtLabel) && globals.Pdb is not null
+                            && globals.Pdb.Labels.TryGetValue(Project!.StopAtLabel, out var label))
+                        {
+                            var checkpoint = viceBridge.EnqueueCommand(
+                            new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
+                            await checkpoint.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpoint);
+                        }
+                        else
+                        {
+                            dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Start debugging",
+                                $"Couldn't set auto start checkpoint for label {Project!.StopAtLabel}"));
+                        }
+                    }
+
+                    if (Project!.AutoStartMode == DebugAutoStartMode.AtAddress)
+                    {
+                        if (globals.Pdb is not null&& globals.Pdb.Labels.TryGetValue("start", out var label))
+                        {
+                            await RegistersViewModel.SetStartAddressAsync(label!.Address, startDebuggingCts.Token);
+                        }
+                        else
+                        {
+                            dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Start debugging", 
+                                $"Couldn't auto start using AtAddress for label {Project!.StopAtLabel}"));
+                        }
+                    }
+                    //if (Project!.StopAtLabel != "[None]")
+                    //{
+                    //    await ExitViceMonitorAsync();
+                    //}
                 }
                 catch (OperationCanceledException)
                 {
@@ -396,6 +432,18 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 SwitchOverlayContent<ProjectViewModel>();
             }
+        }
+        internal async Task StepIntoAsync()
+        {
+            ushort instructionsNumber = 1;
+            var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: false, instructionsNumber));
+            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+        }
+        internal async Task StepOverAsync()
+        {
+            ushort instructionsNumber = 1;
+            var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: true, instructionsNumber));
+            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
         }
         internal void SwitchContent<T>()
             where T : ScopedViewModel

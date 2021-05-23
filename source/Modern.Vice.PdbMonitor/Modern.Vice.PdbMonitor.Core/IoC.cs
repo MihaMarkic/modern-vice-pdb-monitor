@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Modern.Vice.PdbMonitor.Core.Common;
 
 namespace Modern.Vice.PdbMonitor.Core
 {
@@ -8,10 +10,15 @@ namespace Modern.Vice.PdbMonitor.Core
         /// <summary>
         /// Has to be called before IoC is used, usually at very program start.
         /// </summary>
-        /// <param name="serviceProvider"></param>
+        /// <param name="host"></param>
         public static void Init(IHost host)
         {
             Host = host;
+        }
+
+        public static void AddCore(this IServiceCollection services)
+        {
+            services.AddSingleton<EnumDisplayTextMapper>();
         }
     }
 }

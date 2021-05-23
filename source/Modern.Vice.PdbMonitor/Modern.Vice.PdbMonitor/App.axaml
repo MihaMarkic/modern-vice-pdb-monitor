@@ -1,7 +1,14 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              x:Class="Modern.Vice.PdbMonitor.App">
-    <Application.Styles>
-        <FluentTheme Mode="Light"/>
-    </Application.Styles>
+  <Application.Styles>
+    <FluentTheme Mode="Light"/>
+    <StyleInclude Source="/Styles/AppStyles.xaml"/>
+  </Application.Styles>
+  <Application.DataTemplates>
+    <DataTemplate DataType="b:ComboBoxKeyValueItem">
+      <TextBlock Text="{Binding Text}" />
+    </DataTemplate>
+  </Application.DataTemplates>
 </Application>

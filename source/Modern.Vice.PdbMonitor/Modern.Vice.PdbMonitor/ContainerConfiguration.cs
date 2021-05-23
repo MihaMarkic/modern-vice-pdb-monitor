@@ -2,9 +2,9 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using NLog.Extensions.Logging;
-using Righthand.ViceMonitor.Bridge;
 
 namespace Modern.Vice.PdbMonitor
 {
@@ -24,6 +24,7 @@ namespace Modern.Vice.PdbMonitor
                 builder.AddNLog(config);
             });
             services.AddEngine();
+            services.AddCore();
             return services;
         }
     }
