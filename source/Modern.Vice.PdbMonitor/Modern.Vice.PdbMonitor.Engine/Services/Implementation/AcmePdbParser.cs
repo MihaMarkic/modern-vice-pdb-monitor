@@ -65,14 +65,14 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                     case ReportSource reportSource:
                         if (!filesBuilder.TryGetValue(reportSource.RelativePath, out file))
                         {
-                            file = new AcmeFile(reportSource.RelativePath);
+                            file = new AcmeFile(BeautifyRelativePath(reportSource.RelativePath));
                             filesBuilder.Add(file.RelativePath, file);
                         }
                         break;
                     case ReportCodeLine reportCodeLine:
                         if (file is not null)
                         {
-                            var line = new AcmeLine(file, reportCodeLine.LineNumber, reportCodeLine.StartAddress, reportCodeLine.Data, reportCodeLine.IsMoreData,
+                            var line = new AcmeLine(file.RelativePath, reportCodeLine.LineNumber, reportCodeLine.StartAddress, reportCodeLine.Data, reportCodeLine.IsMoreData,
                                 reportCodeLine.Text);
                             linesBuilder.Add(line);
                         }
@@ -95,14 +95,14 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             }
             else
             {
-                acmeFiles[0] = files[0] with { RelativePath = BeautifyRelativePath(files[0].RelativePath), Lines = lines };
+                acmeFiles[0] = files[0] with { Lines = lines };
             }
             return new AcmePdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels);
         }
         internal AcmeFile CreateAcmeFile(AcmeFile source, ImmutableArray<AcmeLine> lines)
         {
-            var fileLines = lines.Where(l => l.File == source).ToImmutableArray();
-            return source with { RelativePath = BeautifyRelativePath(source.RelativePath), Lines = fileLines };
+            var fileLines = lines.Where(l => l.FileRelativePath == source.RelativePath).ToImmutableArray();
+            return source with { Lines = fileLines };
         }
         internal string BeautifyRelativePath(string path)
         {

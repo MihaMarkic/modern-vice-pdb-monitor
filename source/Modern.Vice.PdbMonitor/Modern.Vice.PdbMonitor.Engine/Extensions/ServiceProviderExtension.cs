@@ -6,7 +6,7 @@ namespace System
 {
     public static class ServiceProviderExtension
     {
-        public static SourceFileViewModel CreateScopedSourceFileViewModel(this IServiceProvider serviceProvider, string path, ImmutableArray<Line> lines)
+        public static SourceFileViewModel CreateScopedSourceFileViewModel(this IServiceProvider serviceProvider, string path, ImmutableArray<LineViewModel> lines)
         {
             var contentScope = serviceProvider.CreateScope();
             var viewModel = ActivatorUtilities.CreateInstance<SourceFileViewModel>(serviceProvider, path, lines);

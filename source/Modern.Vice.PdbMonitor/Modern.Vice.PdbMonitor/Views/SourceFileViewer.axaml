@@ -14,11 +14,12 @@
     <ScrollViewer.Resources>
       <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
       <c:HexAddressConverter x:Key="HexAddressConverter" />
+      <c:BoolToColorConverter x:Key="ExecutionRowToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
     </ScrollViewer.Resources>
     <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
       <ItemsRepeater.ItemTemplate>
-        <DataTemplate DataType="vm:Line">
-          <StackPanel Orientation="Horizontal" Height="18">
+        <DataTemplate DataType="vm:LineViewModel">
+          <StackPanel Orientation="Horizontal" Height="18" Background="{Binding IsExecution, Converter={StaticResource ExecutionRowToBackgroundConverter}}">
             <StackPanel.Styles>
               <Style Selector="TextBlock">
                 <Setter Property="FontFamily" Value="Fira Code" />

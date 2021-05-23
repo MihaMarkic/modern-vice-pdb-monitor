@@ -14,7 +14,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Models
         public AcmeFile(string relativePath) : this(relativePath, ImmutableArray<AcmeLine>.Empty)
         { }
     }
-    public record AcmeLine(AcmeFile File, int LineNumber, ushort? StartAddress, ImmutableArray<byte>? Data, bool? IsMoreData, string Text);
+    public record AcmeLine(string FileRelativePath, int LineNumber, ushort? StartAddress, ImmutableArray<byte>? Data, bool? IsMoreData, string Text);
     public record AcmeLabel(ushort Address, string Name);
 
     public record AcmePdbParseResult<T>(T ParsedData, ImmutableArray<AcmePdbParseError> Errors);

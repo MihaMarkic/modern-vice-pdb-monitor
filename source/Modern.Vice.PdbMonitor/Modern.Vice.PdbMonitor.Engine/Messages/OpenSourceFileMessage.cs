@@ -2,5 +2,5 @@
 
 namespace Modern.Vice.PdbMonitor.Engine.Messages
 {
-    public record OpenSourceFileMessage(AcmeFile File, int? Line = default);
+    public record OpenSourceFileMessage(AcmeFile File, int? Line = default, int? ExecutingLine = default);
 }

@@ -12,6 +12,7 @@ namespace Modern.Vice.PdbMonitor.Views
     public class SourceFileViewer : UserControl
     {
         int cursorRow;
+        int? executionRow;
         double itemHeight;
         readonly ItemsRepeater lines;
         readonly ScrollViewer scroller;
@@ -19,6 +20,11 @@ namespace Modern.Vice.PdbMonitor.Views
             AvaloniaProperty.RegisterDirect<SourceFileViewer, int>(nameof(CursorRow),
                 o => o.CursorRow, 
                 (o, v) => o.CursorRow = v, 
+                defaultBindingMode: BindingMode.TwoWay);
+        public static readonly DirectProperty<SourceFileViewer, int?> ExecutionRowProperty =
+            AvaloniaProperty.RegisterDirect<SourceFileViewer, int?>(nameof(ExecutionRow),
+                o => o.ExecutionRow,
+                (o, v) => o.ExecutionRow = v,
                 defaultBindingMode: BindingMode.TwoWay);
         public SourceFileViewer()
         {
@@ -40,6 +46,27 @@ namespace Modern.Vice.PdbMonitor.Views
             {
                 cursorRow = -1;
             }
+        }
+
+        public int? ExecutionRow
+        {
+            get => executionRow;
+            set
+            {
+                if (ExecutionRow != value)
+                {
+                    SetAndRaise(ExecutionRowProperty, ref executionRow, value);
+                    ExecutionRowChanged();
+                }
+            }
+        }
+        void ExecutionRowChanged()
+        {
+            //bool success = ScrollToCursorRow();
+            //if (!success)
+            //{
+            //    lines.ElementPrepared += Lines_ElementPrepared;
+            //}
         }
 
         public int CursorRow

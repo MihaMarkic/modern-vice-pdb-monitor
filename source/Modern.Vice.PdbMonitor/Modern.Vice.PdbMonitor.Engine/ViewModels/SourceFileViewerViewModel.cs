@@ -17,13 +17,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly Subscription openSourceFileSubscription;
         readonly Globals globals;
         readonly IServiceProvider serviceProvider;
+        readonly ExecutionStatusViewModel executionStatusViewModel;
         public ObservableCollection<SourceFileViewModel> Files { get; }
         public SourceFileViewModel? Selected { get; set; }
         public RelayCommand<SourceFileViewModel> CloseSourceFileCommand { get; }
-        public SourceFileViewerViewModel(IDispatcher dispatcher, ILogger<SourceFileViewerViewModel> logger, Globals globals, IServiceProvider serviceProvider)
+        public SourceFileViewerViewModel(IDispatcher dispatcher, ILogger<SourceFileViewerViewModel> logger, Globals globals, IServiceProvider serviceProvider,
+            ExecutionStatusViewModel executionStatusViewModel)
         {
             this.logger = logger;
             this.globals = globals;
+            this.executionStatusViewModel = executionStatusViewModel;
             this.serviceProvider = serviceProvider;
             openSourceFileSubscription = dispatcher.Subscribe<OpenSourceFileMessage>(OpenSourceFile);
             CloseSourceFileCommand = new(CloseSourceFile);
@@ -36,7 +39,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (item is null)
             {
                 var content = acmeFile.Lines
-                    .Select((l, i) => new Line(l.LineNumber, l.StartAddress, l.Text))
+                    .Select((l, i) => new LineViewModel(l.LineNumber, l.StartAddress, l.Text))
                     .ToImmutableArray();
                 item = serviceProvider.CreateScopedSourceFileViewModel(acmeFile.RelativePath, content);
                 Files.Add(item);
@@ -46,6 +49,15 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 if (message.Line.HasValue)
                 {
                     item.CursorRow = message.Line.Value;
+                }
+                item.ClearExecutionRow();
+                if (message.ExecutingLine.HasValue && executionStatusViewModel.IsDebugging)
+                {
+                    item.SetExecutionRow(message.ExecutingLine.Value);
+                    if (!message.Line.HasValue)
+                    {
+                        item.CursorRow = message.ExecutingLine.Value;
+                    }
                 }
                 Selected = item;
             }
