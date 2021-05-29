@@ -5,9 +5,11 @@ namespace Modern.Vice.PdbMonitor.Engine.Models
     /// <summary>
     /// Contains all debugging information
     /// </summary>
-    public record AcmePdb(ImmutableArray<AcmeLine> Lines, ImmutableDictionary<string, AcmeFile> Files, ImmutableDictionary<string, AcmeLabel> Labels)
+    public record AcmePdb(ImmutableArray<AcmeLine> Lines, ImmutableDictionary<string, AcmeFile> Files, ImmutableDictionary<string, AcmeLabel> Labels,
+        ImmutableArray<AcmeLine> LinesWithAddress)
     {
-        public static AcmePdb Empty { get; } = new AcmePdb(ImmutableArray<AcmeLine>.Empty, ImmutableDictionary<string, AcmeFile>.Empty, ImmutableDictionary<string, AcmeLabel>.Empty);
+        public static AcmePdb Empty { get; } = new AcmePdb(ImmutableArray<AcmeLine>.Empty, ImmutableDictionary<string, AcmeFile>.Empty, 
+            ImmutableDictionary<string, AcmeLabel>.Empty, ImmutableArray<AcmeLine>.Empty);
     }
     public record AcmeFile(string RelativePath, ImmutableArray<AcmeLine> Lines)
     {

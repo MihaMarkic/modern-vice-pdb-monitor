@@ -1,0 +1,2982 @@
+﻿
+; ******** Source: .\macedit.a
+     1                          ;ACME 0.95
+     2                          ; ist der komplette Sourcecode von MacEdit
+     3                          ; (80-Zeichen-Version)
+     4                          ; Version 0.7
+     5                          ; Weitere Informationen am Ende der Datei
+     6                          ; Parameter:
+     7                          	!to "macedit.prg", cbm
+     8                          	;!sl "macedit.l"
+     9                          	*= $1300
+    10                          	!ct pet
+
+; ******** Source: D:\Utilities\ACME\ACME_Lib\6502\std.a
+     1                          ;ACME 0.96.4
+     2                          
+
+; ******** Source: .\macedit.a
+    12                          	!ifndef lib_6502_std_a {
+    13                          		!serious "To assemble this program, you need to install the current ACME library."
+    14                          	}
+
+; ******** Source: me\macros.a
+     1                          ;ACME 0.94.4
+     2                          
+     3                          !macro cmp16bit .data1, .data2 {
+     4                          		ldx #.data1
+     5                          		ldy #.data2
+     6                          		jsr cmp16bit
+     7                          }
+     8                          a = 0
+     9                          x = 1
+    10                          y = 2
+    11                          
+    12                          !macro bank .r, .v {
+    13                          	!if .r = a {
+    14                          		lda #.v
+    15                          		sta conreg
+    16                          	}
+    17                          	!if .r = x {
+    18                          		ldx #.v
+    19                          		stx conreg
+    20                          	}
+    21                          	!if .r = y {
+    22                          		ldy #.v
+    23                          		sty conreg
+    24                          	}
+    25                          }
+    26                          
+    27                          CR_BANK15	= 0
+    28                          CR_RAM0_IO	= $3e
+    29                          CR_RAM0		= $3f
+    30                          
+    31                          !macro bank15 {
+    32                          		+bank a, CR_BANK15
+    33                          }
+    34                          
+    35                          !macro xbank15 {
+    36                          		+bank x, CR_BANK15
+    37                          }
+    38                          
+    39                          !macro ybank15 {
+    40                          		+bank y, CR_BANK15
+    41                          }
+    42                          
+    43                          !macro ram0io {
+    44                          		+bank a, CR_RAM0_IO
+    45                          }
+    46                          
+    47                          !macro yram0io {
+    48                          		+bank y, CR_RAM0_IO
+    49                          }
+    50                          
+    51                          !macro xram0 {
+    52                          		+bank x, CR_RAM0
+    53                          }
+    54                          
+    55                          !macro inc16x .a {
+    56                          		inc .a, x
+    57                          		bne +
+    58                          			inc .a + 1, x
+    59                          +
+    60                          }
+    61                          
+    62                          !macro ldax .a {
+    63                          		lda .a + 1
+    64                          		ldx .a
+    65                          }
+    66                          
+    67                          !macro cp16 .s, .t {
+    68                          		ldx .s
+    69                          		lda .s + 1
+    70                          		stx .t
+    71                          		sta .t + 1
+    72                          }
+    73                          
+    74                          !macro wait_for_vdc {
+    75                          -		bit vdc
+    76                          		bpl -
+    77                          }
+
+; ******** Source: .\macedit.a
+
+; ******** Source: me\const.a
+     1                          ;ACME 0.95.1
+	 
+     2                          
+     3                          ; Konstanten:
+     4                          	FALSE	= 0	; Das Programm verläßt sich an etlichen Stellen
+     5                          	TRUE	= $ff	; darauf, daß genau diese Werte zugewiesen wurden.
+     6                          	MODIFIED8	= $ff	; Defaultwerte für
+     7                          !addr	MODIFIED16	= $ffff	; Selbstmodifikationen
+     8                          
+     9                          	Char_NUL		= $00
+    10                          	Char_STOP		= $03
+    11                          	Char_RETURN		= $0d
+    12                          	Char_CursorDown		= $11
+    13                          	Char_HOME		= $13
+    14                          	Char_DEL		= $14
+    15                          	Char_ESCAPE		= $1b
+    16                          	Char_CursorRight	= $1d
+    17                          	Char_At			= $40
+    18                          	CharOwn_Delete		= $74
+    19                          	Char_ShiftRETURN	= $8d
+    20                          	Char_CursorUp		= $91	; Diese Werte waren früher als Strings angegeben.
+    21                          	Char_CLEAR		= $93
+    22                          	Char_INST		= $94
+    23                          	Char_Grey2		= $98
+    24                          	Char_BlueL		= $9a
+    25                          	Char_Grey3		= $9b
+    26                          	Char_CursorLeft		= $9d
+    27                          	_ = 1	; Dieser Code steht für das unsichtbare Space in den Windows.
+    28                          
+    29                          	ä = $bb	; Werte um Umlaute verwenden zu können.
+    30                          	ö = $bc
+    31                          	ü = $bd
+    32                          	ß = $be
+    33                          	Ä = $db
+    34                          	Ö = $dc
+    35                          	Ü = $dd
+    36                          
+    37                          	chrol = 104	; Fensterrahmen
+    38                          	chroo = 102
+    39                          	chror = 106
+    40                          	chrll = 97
+    41                          	chrmm = 32
+    42                          	chrrr = 97
+    43                          	chrul = 98
+    44                          	chruu = 102
+    45                          	chrur = 100
+    46                          	lf = 8	; Filenr. & Sek.-Addy
+    47                          
+    48                          ; Zeropage:
+    49                          !addr {
+    50                          	D8502	= $00	; Direction
+    51                          	R8502	= $01	; Register
+    52                          	vvek	= $83	; Vektor auf LineVektor
+    53                          	lvek	= $85	; LineVektor
+    54                          	tmp1	= $87
+    55                          	tmp2	= $89
+    56                          	vtemp	= $8d	; crsr-address (3) ; zeropage (**mark**)
+    57                          	status	= $90	; System variable ST
+    58                          	fnlen	= $b7	; Dateiparameter
+    59                          	fnbank	= $c7	; Bank of file name
+    60                          	ndx	= $d0	; Tasten- &
+    61                          	kyndx	= $d1	; F- Buffer
+    62                          	keyidx	= $d2	; F-Zeichenzähler
+    63                          	mode	= $d7	; Bit 7 = Cursorscreen (40/80)
+    64                          	color	= $f1	; current attribute
+    65                          	locks	= $f7	; Verhindert CBM-Shift
+    66                          	beep	= $f9	; Tastenklick
+    67                          	lftb	= $fa	; Maustasten
+    68                          	rgtb	= $fb
+    69                          	line	= $fc	; Zähler
+    70                          	col	= $fd
+    71                          	zahl	= $fe	; fürs Wrap
+    72                          ; System:
+    73                          	nmivek		= $0318	; NMI
+    74                          	keybuffer	= $034a
+    75                          	pkydef		= $100a	; Strings der F-Tasten
+    76                          	texttop		= $1210	; Basic-Ende+1
+    77                          	maxmem0		= $1212	; Ende Bank 0
+    78                          	basic		= $12fd	; Basic-IRQ
+    79                          	e_copyfont	= $c027	; Systemroutine, kopiert Font in VDC-RAM
+    80                          	e_cls		= $c142	; Systemroutine, löscht Screen
+    81                          	e_switchmode	= $cd2e	; Systemroutine, switcht aktiven Monitor
+    82                          	takt	= $d030	; 2 MHz ; register (**mark**)
+    83                          	vdc	= $d600	; VDC
+    84                          	reg	= $d601
+    85                          	conreg	= $ff00	; MMU-CR
+    86                          	nmiend	= $ff33	; NMI-Ende
+    87                          	primm	= $ff7d	; Kernal
+    88                          	open	= $ffc0
+    89                          	close	= $ffc3
+    90                          	chkin	= $ffc6
+    91                          	chkout	= $ffc9
+    92                          	clrchn	= $ffcc
+    93                          	basin	= $ffcf
+    94                          	basout	= $ffd2
+    95                          }
+
+; ******** Source: .\macedit.a
+    17                          ; Code:
+    18  1300 4cd326             		jmp init	; zum Programm
+    19  1303 d4454bc6494c4500   	!text "TekFile", 0	; DateiFormat + 'program'
+    20  130b 871d               	!word progend - keyb	; length
+    21                          
+    22                          ; Gelinkt wird:
+    23                          keyb
+    24  130d 3014d31376131913...	!binary "me/tables.bin", 826
+    25                          	keytabs = keyb + 12	; 6 Tastaturtabs &
+    26                          	atst = keytabs + $22e	; ASCII-2-Screen-Tabelle
+    27                          
+
+; ******** Source: me\vars.a
+     1                          ;ACME 0.94.4
+     2                          
+     3                          ; Vermerk:
+     4  1647 cd4143c544495420...	!text "MacEdit was written by Mac Bacon in 1994-97."
+     5  1673 20d4484953204953...	!text " This is Freeware !"
+     6                          
+     7                          ; Variablen:
+     8  1686 00                 stck		!byte 0		; Stackbuffer
+     9  1687 0000               nmibuf		!word 0		; NMI-Buffer
+    10  1689 cd4143c544d630     idtext		!text "MacEdV0"	; RAM-Kennung
+    11  1690 53                 scratch		!byte "s"	; DOS-String
+    12  1691 303a               dospre		!text "0:"
+    13  1693 2dc14e4c45495455...dosname		!text "-Anleitung  .txt,p,"	; Default
+    14  16a6 52                 dosmode		!text "r"
+    15  16a7 16080808           filepara	!byte 22, lf, lf, 8
+    16  16ab 9116               		!word dospre
+    17  16ad 130f0f08           killpara	!byte 19, 15, 15, 8
+    18  16b1 9016               		!word scratch
+    19  16b3 c64f524d4154d645...idfile		!text "FormatVersion1.0"
+    20                          ; Farben:
+    21                          ;		       2rufRGBI-Format
+    22  16c3 d9                 clrcrsr		!byte %##.##..#	; Cursor
+    23  16c4 00                 clrback		!byte %........	; Screen (xxxxRGBI-Format)
+    24  16c5 8e                 clraktv		!byte %#...###.	; Aktive Flags
+    25  16c6 81                 clrinak		!byte %#......#	; Inaktive
+    26  16c7 cd                 clrmenu		!byte %##..##.#	; Menu
+    27  16c8 8f                 clrmenu1	!byte %#...####	; aktives Menu
+    28  16c9 cf                 clraktl		!byte %##..####	; Menupunkt
+    29  16ca 87                 clrboxs		!byte %#....###	; Menuboxen
+    30  16cb 85                 		!byte %#....#.#	; Dialogboxen
+    31  16cc 99                 		!byte %#..##..#	; Warnungen
+    32                          ; Vars
+    33  16cd 00                 bank		!byte 0		; Bankbuffer
+    34  16ce 0000               memin		!word 0		; Startaddy Vektoren
+    35  16d0 0000               txts		!word 0		; Startaddy Text
+    36  16d2 ff                 unnamed		!byte TRUE	; ist Text benannt ?
+    37  16d3 00                 changes		!byte FALSE	; Sind Changes saved ?
+    38  16d4 00                 nwfrm		!byte FALSE	; neues Bild ?
+    39  16d5 00                 blockflag	!byte FALSE	; Block definiert ?
+    40  16d6 ff                 wrapflag	!byte TRUE	; PARWing ?
+    41  16d7 ff                 esca		!byte TRUE	; AutoInsert ?
+    42  16d8 00                 updatewbi	!byte FALSE	; Flag-Redraw nötig ?
+    43  16d9 00                 repeatedtry	!byte FALSE	; Schon früher gestartet ?
+    44  16da 00                 loadflag	!byte 0		; 0 = LOAD (/MERGE)
+    45  16db 554e42454e414e4e...txtname		!text "unbenannt   .txt"
+    46  16eb 4d45524745202020...mrgname		!text "merge       .txt"
+    47  16fb 554e42454e414e4e...newname		!text "unbenannt   .txt"
+    48  170b 554e42454e414e4e...lodname		!text "unbenannt   .txt"
+    49  171b 00                 xindex		!byte 0		; Index-Puffer
+    50                          ; Folgende Vars werden per x indiziert
+    51                          SCR =  0	; x-Wert
+    52  171c 00                 scrx		!byte 0	; Display
+    53  171d 0000               scry		!word 0
+    54                          ANF =  3	; x-Wert
+    55  171f 00                 anfx		!byte 0	; Blockstart
+    56  1720 0000               anfy		!word 0
+    57                          END =  6	; x-Wert
+    58  1722 00                 endx		!byte 0	; Ende
+    59  1723 0000               endy		!word 0
+    60                          POS =  9	; x-Wert
+    61  1725 00                 posx		!byte 0	; Cursor
+    62  1726 0000               posy		!word 0
+    63                          TMP = 12	; x-Wert
+    64  1728 00                 tmpx		!byte 0	; temp
+    65  1729 0000               tmpy		!word 0
+    66                          ZZA = 15	; x-Wert
+    67  172b 50                 llen		!byte preflen	; Zeilenlaenge
+    68  172c 0000               zzan		!word 0	; vorhandene Zeilen
+    69                          ZZB = 18	; x-Wert
+    70  172e 00                 byte		!byte 0	; akt. Zeichen
+    71  172f 0000               zzbe		!word 0	; benutzte Zeilen
+    72                          WRP = 21	; x-Wert
+    73  1731 00                 wrpx		!byte 0	; Wrap
+    74  1732 0000               wrpy		!word 0
+    75                          PRW = 24	; x-Wert
+    76  1734 00                 prwx		!byte 0	; Parw
+    77  1735 0000               prwy		!word 0
+    78                          
+    79                          ; Tabs:
+    80                          etab	; ESC-Jumps
+    81  1737 f71cf81c011d371d   	!word ESC_at,	ESC_a,	ESC_b,	ESC_c
+    82  173f 411d00000000661d   	!word ESC_d,	0,	0,	ESC_g
+    83  1747 6f1d771d871d8f1d   	!word ESC_h,	ESC_i,	ESC_j,	ESC_k
+    84  174f 0000000000009c1d   	!word 0,	0,	0,	ESC_o
+    85  1757 a51da51d00000000   	!word ESC_p,	ESC_q,	0,	0
+    86  175f a61d000000000000   	!word ESC_t,	0,	0,	0
+    87  1767 0000000000000000   	!word 0,	0,	0,	0
+    88  176f 0000000000000000   	!word 0,	0,	0,	0
+    89                          ctab	; Command-Jumps 1. Achtel
+    90  1777 00000000711ed52e   	!word 0,	0,	F_un,		F_menu
+    91  177f 0000711e0000711e   	!word 0,	F_c,	0,		F_bell
+    92  1787 0000711e20210000   	!word 0,	F_tab,	F_lfeed,	0
+    93  178f 711e6b1e711e711e   	!word F_ffeed,	F_cr,	F_text,		F_fn
+    94  1797 0000191b711eb01d   	!word 0,	F_gcd,	F_rn,		F_home
+    95  179f 021c711e711e711e   	!word F_dcl,	F_sf,	F_sk,		F_su
+    96  17a7 711e1221711eb118   	!word F_st,	F_sw,	F_sl,		F_esc
+    97  17af 711eff1a711e711e   	!word F_c,	F_gcr,	F_c,		F_c
+    98                          ; 5. Achtel
+    99  17b7 711e711e711e711e   	!word F_dir,	F_c,	F_uf,		F_fbox
+   100  17bf 711e711e711e711e   	!word F_hlp,	F_f,	F_f,		F_f
+   101  17c7 711e711e711e711e   	!word F_f,	F_f,	F_f,		F_f
+   102  17cf 711e981b711e711e   	!word F_f,	F_cs,	F_graphic,	F_ff
+   103  17d7 711e0b1b711e2b1e   	!word F_c,	F_gcu,	F_rf,		F_gsot
+   104  17df cc1b711e711e711e   	!word F_insert,	F_c,	F_c,		F_c
+   105  17e7 711e711e711e711e   	!word F_c,	F_c,	F_c,		F_c
+   106  17ef 711e051b711e711e   	!word F_c,	F_gcl,	F_c,		F_c
+   107                          ; 8. Achtel
+   108  17f7 711e722900000000   	!word F_bttnf,	F_gosys,	0,		0
+   109  17ff eb20711e711e711e   	!word F_info,	F_f,		F_f,		F_f
+   110  1807 711e711e711e711e   	!word F_f,	F_f,		F_f,		F_f
+   111  180f 711e00008f1d711e   	!word F_f,	0,		F_geol,		F_print
+   112  1817 711e711ec81d741b   	!word F_glu,	F_gau,		F_scrnu,	F_geot
+   113  181f 711ee81fde1f382b   	!word F_dword,	F_save,		F_saveas,	F_rnmtxt
+   114  1827 711e711e711e711e   	!word F_gtl,	F_fmtl,		F_fmtr,		F_fmtm
+   115  182f 711e711e711e0000   	!word F_fmtb,	F_gwl,		F_gpu,		0
+   116                          ; 4. Achtel
+   117  1837 711e6d2900000000   	!word F_bttnn,	F_goout,	0,		0
+   118  183f 711e000000000000   	!word F_mode,	0,		0,		0
+   119  1847 0000000000000000   	!word 0,	0,		0,		0
+   120  184f 00000000871d2319   	!word 0,	0,		F_gsol,		F_new
+   121  1857 711e711e091eea1d   	!word F_gld,	F_gad,		F_scrnd,	F_ahome
+   122  185f 051cc71ebe1e711e   	!word F_dcr,	F_loadas,	F_mergeas,	F_find
+   123  1867 711e711e711e711e   	!word F_gtr,	F_cut,		F_copy,		F_paste
+   124  186f 711e711e711e711e   	!word F_move,	F_gwr,		F_gpd,		F_middle
+
+; ******** Source: .\macedit.a
+
+; ******** Source: me\core.a
+     1                          ;ACME 0.94.4
+     2                          
+     3                          !zone
+     4                          ; Programm:
+     5                          mainloop
+     6                          ; Cursor setzen:
+     7  1877 ad2617             		lda posy	; screeny = posy-spry
+     8  187a 38                 		sec
+     9  187b ed1d17             		sbc scry
+    10  187e a8                 		tay		; y in Y
+    11                          ; ab hier X
+    12  187f ad2517             		lda posx	; screenx = posx-scrx
+    13  1882 38                 		sec
+    14  1883 ed1c17             		sbc scrx
+    15  1886 202a2f             		jsr crsrset	; set crsr
+    16                          ; hier eigentliche Hauptroutine
+    17  1889 add416             		lda nwfrm	; new frame ?
+    18  188c f003               		beq +
+    19  188e 20a229             			jsr newframe	; yes = >
+    20  1891 add816             +		lda updatewbi	; update flags?
+    21  1894 f003               		beq +
+    22  1896 20902a             			jsr showwbi	; yes = >
+    23  1899 207519             +		jsr getchar	; get CHARACTER
+    24  189c aa                 		tax		; & buffer
+    25  189d 2960               		and #%.##.....	; command ?
+    26  189f f00a               		beq +		; yes = >
+    27  18a1 4960               			eor #%.##.....	; command ?
+    28  18a3 f006               			beq +		; yes = >
+    29  18a5 20a81b             				jsr chrout	; char out
+    30  18a8 4c7718             				jmp mainloop
+    31  18ab 200a19             +		jsr execom	; execute command
+    32  18ae 4c7718             		jmp mainloop
+    33                          
+    34                          !zone
+    35                          ; Pseudo-Sub: (ESC uses jmp)
+    36  18b1 18                 F_esc		clc		; 'ESC' on!
+    37  18b2 adc516             		lda clraktv
+    38  18b5 a200               		ldx #hFlag_Escape
+    39  18b7 20322a             		jsr setflagdata
+    40  18ba 207819             -			jsr getkey	; get KEY
+    41  18bd f0fb               			beq -
+    42  18bf 8d2e17             		sta byte	; & buffer
+    43  18c2 18                 		clc		; 'ESC' off!
+    44  18c3 adc616             		lda clrinak
+    45  18c6 a200               		ldx #hFlag_Escape
+    46  18c8 20322a             		jsr setflagdata
+    47  18cb ae2e17             		ldx byte	; get byte
+    48  18ce 8a                 		txa		; & buffer
+    49  18cf 4940               		eor #%.#......	; a-z ?
+    50  18d1 2960               		and #%.##.....
+    51  18d3 d017               		bne +		; no = >
+    52  18d5 8a                 			txa		; get byte
+    53  18d6 291f               			and #%...#####	; & short
+    54  18d8 0a                 			asl		; *2 &
+    55  18d9 aa                 			tax		; as index
+    56  18da bd3817             			lda etab + 1, x	; get Hi
+    57  18dd f00c               			beq .no		; 0 = >
+    58  18df 8dea18             			sta .m + 1	; set
+    59  18e2 bd3717             			lda etab, x	; get Lo
+    60  18e5 8de918             			sta .m		; set
+    61  18e8 4cffff             .m = * + 1:		jmp MODIFIED16	; execute sequence
+    62                          
+    63  18eb 60                 .no		rts		; nothing...
+    64                          
+    65  18ec 8a                 +		txa		; get byte ( = FKey?)
+    66  18ed 10fc               		bpl .no		; out = >
+    67  18ef 4920               		eor #%..#.....	; convert
+    68  18f1 2960               		and #%.##.....	; test
+    69  18f3 f0f6               		beq .no		; out = >
+    70  18f5 8a                 		txa		; get byte
+    71  18f6 291f               		and #%...#####	; convert
+    72  18f8 c905               		cmp #$05	; test bottom border
+    73  18fa 90ef               		bcc .no		; too low = >
+    74  18fc c90d               		cmp #$0d	; test upper border
+    75  18fe b0eb               		bcs .no		; too high = >
+    76                          ; here: define f-keys !
+    77  1900 60                 		rts
+    78                          
+    79                          !zone
+    80                          ; NMI
+    81  1901 a900               nmirtn		lda #0		; clear keybuffers
+    82  1903 85d0               		sta ndx
+    83  1905 85d1               		sta kyndx
+    84  1907 4c33ff             		jmp nmiend
+    85                          
+    86                          !zone
+    87                          ; Subs:
+    88  190a 8a                 execom		txa		; get & convert Byte
+    89  190b 1002               		bpl +		; (therefore strange
+    90  190d 49a0               			eor #%#.#.....	; vectorlist)
+    91  190f 0a                 +		asl
+    92  1910 aa                 		tax
+    93  1911 bd7817             		lda ctab + 1, x	; get Hi
+    94  1914 f00c               		beq noroutine	; 0 = >
+    95  1916 8d2119             		sta .m + 1	; and set
+    96  1919 bd7717             		lda ctab, x	; get Lo
+    97  191c 8d2019             		sta .m		; and set
+    98  191f 4cffff             .m = * + 1:	jmp MODIFIED16	; use command
+    99                          
+   100  1922 60                 noroutine	rts		; not defined (fixme - could save a byte here)
+   101                          
+   102                          !zone
+   103  1923 20721e             F_new		jsr willblost
+   104  1926 f0fa               		beq noroutine
+   105  1928 204719             		jsr newtext
+   106  192b 20d21a             		jsr needline
+   107  192e a20f               		ldx #$0f	; use counter as "TRUE"
+   108  1930 8ed416             		stx nwfrm
+   109  1933 8ed816             		stx updatewbi
+   110  1936 8ed216             		stx unnamed
+   111  1939 bdfb16             -			lda newname, x
+   112  193c 9ddb16             			sta txtname, x
+   113  193f ca                 			dex
+   114  1940 10f7               			bpl -
+   115  1942 e8                 		inx
+   116  1943 8ed316             		stx changes
+   117  1946 60                 		rts
+   118                          
+   119                          !zone
+   120  1947 a201               newtext		ldx #1		; '1'
+   121  1949 8e1c17             		stx scrx	; as X of screen,
+   122  194c 8e1f17             		stx anfx	; blockstart, -end &
+   123  194f 8e2217             		stx endx	; crsr.
+   124  1952 8e2517             		stx posx
+   125  1955 8e1d17             		stx scry	; ...as Y-Lo
+   126  1958 8e2017             		stx anfy
+   127  195b 8e2317             		stx endy
+   128  195e 8e2617             		stx posy
+   129  1961 ca                 		dex		; '0'
+   130  1962 8e1e17             		stx scry + 1	; ...as Y-Hi
+   131  1965 8e2117             		stx anfy + 1
+   132  1968 8e2417             		stx endy + 1
+   133  196b 8e2717             		stx posy + 1
+   134  196e 8e2f17             		stx zzbe	; no lines
+   135  1971 8e3017             		stx zzbe + 1	; used
+   136  1974 60                 		rts
+   137                          
+   138                          !zone
+   139                          ; 'key' ist der Kern, holt einen Code
+   140                          ; ausm Puffer. 'char' wuerde, wenns ein
+   141                          ; F-Key oder Accent ist, den Puffer
+   142                          ; aendern und dann das erste Byte
+   143                          ; abliefern. Hier nur das Standardprog:
+   144  1975 4c7819             getchar		jmp getkey
+   145                          .defrag		;{check fragjob}
+   146                          
+   147                          getkey		;{check mousejob}
+   148                          		;{check clockjob}
+   149  1978 a6d1               		ldx kyndx	; F-keys as standard
+   150  197a f00a               		beq .std
+   151  197c a4d2               		ldy keyidx
+   152  197e b90a10             		lda pkydef,y
+   153  1981 c6d1               		dec kyndx
+   154  1983 e6d2               		inc keyidx
+   155  1985 60                 		rts
+   156  1986 a6d0               .std		ldx ndx		; chars in buffer ?
+   157  1988 f0ee               		beq .defrag	; 0 = >
+   158  198a 78                 		sei		; else
+   159  198b ac4a03             		ldy keybuffer	; get first byte
+   160  198e a2f7               		ldx #255 - 8	; loop to shift other 9 chars down
+   161  1990 bd5402             -			lda keybuffer - 255 + 9, x
+   162  1993 9d5302             			sta keybuffer - 255 + 8, x
+   163  1996 e8                 			inx		; (f7 to ff)
+   164  1997 d0f7               			bne -
+   165  1999 c6d0               		dec ndx		; dec number
+   166  199b 98                 		tya		; byte = >A
+   167  199c 8e5303             		stx keybuffer + 9	; clear lastbyte
+   168  199f 58                 		cli
+   169  19a0 60                 		rts
+   170                          
+   171                          !zone
+   172  19a1 bd1d17             getvvek		lda scry, x	; get y-Lo
+   173  19a4 0a                 		asl		; *2
+   174  19a5 a8                 		tay		; buffer
+   175  19a6 bd1e17             		lda scry + 1, x	; get y-Hi
+   176  19a9 2a                 		rol		; *2 ( = clc)
+   177  19aa 8584               		sta vvek + 1	; in Hi
+   178  19ac 98                 		tya		; get Lo
+   179  19ad 6dce16             		adc memin	; + BaseLo
+   180  19b0 8583               		sta vvek	; = VectorLo
+   181  19b2 a584               		lda vvek + 1	; get Hi
+   182  19b4 6dcf16             		adc memin + 1	; + BaseHi
+   183  19b7 8584               		sta vvek + 1	; = VectorHi
+   184  19b9 60                 		rts		; (VekVek)
+   185                          
+   186                          ; stellt Vektor auf Cursor-Y
+   187  19ba a209               poslvek		ldx #POS
+   188                          
+   189                          ; stellt Vektor auf Zeile
+   190                          !zone
+   191  19bc 20a119             getlvek		jsr getvvek	; get VekVek
+   192  19bf a000               		ldy #0		; Y-Init
+   193  19c1 b183               		lda (vvek), y	; get Lo-Byte
+   194  19c3 8585               		sta lvek	; store
+   195  19c5 c8                 		iny		; inc vector
+   196  19c6 b183               		lda (vvek), y	; get Hi-Byte
+   197  19c8 8586               		sta lvek + 1	; store
+   198  19ca 60                 		rts
+   199                          
+   200                          !zone
+   201  19cb ad2517             windowproof	lda posx	;crsr-X
+   202  19ce cd1c17             		cmp scrx	; screen(home)-X
+   203  19d1 b008               		bcs +		; bigger = >
+   204  19d3 8d1c17             			sta scrx	; else set screen-X
+   205  19d6 8dd416             			sta nwfrm	; and NewFrame
+   206  19d9 9012               			bcc .UpDown
+   207  19db ed1c17             +		sbc scrx	; difference
+   208  19de c950               		cmp #scrcols	; cmp screenwidth
+   209  19e0 900b               		bcc .UpDown	; ok = >
+   210  19e2 ad2517             		lda posx	; else NewFrame,
+   211  19e5 8dd416             		sta nwfrm
+   212  19e8 e94f               		sbc #scrcols - 1	; set screen-X
+   213  19ea 8d1c17             		sta scrx	; & store
+   214  19ed ad1e17             .UpDown		lda scry + 1	; HiByte screen-
+   215  19f0 cd2717             		cmp posy + 1	; Y and crsr-Y
+   216  19f3 901c               		bcc crsrweiter	; shorter = >
+   217  19f5 d008               		bne .set	; equal = >
+   218  19f7 ad2617             		lda posy	; else cmp Lo-bytes
+   219  19fa cd1d17             		cmp scry
+   220  19fd b012               		bcs crsrweiter	; shorter = >
+   221  19ff ae2617             .set		ldx posy	; get crsrpos as
+   222  1a02 ad2717             		lda posy + 1	; new screenstart
+   223  1a05 8e1d17             		stx scry
+   224  1a08 8d1e17             		sta scry + 1
+   225  1a0b a9ff               		lda #TRUE	; NewFrame
+   226  1a0d 8dd416             		sta nwfrm
+   227  1a10 60                 		rts
+   228                          
+   229                          !zone
+   230  1a11 38                 crsrweiter	sec		; for sbc
+   231  1a12 ad2617             		lda posy	; calculate
+   232  1a15 ed1d17             		sbc scry	; Lo-difference
+   233  1a18 aa                 		tax		; in X
+   234  1a19 ad2717             		lda posy + 1	; calculate
+   235  1a1c ed1e17             		sbc scry + 1	; Hi-difference
+   236  1a1f d004               		bne +		; if Hi = 0
+   237  1a21 e016               			cpx #scrlins	; & Lo ok,
+   238  1a23 9019               			bcc ++		; ready = >
+   239  1a25 ad2717             +		lda posy + 1	; else: copy Hibyte
+   240  1a28 8d1e17             		sta scry + 1
+   241  1a2b 38                 		sec		; for sbc
+   242  1a2c ad2617             		lda posy	; calculate & save
+   243  1a2f e915               		sbc #scrlins - 1	; new Hibyte
+   244  1a31 8d1d17             		sta scry
+   245  1a34 b003               		bcs +		; ggfs. = >
+   246  1a36 ce1e17             			dec scry + 1	; correct Hibyte
+   247  1a39 a9ff               +		lda #TRUE	; NewFrame
+   248  1a3b 8dd416             		sta nwfrm
+   249  1a3e 60                 ++		rts
+   250                          ; Scrollroutines missing !
+   251                          
+   252                          !zone
+   253                          ; fuellt Speicher mit Zeilen
+   254  1a3f a900               fillmem		lda #0		; Keine Zeilen da
+   255  1a41 8d2c17             		sta zzan
+   256  1a44 8d2d17             		sta zzan + 1
+   257  1a47 ae2b17             		ldx llen	; Zeilenlaenge
+   258  1a4a e8                 		inx		; + Info-Byte
+   259  1a4b 8e801a             		stx .m1		; in SBC #$dummy
+   260  1a4e ad1212             		lda maxmem0	; holt MAX-MEM-0
+   261  1a51 8dd016             		sta txts	; und nimmt es als
+   262  1a54 ad1312             		lda maxmem0 + 1	; Obergrenze !
+   263  1a57 8dd116             		sta txts + 1
+   264  1a5a ad401e             		lda mod_id	; Holt ID-Adresse (Lo)
+   265  1a5d aa                 		tax		; sichern
+   266  1a5e 4a                 		lsr		; Bit 0 ins Carry
+   267  1a5f 8a                 		txa		; zurueck
+   268  1a60 6906               		adc #6		; +ID-2+C
+   269  1a62 8dce16             		sta memin	; wird Vektorstart (Lo)
+   270  1a65 ad411e             		lda mod_id + 1	; Hi-Byte
+   271  1a68 6900               		adc #0		; entsprechend
+   272  1a6a 8dcf16             		sta memin + 1	; anpassen (Auto-CLC)
+   273                          ; Carry wird addiert, damit Vektoren bei
+   274                          ; einer GERADEN Adresse starten!
+   275  1a6d adce16             		lda memin	; Die VekVeks
+   276  1a70 6902               		adc #2		; werden ab dem
+   277  1a72 8583               		sta vvek	; Vektorstart+2
+   278  1a74 adcf16             		lda memin + 1	; abgelegt, da es
+   279  1a77 6900               		adc #0		; keine nullte Zeile
+   280  1a79 8584               		sta vvek + 1	; gibt
+   281  1a7b add016             .Check		lda txts	; TextstartLo
+   282  1a7e 38                 		sec
+   283  1a7f e9ff               .m1 = * + 1:	sbc #MODIFIED8	; -ZeilenlÃ¤nge
+   284  1a81 8587               		sta tmp1	; wird gepuffert
+   285  1a83 aed116             		ldx txts + 1
+   286  1a86 b001               		bcs +
+   287  1a88 ca                 			dex
+   288  1a89 8688               +		stx tmp1 + 1
+   289  1a8b e484               		cpx vvek + 1	; Vektorkollision ?
+   290  1a8d 902d               		bcc .NoLine	; Ja = > keine Zeile !
+   291  1a8f d007               		bne .MakeLn	; Nein = > neue Zeile !
+   292  1a91 a683               		ldx vvek	; Gleich: Lo-Bytes
+   293  1a93 e8                 		inx		; vergleichen
+   294  1a94 e487               		cpx tmp1	; Wieder: Kollision ?
+   295  1a96 b024               		bcs .NoLine	; Ja = > keine Zeile !
+   296  1a98 a587               .MakeLn		lda tmp1	; Nein: dann temp als
+   297  1a9a 8dd016             		sta txts	; Textstart und in den
+   298  1a9d a000               		ldy #0		; Linevektor
+   299  1a9f 9183               		sta (vvek), y
+   300  1aa1 a588               		lda tmp1 + 1	; dito, Highbyte
+   301  1aa3 8dd116             		sta txts + 1
+   302  1aa6 c8                 		iny
+   303  1aa7 9183               		sta (vvek), y
+   304  1aa9 e683               		inc vvek	; VekVek 2 Byte weiter
+   305  1aab e683d002e684       		+inc16 vvek
+   306  1ab1 ee2c17             		inc zzan	; angelegte Zeilen
+   307  1ab4 d0c5               		bne .Check	; eins hoeher
+   308  1ab6 ee2d17             		inc zzan + 1
+   309  1ab9 4c7b1a             		jmp .Check
+   310  1abc 60                 .NoLine		rts
+   311                          
+   312                          !zone
+   313  1abd a920               clearline	lda #" "	; Space
+   314  1abf ac2b17             		ldy llen	; Y auf Zeilenende
+   315  1ac2 9185               -			sta (lvek), y	; Space setzen
+   316  1ac4 88                 			dey		; zurueck
+   317  1ac5 d0fb               			bne -		; Infobyte ?
+   318  1ac7 98                 		tya		; Dann auf
+   319  1ac8 9185               		sta (lvek), y	; Null setzen
+   320  1aca 88                 		dey		; Y auf $ff fuer
+   321  1acb 8cd416             		sty nwfrm	; NewFrame
+   322  1ace 8cd316             		sty changes	; Veraendert !
+   323                          ; WordWrap sinnlos !
+   324  1ad1 60                 		rts
+   325                          
+   326                          !zone
+   327                          ; stellt Zeilen zur Verfuegung oder gibt Fehlermeldung
+   328  1ad2 a20fa01220f01a     needline	+cmp16bit ZZA, ZZB	; vergleichen
+   329  1ad9 f014               		beq +		; Wenn gleich, wirds gesetzte Carry 'failure'
+   330  1adb ee2f17d003ee3017   			+inc16 zzbe	; sonst: Zahl der genutzten Zeilen hoeher
+   331  1ae3 a212               			ldx #ZZB
+   332  1ae5 8ed316             			stx changes	; Veraendert !
+   333  1ae8 20bc19             			jsr getlvek	; Holt Vektor
+   334  1aeb 20bd1a             			jsr clearline	; und leert Zeile
+   335  1aee 18                 			clc		; 'success'
+   336                          ; EIGENTLICH ist das Carrybit hier schon
+   337                          ; durch die beiden Subs gelöscht...
+   338  1aef 60                 +		rts
+   339                          
+   340  1af0 bd1e17             cmp16bit	lda scry + 1, x	; Hi-Bytes vergleichen
+   341  1af3 d91e17             		cmp scry + 1, y
+   342  1af6 d006               		bne +		; wenn gleich,
+   343  1af8 bd1d17             			lda scry, x	; Lo-Bytes vergleichen
+   344  1afb d91d17             			cmp scry, y
+   345  1afe 60                 +		rts
+   346                          
+   347  1aff ee2517             F_gcr		inc posx
+   348  1b02 4c211b             		jmp proofpos
+   349                          
+   350  1b05 ce2517             F_gcl		dec posx
+   351  1b08 4c211b             		jmp proofpos
+   352                          
+   353  1b0b ae2617             F_gcu		ldx posy
+   354  1b0e d003               		bne +
+   355  1b10 ce2717             			dec posy + 1
+   356  1b13 ce2617             +		dec posy
+   357  1b16 4c211b             		jmp proofpos
+   358                          
+   359  1b19 ee2617d003ee2717   F_gcd		+inc16 posy
+   360                          
+   361                          !zone
+   362  1b21 ae2517             proofpos	ldx posx	; CRSR-X
+   363  1b24 f01c               		beq .jBack	; Null = >
+   364  1b26 ca                 		dex		; verringern und mit
+   365  1b27 ec2b17             		cpx llen	; Laenge vergl.
+   366  1b2a b02c               		bcs jump	; zu weit rechts = >
+   367  1b2c ad2717             		lda posy + 1	; CRSR-Y (Hi)
+   368  1b2f 3037               		bmi firstline	; >32K = > 1. Zeile = >
+   369  1b31 0d2617             		ora posy	; ODERt Low-Byte
+   370  1b34 f032               		beq firstline	; = 0 = > 1. Zeile = >
+   371  1b36 a212a00920f01a     		+cmp16bit ZZB, POS	; vergleichen
+   372  1b3d 9035               		bcc F_geot	; CRSR zu weit = >
+   373  1b3f 4ccb19             		jmp windowproof	; okay
+   374                          
+   375  1b42 ae2b17             .jBack		ldx llen	; Zeilenlaenge wird
+   376  1b45 8e2517             		stx posx	; neue Position & hoch
+   377  1b48 200b1b             		jsr F_gcu
+   378  1b4b 20ba19             		jsr poslvek	; LineVek holen
+   379  1b4e 20f322             		jsr findend	; Ende suchen
+   380  1b51 c8                 		iny		; dahintersetzen
+   381  1b52 8c2517             		sty posx
+   382  1b55 4c211b             		jmp proofpos
+   383                          
+   384  1b58 20831b             jump		jsr newline	; naechste Zeile
+   385  1b5b b008               		bcs +		; CRSR zu weit,
+   386  1b5d 20d21a             			jsr needline	; Zeile anfordern
+   387  1b60 9003               			bcc +		; Bei Fehlschlag
+   388  1b62 20f020             				jsr memfull	; Warnung zeigen
+   389  1b65 4c211b             +		jmp proofpos
+   390                          
+   391                          !zone
+   392  1b68 a201               firstline	ldx #1		; CRSR in erste Zeile
+   393  1b6a 8e2617             		stx posy
+   394  1b6d ca                 		dex
+   395  1b6e 8e2717             		stx posy + 1
+   396  1b71 4ccb19             		jmp windowproof
+   397                          
+   398  1b74 ae2f17ad30178e26...F_geot		+cp16 zzbe, posy; CRSR in letzte Zeile
+   399  1b80 4ccb19             		jmp windowproof
+   400                          
+   401                          !zone
+   402  1b83 a901               newline		lda #1		; X-Pos : = 1 & Y += 1
+   403  1b85 8d2517             		sta posx
+   404  1b88 ee2617d003ee2717   		+inc16 posy
+   405  1b90 a212a00920f01a     		+cmp16bit ZZB, POS	; vergleichen
+   406  1b97 60                 		rts
+   407                          
+   408                          !zone
+   409  1b98 a901               F_cs		lda #1		; CRSR 2 next linestart
+   410  1b9a 8d2517             		sta posx
+   411  1b9d ee2617d003ee2717   		+inc16 posy
+   412  1ba5 4c211b             		jmp proofpos
+   413                          
+   414                          !zone
+   415  1ba8 8e2e17             chrout		stx byte	; sichert Zeichen
+   416  1bab 20ba19             		jsr poslvek	; LineVek
+   417  1bae acd716             		ldy esca	; Autoinsert ?
+   418  1bb1 f003               		beq +		; ggfs. kein
+   419  1bb3 20d61b             			jsr insert1	; insert
+   420  1bb6 ac2517             +		ldy posx	; Versatz
+   421  1bb9 ad2e17             		lda byte	; Akku holen
+   422  1bbc 9185               		sta (lvek), y	; und setzen
+   423  1bbe 205521             		jsr poswrap	; Wrap ?
+   424  1bc1 a9ff               		lda #TRUE	; NewFrame fordern
+   425  1bc3 8dd416             		sta nwfrm
+   426  1bc6 8dd316             		sta changes	; Veraendert !
+   427  1bc9 4cff1a             		jmp F_gcr
+   428                          
+   429                          !zone
+   430  1bcc 20ba19             F_insert	jsr poslvek	; LineVek
+   431  1bcf 20d61b             		jsr insert1	; insert
+   432  1bd2 205521             		jsr poswrap	; Wrap ?
+   433  1bd5 60                 		rts		; fixme - could save a byte here
+   434                          
+   435                          !zone
+   436  1bd6 bc1c17             insert1		ldy scrx, x	; X-Wert holen & in
+   437  1bd9 8cec1b             		sty .mod	; Immediate
+   438  1bdc a486               		ldy lvek + 1	; Quell-Vektor =
+   439  1bde a685               		ldx lvek	; aktueller Vektor-1
+   440  1be0 d001               		bne +
+   441  1be2 88                 			dey
+   442  1be3 ca                 +		dex
+   443  1be4 8687               		stx tmp1
+   444  1be6 8488               		sty tmp1 + 1
+   445  1be8 ac2b17             		ldy llen	; Shiftstart LineEnd
+   446                          -
+   447  1beb c0ff               .mod = * + 1:		cpy #MODIFIED8	; X
+   448  1bed f008               			beq +		; Ende = >
+   449  1bef b187               			lda (tmp1), y	; Zeichen holen
+   450  1bf1 9185               			sta (lvek), y	; und shiften
+   451  1bf3 88                 			dey		; neue Pos
+   452  1bf4 4ceb1b             			jmp -
+   453  1bf7 a920               +		lda #" "	; 'Space' an
+   454  1bf9 9185               		sta (lvek), y	; Pos setzen
+   455  1bfb 8dd416             		sta nwfrm	; NewFrame fordern
+   456  1bfe 8dd316             		sta changes	; Veraendert !
+   457  1c01 60                 		rts
+   458                          
+   459                          !zone
+   460  1c02 20051b             F_dcl		jsr F_gcl
+   461  1c05 20ba19             F_dcr		jsr poslvek	; LineVek
+   462  1c08 20111c             		jsr delchr1	; Delete
+   463  1c0b 205521             		jsr poswrap	; Wrap ?
+   464  1c0e 4c211b             		jmp proofpos
+   465                          
+   466                          !zone
+   467  1c11 bc1c17             delchr1		ldy scrx, x	; X-Wert in Immediate
+   468  1c14 8c241c             		sty .m
+   469  1c17 a685               		ldx lvek	; Zielvektor = aktueller
+   470  1c19 a486               		ldy lvek + 1	; Vektor+1
+   471  1c1b e8                 		inx
+   472  1c1c d001               		bne +
+   473  1c1e c8                 			iny
+   474  1c1f 8687               +		stx tmp1
+   475  1c21 8488               		sty tmp1 + 1
+   476  1c23 a0ff               .m = * + 1:	ldy #MODIFIED8	; X
+   477  1c25 cc2b17             -			cpy llen	; Zeilenende ?
+   478  1c28 f008               			beq +		; Dann = >
+   479  1c2a b187               			lda (tmp1), y	; Zeichen holen
+   480  1c2c 9185               			sta (lvek), y	; und shiften
+   481  1c2e c8                 			iny		; neue Pos
+   482  1c2f 4c251c             			jmp -
+   483  1c32 a920               +		lda #" "	; Space an letzte
+   484  1c34 9185               		sta (lvek), y	; Pos setzen
+   485  1c36 a9ff               		lda #TRUE	; NewFrame fordern
+   486  1c38 8dd416             		sta nwfrm
+   487  1c3b 8dd316             		sta changes	; Veraendert !
+   488  1c3e 60                 		rts
+   489                          
+   490                          !zone
+   491                          ; Einsprung: X = StartIndex, Y = EndIndex
+   492                          ; Bewegt Zeilenbloecke: X bis Y-1 werden nach X+1 bis Y geschoben. Danach
+   493                          ; liegt die Endzeile in der Startzeile
+   494  1c3f 20c81c             rollfwd		jsr howmany	; Zeilenanzahl ?
+   495  1c42 f038               		beq ++		; ggfs Abbruch !
+   496  1c44 98                 			tya		; Y in X
+   497  1c45 aa                 			tax
+   498  1c46 20bc19             			jsr getlvek	; lvek in lvek puffern
+   499  1c49 38                 			sec		; Quellvektor = Vektor-2
+   500  1c4a a583               			lda vvek
+   501  1c4c e902               			sbc #2
+   502  1c4e 8587               			sta tmp1
+   503  1c50 a584               			lda vvek + 1
+   504  1c52 e900               			sbc #0
+   505  1c54 8588               			sta tmp1 + 1
+   506  1c56 a002               			ldy #2		; Versatz 2
+   507  1c58 98                 -				tya		; Y pruefen
+   508  1c59 d004               				bne +		; ggfs
+   509  1c5b c688               					dec tmp1 + 1	; Page sichern
+   510  1c5d c684               					dec vvek + 1
+   511  1c5f 88                 +				dey		; Versatz runter
+   512  1c60 b187               				lda (tmp1), y	; High-Byte oben setzen
+   513  1c62 9183               				sta (vvek), y
+   514  1c64 88                 				dey		; Versatz runter
+   515  1c65 b187               				lda (tmp1), y	; Low-Byte oben setzen
+   516  1c67 9183               				sta (vvek), y
+   517  1c69 ee2917             				inc tmpy	; Anzahl der Shifts
+   518  1c6c d0ea               				bne -		; pruefen, ggfs loop
+   519  1c6e ee2a17             				inc tmpy + 1
+   520  1c71 d0e5               				bne -
+   521  1c73 a585               			lda lvek	; alten Vektor holen
+   522  1c75 9187               			sta (tmp1), y	; und in letzte
+   523  1c77 c8                 			iny		; Position setzen
+   524  1c78 a586               			lda lvek + 1
+   525  1c7a 9187               			sta (tmp1), y
+   526  1c7c a9ff               ++		lda #TRUE	; NewFrame fordern
+   527  1c7e 8dd416             		sta nwfrm
+   528  1c81 8dd316             		sta changes	; Veraendert !
+   529  1c84 60                 		rts
+   530                          
+   531                          !zone
+   532                          ; Einsprung: X = StartIndex, Y = Endzeile
+   533                          ; Bewegt Zeilenbloecke: X+1 bis Y werden nach X bis Y-1 geschoben. Danach
+   534                          ; liegt die Startzeile in der Endzeile !
+   535  1c85 20c81c             rollrwd		jsr howmany	; Zeilenanzahl ?
+   536  1c88 f035               		beq ++		; ggfs Abbruch !
+   537  1c8a 20bc19             			jsr getlvek	; lvek in lvek puffern
+   538  1c8d 18                 			clc		; Quellvektor = Vektor+2
+   539  1c8e a583               			lda vvek
+   540  1c90 6902               			adc #2
+   541  1c92 8587               			sta tmp1
+   542  1c94 a584               			lda vvek + 1
+   543  1c96 6900               			adc #0
+   544  1c98 8588               			sta tmp1 + 1
+   545  1c9a a000               			ldy #0		; Versatz 0
+   546  1c9c b187               -				lda (tmp1), y	; Hi-Byte unten setzen
+   547  1c9e 9183               				sta (vvek), y
+   548  1ca0 c8                 				iny		; weiter
+   549  1ca1 b187               				lda (tmp1), y	; Lo-Byte unten setzen
+   550  1ca3 9183               				sta (vvek), y
+   551  1ca5 c8                 				iny		; weiter
+   552  1ca6 d004               				bne +		; Page sichern
+   553  1ca8 e688               					inc tmp1 + 1
+   554  1caa e684               					inc vvek + 1
+   555  1cac ee2917             +				inc tmpy	; Anzahl Shifts
+   556  1caf d0eb               				bne -		; pruefen, ggfs loop
+   557  1cb1 ee2a17             				inc tmpy + 1
+   558  1cb4 d0e6               				bne -
+   559  1cb6 a585               			lda lvek	; alten Vektor an die
+   560  1cb8 9183               			sta (vvek), y	; letzte Pos setzen
+   561  1cba c8                 			iny
+   562  1cbb a586               			lda lvek + 1
+   563  1cbd 9183               			sta (vvek), y
+   564  1cbf a9ff               ++		lda #TRUE	; NewFrame fordern
+   565  1cc1 8dd416             		sta nwfrm
+   566  1cc4 8dd316             		sta changes	; Veraendert !
+   567  1cc7 60                 		rts
+   568                          
+   569                          !zone
+   570  1cc8 20f01a             howmany		jsr cmp16bit	; Sicherheit
+   571  1ccb b014               		bcs +		; ggfs Abbruch = >
+   572  1ccd 38                 			sec		; Negativ, um INC statt DEC nutzen zu kÃ¶nnen
+   573  1cce bd1d17             			lda scry, x
+   574  1cd1 f91d17             			sbc scry, y
+   575  1cd4 8d2917             			sta tmpy
+   576  1cd7 bd1e17             			lda scry + 1, x
+   577  1cda f91e17             			sbc scry + 1, y
+   578  1cdd 8d2a17             			sta tmpy + 1
+   579  1ce0 60                 			rts
+   580  1ce1 a900               +		lda #0		; Zeilen
+   581  1ce3 60                 		rts
+   582                          
+   583                          !zone
+   584  1ce4 bd1c17             movx2y		lda scrx, x	; Copy X-indexed Werte in Y-indexed Variablen
+   585  1ce7 991c17             		sta scrx, y
+   586  1cea bd1d17             		lda scry, x
+   587  1ced 991d17             		sta scry, y
+   588  1cf0 bd1e17             		lda scry + 1, x
+   589  1cf3 991e17             		sta scry + 1, y
+   590  1cf6 60                 		rts
+   591                          
+   592  1cf7 60                 ESC_at		rts		; fixme - could save one byte here
+   593                          
+   594  1cf8 a9ff               ESC_a		lda #TRUE	; Set AutoInsert
+   595  1cfa 8dd716             		sta esca
+   596  1cfd 8dd816             		sta updatewbi	; Update fordern
+   597  1d00 60                 		rts
+   598                          
+   599  1d01 a209               ESC_b		ldx #POS	; BlockEnd: = Cursorposition
+   600  1d03 a006               		ldy #END
+   601  1d05 20e41c             		jsr movx2y
+   602                          
+   603                          !zone
+   604                          ; Block legal ? Vertauscht ggfs Zeiger
+   605  1d08 a203a00620f01a     nblck		+cmp16bit ANF, END	; Blockstart und -Ende vergleichen
+   606  1d0f 901d               		bcc ++		; anf<end: ok
+   607  1d11 d008               			bne +		; anf>end: not ok
+   608  1d13 b91c17             				lda scrx, y	; Bei Gleichheit noch
+   609  1d16 dd1c17             				cmp scrx, x	; X pruefen
+   610  1d19 b013               				bcs ++		; end> = anf: ok
+   611  1d1b a00c               +			ldy #TMP	; (Anf) in Temp
+   612  1d1d 20e41c             			jsr movx2y
+   613  1d20 a206               			ldx #END	; Ende in Anf
+   614  1d22 a003               			ldy #ANF
+   615  1d24 20e41c             			jsr movx2y
+   616  1d27 a20c               			ldx #TMP	; Temp in Ende
+   617  1d29 a006               			ldy #END
+   618  1d2b 20e41c             			jsr movx2y
+   619  1d2e a9ff               ++		lda #TRUE	; NewFrame fordern
+   620  1d30 8dd416             		sta nwfrm	; (Blockanzeige)
+   621  1d33 8dd516             		sta blockflag	; Block ein
+   622  1d36 60                 		rts
+   623                          
+   624                          !zone
+   625  1d37 a200               ESC_c		ldx #FALSE	; Clear AutoInsert
+   626  1d39 8ed716             		stx esca
+   627  1d3c ca                 		dex		; Update fordern
+   628  1d3d 8ed816             		stx updatewbi
+   629  1d40 60                 		rts
+   630                          
+   631  1d41 a209               ESC_d		ldx #POS	; Start: Cursorposition
+   632  1d43 20491d             		jsr delline	; Zeile weg
+   633  1d46 4c5521             		jmp poswrap	; und wrap
+   634                          
+   635                          !zone
+   636  1d49 a012               delline		ldy #ZZB	; Ende: LastLine
+   637  1d4b 20851c             		jsr rollrwd	; runterrollen
+   638  1d4e ad2f17             		lda zzbe	; Anzahl der benutzten Zeilen runter
+   639  1d51 d003               		bne +
+   640  1d53 ce3017             			dec zzbe + 1
+   641  1d56 ce2f17             +		dec zzbe
+   642  1d59 d008               		bne +		; Low = 0 ?
+   643  1d5b ad3017             			lda zzbe + 1	; Dann High pruefen und ggfs Zeile fordern
+   644  1d5e d003               			bne +
+   645  1d60 20d21a             				jsr needline
+   646  1d63 4c211b             +		jmp proofpos
+   647                          
+   648                          !zone
+   649  1d66 a200               ESC_g		ldx #FALSE	; Beep On
+   650  1d68 86f9               		stx beep
+   651  1d6a ca                 		dex		; Update fordern
+   652  1d6b 8ed816             		stx updatewbi
+   653  1d6e 60                 		rts
+   654                          
+   655  1d6f a9ff               ESC_h		lda #TRUE	; Beep Off
+   656  1d71 85f9               		sta beep
+   657  1d73 8dd816             		sta updatewbi	; Update fordern
+   658  1d76 60                 		rts
+   659                          
+   660                          !zone
+   661  1d77 20d21a             ESC_i		jsr needline	; Zeile fordern
+   662  1d7a 90034cf020         		+bcs memfull	; bei Fehlschlag Warnung = >
+   663  1d7f a209               		ldx #POS	; Start: Cursorposition
+   664  1d81 a012               		ldy #ZZB	; Ende: LastLine
+   665  1d83 203f1c             		jsr rollfwd	; raufrollen
+   666  1d86 60                 		rts		; fixme - could save a byte here
+   667                          
+   668                          !zone
+   669                          F_gsol
+   670  1d87 a901               ESC_j		lda #1		; Cursor-X: = 1
+   671  1d89 8d2517             		sta posx
+   672  1d8c 4ccb19             		jmp windowproof
+   673                          
+   674                          F_geol
+   675  1d8f 20ba19             ESC_k		jsr poslvek	; LineVek
+   676  1d92 20f322             		jsr findend	; sucht letztes Byte, dahinter steht dann Cursor
+   677  1d95 c8                 		iny
+   678  1d96 8c2517             		sty posx
+   679  1d99 4c211b             		jmp proofpos
+   680                          
+   681  1d9c add516             ESC_o		lda blockflag	; toggle Flag
+   682  1d9f 49ff               		eor #$ff
+   683  1da1 8dd516             		sta blockflag
+   684  1da4 60                 		rts
+   685                          
+   686                          ESC_p
+   687  1da5 60                 ESC_q		rts		; fixme - could save a byte here
+   688                          
+   689  1da6 a209               ESC_t		ldx #POS	; Blockstart = Cursorposition
+   690  1da8 a003               		ldy #ANF
+   691  1daa 20e41c             		jsr movx2y
+   692  1dad 4c081d             		jmp nblck	; legal ?
+   693                          
+   694  1db0 ae1c17             F_home		ldx scrx	; Normal HOME only,
+   695  1db3 ac1d17             		ldy scry	; if CRSR not there
+   696  1db6 ad1e17             		lda scry + 1
+   697  1db9 ec2517             		cpx posx	; Otherwise ScreenUp
+   698  1dbc d020               		bne scrnhome
+   699  1dbe cc2617             		cpy posy
+   700  1dc1 d01b               		bne scrnhome
+   701  1dc3 cd2717             		cmp posy + 1
+   702  1dc6 d016               		bne scrnhome
+   703                          
+   704                          !zone
+   705  1dc8 ad2617             F_scrnu		lda posy	; Displaystart =
+   706  1dcb 38                 		sec		; Displaystart
+   707  1dcc e916               		sbc #scrlins	; - Zeilenzahl
+   708  1dce 8d2617             		sta posy
+   709  1dd1 b003               		bcs +
+   710  1dd3 ce2717             			dec posy + 1
+   711  1dd6 a9ff               +		lda #TRUE	; NewFrame fordern
+   712  1dd8 8dd416             		sta nwfrm
+   713  1ddb 4c211b             		jmp proofpos
+   714                          
+   715                          !zone
+   716  1dde 8e2517             scrnhome	stx posx	; Cursor: = Display
+   717  1de1 8c2617             		sty posy
+   718  1de4 8d2717             		sta posy + 1
+   719  1de7 4c211b             		jmp proofpos
+   720                          
+   721  1dea 18                 F_ahome		clc		; errechnet Werte
+   722  1deb ad1d17             		lda scry	; fuer antih1
+   723  1dee 6915               		adc #scrlins - 1	; in A, X, Y
+   724  1df0 aa                 		tax
+   725  1df1 ad1e17             		lda scry + 1
+   726  1df4 6900               		adc #0
+   727  1df6 a8                 		tay
+   728  1df7 ad1c17             		lda scrx	; CRSR dort ?
+   729  1dfa cd2517             		cmp posx
+   730  1dfd d020               		bne antih1
+   731  1dff ec2617             		cpx posy	; Nein = > dorthin
+   732  1e02 d01b               		bne antih1
+   733  1e04 cc2717             		cpy posy + 1	; Ja = > ScreenDown !
+   734  1e07 d016               		bne antih1
+   735                          
+   736                          !zone
+   737  1e09 ad2617             F_scrnd		lda posy	; One screen down
+   738  1e0c 18                 		clc
+   739  1e0d 6916               		adc #scrlins
+   740  1e0f 8d2617             		sta posy
+   741  1e12 9003               		bcc +
+   742  1e14 ee2717             			inc posy + 1
+   743  1e17 a9ff               +		lda #TRUE	; NewFrame fordern
+   744  1e19 8dd416             		sta nwfrm
+   745  1e1c 4c211b             		jmp proofpos
+   746                          
+   747                          !zone
+   748  1e1f 8d2517             antih1		sta posx	; Cursor: = DisplayEnd
+   749  1e22 8e2617             		stx posy
+   750  1e25 8c2717             		sty posy + 1
+   751  1e28 4c211b             		jmp proofpos
+   752                          
+   753  1e2b a201               F_gsot		ldx #1		; X = Y = 1
+   754  1e2d 8e2517             		stx posx
+   755  1e30 8e2617             		stx posy
+   756  1e33 8ed416             		stx nwfrm	; NewFrame fordern
+   757  1e36 ca                 		dex		; Y-Hi: = 0
+   758  1e37 8e2717             		stx posy + 1
+   759  1e3a 4c211b             		jmp proofpos
+   760                          
+   761                          !zone
+   762  1e3d a207               handleid	ldx #7		; 8 Byte Kennung
+   763                          -
+   764  1e3f bdffff             mod_id = * + 1:		lda MODIFIED16, x; Schleife, um evtl. vorhandenen Text zu
+   765  1e42 dd8916             			cmp idtext, x
+   766  1e45 d005               			bne makeid	; erkennen & zu reaktivieren
+   767  1e47 ca                 			dex
+   768  1e48 10f5               			bpl -
+   769  1e4a 18                 		clc		; 'OldText'
+   770  1e4b 60                 		rts
+   771                          
+   772  1e4c ad1012             makeid		lda texttop	; Neue ID wird ans Basic-Ende gesetzt
+   773  1e4f 8d401e             		sta mod_id
+   774  1e52 8d641e             		sta .m1
+   775  1e55 ad1112             		lda texttop + 1
+   776  1e58 8d411e             		sta mod_id + 1
+   777  1e5b 8d651e             		sta .m1 + 1
+   778  1e5e a207               		ldx #7
+   779  1e60 bd8916             -			lda idtext, x
+   780  1e63 9dffff             .m1 = * + 1:		sta MODIFIED16, x
+   781  1e66 ca                 			dex
+   782  1e67 10f7               			bpl -
+   783  1e69 38                 		sec		; 'NewText'
+   784  1e6a 60                 		rts
+   785                          
+   786  1e6b 202021             F_cr		jsr F_lfeed
+   787  1e6e 4c581b             		jmp jump
+   788                          
+   789                          F_c	:F_f		:F_ffeed	:F_dir
+   790                          F_fbox	:F_hlp		:F_bell		:F_tab
+   791                          F_text	:F_middle	:F_graphic
+   792                          F_fn	:F_ff		:F_un		:F_uf		:F_rn	:F_rf
+   793                          F_sf	:F_sk		:F_su		:F_st		:F_sl
+   794                          F_gld	:F_glu		:F_gad		:F_gau		:F_gpd	:F_gpu
+   795                          F_gtr	:F_gtl		:F_gwr		:F_gwl
+   796                          F_bttnn	:F_bttnf	:F_find		:F_print	:F_mode	:F_dword
+   797                          F_cut	:F_copy		:F_paste	:F_move
+   798                          F_fmtl	:F_fmtr		:F_fmtm		:F_fmtb
+   799                          
+   800  1e71 60                 		rts		; (yet) missing
+
+; ******** Source: .\macedit.a
+
+; ******** Source: me\file.a
+     1                          ;ACME 0.94.4
+     2                          
+     3                          ; ChangesNotSaved.Save?
+     4                          !zone
+     5  1e72 aed316             willblost	ldx changes
+     6  1e75 d002               		bne +
+     7  1e77 e8                 			inx
+     8  1e78 60                 			rts		; return with X=1 ("Changes safe, go on")
+     9                          
+    10  1e79 20b12f             +		jsr crsrnew
+    11  1e7c a209               		ldx #hWindow_DCS
+    12  1e7e 8e0123             		stx menunr
+    13  1e81 207c2c             		jsr makewin
+    14  1e84 a00b               		ldy #$0b	; y-pos of cursor in window
+    15  1e86 a932               		lda #$32	; x-pos
+    16  1e88 202a2f             		jsr crsrset
+    17  1e8b 207519             wblchoice	jsr getchar
+    18  1e8e c914               		cmp #Char_DEL
+    19  1e90 f014               		beq wblchoiced
+    20  1e92 c903               		cmp #Char_STOP
+    21  1e94 f01e               		beq wblchoicec
+    22  1e96 c90d               		cmp #Char_RETURN
+    23  1e98 d0f1               		bne wblchoice
+    24  1e9a 20222e             		jsr pullscr
+    25  1e9d 20cf2f             		jsr crsrold
+    26  1ea0 20de1f             		jsr F_saveas
+    27  1ea3 4c721e             		jmp willblost
+    28                          
+    29  1ea6 20222e             wblchoiced	jsr pullscr
+    30  1ea9 20cf2f             		jsr crsrold
+    31  1eac a200               		ldx #FALSE
+    32  1eae 8ed316             		stx changes
+    33  1eb1 a202               		ldx #2
+    34  1eb3 60                 		rts		; return with X=2 ("Changes discarded, go on")
+    35                          
+    36  1eb4 20222e             wblchoicec	jsr pullscr
+    37  1eb7 20cf2f             		jsr crsrold
+    38  1eba a200               		ldx #0
+    39  1ebc 60                 		rts		; return with X=1 ("Cancel operation !")
+    40                          
+    41  1ebd 00                 eotflag		!byte 0		; End-Flag
+    42                          
+    43                          !zone
+    44  1ebe a91f               F_mergeas	lda #$1f	; get Mergename
+    45  1ec0 8dda16             		sta loadflag	; Mode MERGE
+    46  1ec3 4cd31e             		jmp +
+    47                          
+    48  1ec6 60                 noload		rts		; fixme - could save a byte here
+    49                          
+    50  1ec7 20721e             F_loadas	jsr willblost	; Changes saved ?
+    51  1eca f0fa               		beq noload
+    52  1ecc a900               		lda #0		; Mode LOAD
+    53  1ece 8dda16             		sta loadflag
+    54  1ed1 a93f               		lda #$3f	; get LOADname
+    55  1ed3 203a2b             +		jsr rename
+    56  1ed6 d009               		bne load	; ggfs Abbruch
+    57  1ed8 60                 		rts
+    58                          
+    59                          !zone
+    60  1ed9 adda16             loadalien	lda loadflag
+    61  1edc d05b               		bne loadfirst
+    62  1ede 4cca1f             		jmp noheader
+    63  1ee1 ad00ff             load		lda conreg	; Bank sichern
+    64  1ee4 48                 		pha
+    65  1ee5 20b12f             		jsr crsrnew	; new copy (hidden)
+    66  1ee8 a20a               		ldx #hWindow_Load
+    67  1eea 8e0123             		stx menunr
+    68  1eed 207c2c             		jsr makewin
+    69  1ef0 20dd20             		jsr copypara	; Parameter setzen
+    70  1ef3 a952               		lda #"r"	; Lesemodus
+    71  1ef5 8da616             		sta dosmode
+    72  1ef8 a9008d00ff         		+bank15
+    73  1efd 20c0ff             		jsr open	; Open File
+    74  1f00 a208               		ldx #lf		; File: = Input
+    75  1f02 20c6ff             		jsr chkin
+    76  1f05 a00f               		ldy #$0f	; Header pruefen
+    77  1f07 20cfff             -			jsr basin
+    78  1f0a d9b316             			cmp idfile, y
+    79  1f0d d0ca               			bne loadalien
+    80  1f0f 88                 			dey
+    81  1f10 10f5               			bpl -
+    82  1f12 a00f               		ldy #$0f	; Namen holen
+    83  1f14 20cfff             -			jsr basin
+    84  1f17 999316             			sta dosname, y
+    85  1f1a 88                 			dey
+    86  1f1b 10f7               			bpl -
+    87  1f1d adda16             		lda loadflag	; Bei LOAD
+    88  1f20 d017               		bne loadfirst	; Name kopieren,
+    89  1f22 8dd216             		sta unnamed	; (clear Flag)
+    90  1f25 a00f               		ldy #$0f
+    91  1f27 b99316             -			lda dosname, y
+    92  1f2a 99db16             			sta txtname, y
+    93  1f2d 990b17             			sta lodname, y
+    94  1f30 88                 			dey
+    95  1f31 10f4               			bpl -
+    96  1f33 8cd816             		sty updatewbi	; Update verlangen,
+    97  1f36 204719             		jsr newtext	; Defaultwerte
+    98  1f39 a000               loadfirst	ldy #FALSE	; Pufferstart
+    99  1f3b 8cbd1e             		sty eotflag	; init Flag
+   100                          
+   101                          !zone
+   102  1f3e a2008e00ff         loadline	+xbank15
+   103  1f43 c8                 -			iny		; Eins weiter
+   104  1f44 a920               			lda #" "	; get Space
+   105  1f46 a690               			ldx status
+   106  1f48 d003               			bne +		; ggfs
+   107  1f4a 20cfff             				jsr basin	; get Byte
+   108  1f4d 991430             +			sta linebuf, y	; und setzen
+   109  1f50 cc2b17             			cpy llen
+   110  1f53 d0ee               			bne -
+   111  1f55 a001               		ldy #1		; Neustart
+   112  1f57 b91430             -			lda linebuf, y
+   113  1f5a c90d               			cmp #Char_RETURN
+   114  1f5c f02e               			beq ++
+   115  1f5e c92d               			cmp #"-"
+   116  1f60 d003               			bne +
+   117  1f62 8c1430             				sty linebuf	; Dann Pos merken
+   118  1f65 c920               +			cmp #" "
+   119  1f67 d003               			bne +
+   120  1f69 8c1430             				sty linebuf	; Dann Pos merken
+   121  1f6c c8                 +			iny		; weiter
+   122  1f6d cc2b17             			cpy llen
+   123  1f70 d0e5               			bne -
+   124  1f72 b91430             		lda linebuf, y	; LineEnd = Space ?
+   125  1f75 c920               		cmp #" "	; Dann Grenze: = Y &
+   126  1f77 d00a               		bne +
+   127  1f79 8c1430             			sty linebuf
+   128  1f7c a590               			lda status
+   129  1f7e f003               			beq +		; ggfs setflag
+   130  1f80 8dbd1e             				sta eotflag
+   131  1f83 ac1430             +		ldy linebuf	; get Grenze
+   132  1f86 d007               		bne +
+   133  1f88 ac2b17             			ldy llen
+   134  1f8b 88                 			dey
+   135  1f8c 8c1430             ++			sty linebuf
+   136  1f8f a23f8e00ff         +		+xram0
+   137  1f94 20d21a             		jsr needline	; fordert Zeile
+   138  1f97 b023               		bcs nomemleft	; ggfs Abbruch
+   139  1f99 ac1430             		ldy linebuf	; copy buffer2line
+   140  1f9c b91430             -			lda linebuf, y
+   141  1f9f 9185               			sta (lvek), y
+   142  1fa1 88                 			dey
+   143  1fa2 d0f8               			bne -
+   144  1fa4 adbd1e             		lda eotflag	; Ende ?
+   145  1fa7 d016               		bne endoffile
+   146  1fa9 ae1430             		ldx linebuf	; shift buffer
+   147  1fac ec2b17             -			cpx llen	; fertig ?
+   148  1faf f08d               			beq loadline	; Dann lesen !
+   149  1fb1 e8                 			inx
+   150  1fb2 c8                 			iny
+   151  1fb3 bd1430             			lda linebuf, x
+   152  1fb6 991430             			sta linebuf, y
+   153  1fb9 4cac1f             			jmp -
+   154                          
+   155  1fbc 20f020             nomemleft	jsr memfull	; Warnung
+   156  1fbf a9008d00ff         endoffile	+bank15
+   157  1fc4 adda16             		lda loadflag
+   158  1fc7 8dd316             		sta changes
+   159  1fca 20ccff             noheader	jsr clrchn	; Standard
+   160  1fcd a908               		lda #lf		; Close File
+   161  1fcf 20c3ff             		jsr close
+   162  1fd2 20222e             		jsr pullscr	; Win weg
+   163  1fd5 20cf2f             		jsr crsrold	; restore cursor
+   164  1fd8 68                 		pla		; alte Bank
+   165  1fd9 8d00ff             		sta conreg
+   166  1fdc 60                 		rts
+   167                          
+   168                          !zone
+   169  1fdd 60                 nosave		rts		; Abbruch (fixme - could save a byte here)
+   170                          
+   171  1fde 20382b             F_saveas	jsr F_rnmtxt	; get Textname
+   172  1fe1 f0fa               		beq nosave	; ggfs Abbruch
+   173  1fe3 a900               		lda #FALSE	; Name vorhanden
+   174  1fe5 8dd216             		sta unnamed
+   175  1fe8 add216             F_save		lda unnamed	; Name ?
+   176  1feb d0f1               		bne F_saveas	; ggfs holen
+   177  1fed a00f               		ldy #$0f	; proof "?"
+   178  1fef b9db16             -			lda txtname, y
+   179  1ff2 c93f               			cmp #"?"
+   180  1ff4 f0e8               			beq F_saveas
+   181  1ff6 c92a               			cmp #"*"
+   182  1ff8 f0e4               			beq F_saveas
+   183  1ffa c92c               			cmp #","
+   184  1ffc f0e0               			beq F_saveas
+   185  1ffe c93a               			cmp #":"
+   186  2000 f0dc               			beq F_saveas
+   187  2002 999316             			sta dosname, y
+   188  2005 88                 			dey
+   189  2006 10e7               			bpl -
+   190  2008 a957               		lda #"w"	; Schreibmodus
+   191  200a 8da616             		sta dosmode
+   192  200d ad00ff             		lda conreg	; Bank sichern
+   193  2010 48                 		pha
+   194  2011 a9008d00ff         		+bank15
+   195  2016 20b12f             		jsr crsrnew	; new copy (hidden)
+   196  2019 a20b               		ldx #hWindow_Save	; Save-Win
+   197  201b 8e0123             		stx menunr
+   198  201e 207c2c             		jsr makewin
+   199  2021 20da20             		jsr copykill	; Killparameter
+   200  2024 20c0ff             		jsr open	; Open CmdChannel
+   201  2027 adae16             		lda killpara + 1	; (Scratch)
+   202  202a 20c3ff             		jsr close	; Close CC
+   203  202d 20dd20             		jsr copypara	; Dateiparameter
+   204  2030 20c0ff             		jsr open	; Open Outputfile
+   205  2033 a208               		ldx #lf
+   206  2035 20c9ff             		jsr chkout
+   207  2038 a00f               		ldy #$0f	; Sendet Header
+   208  203a b9b316             -			lda idfile, y
+   209  203d 20d2ff             			jsr basout
+   210  2040 88                 			dey
+   211  2041 10f7               			bpl -
+   212  2043 a00f               		ldy #$0f	; Sendet Name
+   213  2045 b9db16             -			lda txtname, y
+   214  2048 20d2ff             			jsr basout
+   215  204b 88                 			dey
+   216  204c 10f7               			bpl -
+   217  204e c8                 		iny		; Y: = 0, tmpy wird fuers
+   218  204f 8c2a17             		sty tmpy + 1	; Speichern init.
+   219  2052 98                 		tya		; A: = 0
+   220  2053 c8                 		iny		; Y: = 1
+   221  2054 8c2917             		sty tmpy
+   222  2057 38                 		sec		; errechnet negativen
+   223  2058 ed2f17             		sbc zzbe	; Zeilenzaehler (tmp2)
+   224  205b 8589               		sta tmp2
+   225  205d a900               		lda #0
+   226  205f ed3017             		sbc zzbe + 1
+   227  2062 858a               		sta tmp2 + 1
+   228  2064 a23f8e00ff         --			+xram0		; volles RAM
+   229  2069 a201               			ldx #1		; mind. 1 Byte/Zeile
+   230  206b 8e1430             			stx linebuf
+   231  206e a20c               			ldx #TMP
+   232  2070 20bc19             			jsr getlvek	; LineVek
+   233  2073 a001               			ldy #1		; Versatz: = 1
+   234  2075 b185               -				lda (lvek), y	; Byte in Puffer
+   235  2077 c920               				cmp #" "
+   236  2079 f003               				beq +
+   237  207b 8c1430             					sty linebuf	; Pos sichern
+   238  207e 991430             +				sta linebuf, y
+   239  2081 c8                 				iny
+   240  2082 cc2b17             				cpy llen
+   241  2085 d0ee               				bne -
+   242  2087 ae1430             			ldx linebuf
+   243  208a bd1430             			lda linebuf, x	; letztes Byte
+   244  208d c90d               			cmp #Char_RETURN
+   245  208f f00e               			beq +
+   246  2091 c92d               				cmp #"-"
+   247  2093 f00a               				beq +
+   248  2095 c920               					cmp #" "
+   249  2097 f006               					beq +
+   250  2099 e8                 						inx		; Dann Space hinter
+   251  209a a920               						lda #" "	; die Zeile
+   252  209c 9d1430             						sta linebuf, x
+   253  209f 8eaf20             +			stx .m		; Ende speichern
+   254  20a2 a2008e00ff         			+xbank15
+   255  20a7 e8                 -				inx		; X = 1
+   256  20a8 bd1430             				lda linebuf, x	; Zeichen senden
+   257  20ab 20d2ff             				jsr basout
+   258  20ae e0ff               .m = * + 1:			cpx #MODIFIED8	; Länge
+   259  20b0 d0f5               				bne -		; alle ?
+   260  20b2 ee2917d003ee2a17   			+inc16 tmpy	; tmpy += 1
+   261  20ba e689               			inc tmp2	; zaehler += 1
+   262  20bc d0a6               			bne --
+   263  20be e68a               			inc tmp2 + 1
+   264  20c0 d0a2               			bne --
+   265  20c2 20ccff             		jsr clrchn	; Standardkanaele
+   266  20c5 a908               		lda #lf
+   267  20c7 20c3ff             		jsr close	; Close File
+   268  20ca 20222e             		jsr pullscr	; Win weg
+   269  20cd 20cf2f             		jsr crsrold	; restore cursor
+   270  20d0 68                 		pla		; alte Bank
+   271  20d1 8d00ff             		sta conreg
+   272  20d4 a900               		lda #FALSE	; Changes saved !
+   273  20d6 8dd316             		sta changes
+   274  20d9 60                 		rts
+   275                          
+   276                          !zone
+   277  20da a00b               copykill	ldy #$0b	; Scratchparameter
+   278  20dc 2c                 		+bit16		; BIT-Trick !
+   279  20dd a005               copypara	ldy #$05	; Fileparameter
+   280  20df a205               		ldx #5		; 6 Bytes
+   281  20e1 b9a716             -			lda filepara, y	; ins System
+   282  20e4 95b7               			sta fnlen, x
+   283  20e6 88                 			dey
+   284  20e7 ca                 			dex
+   285  20e8 10f7               			bpl -
+   286  20ea 60                 		rts
+
+; ******** Source: .\macedit.a
+
+; ******** Source: me\out.a
+     1                          ;ACME 0.95
+     2                          
+     3                          !zone
+     4  20eb a200               F_info		ldx #hWindow_InfoBox
+     5  20ed 4cf220             		jmp xwindow
+     6                          
+     7  20f0 a207               memfull		ldx #hWindow_NoMemLeft
+     8                          
+     9  20f2 ad00ff             xwindow		lda conreg	; Bank sichern
+    10  20f5 48                 		pha
+    11  20f6 a03e8c00ff         		+yram0io
+    12  20fb 8e0123             		stx menunr
+    13  20fe 20932f             		jsr crsroff	; Cursor aus
+    14  2101 207c2c             		jsr makewin	; Win bauen
+    15  2104 207519             		jsr getchar	; Auf Taste warten
+    16  2107 20222e             		jsr pullscr	; Win weg
+    17  210a 20672f             		jsr crsron	; Cursor an
+    18  210d 68                 		pla		; alte Bank
+    19  210e 8d00ff             		sta conreg
+    20  2111 60                 		rts
+    21                          
+    22  2112 add616             F_sw		lda wrapflag	; Toggle Flag
+    23  2115 49ff               		eor #$ff
+    24  2117 8dd616             		sta wrapflag
+    25  211a a9ff               		lda #TRUE	; Update fordern
+    26  211c 8dd816             		sta updatewbi
+    27  211f 60                 		rts
+    28                          
+    29  2120 20ba19             F_lfeed		jsr poslvek	; LineVek
+    30  2123 20d61b             		jsr insert1	; immer insert
+    31  2126 a90d               		lda #Char_RETURN	; 'CR' an Cursorpos
+    32  2128 9185               		sta (lvek), y
+    33  212a 8dd416             		sta nwfrm	; NewFrame fordern
+    34  212d 8dd316             		sta changes	; Veraendert !
+    35  2130 20f521             		jsr posparw	; PARW ?
+    36  2133 ac2517             		ldy posx	; Cursor am Rand ?
+    37  2136 cc2b17             		cpy llen
+    38  2139 f01a               		beq poswrap	; Nein: Wrap
+    39  213b ad2617             		lda posy	; Zeile in wrap
+    40  213e 8d3217             		sta wrpy
+    41  2141 ad2717             		lda posy + 1
+    42  2144 8d3317             		sta wrpy + 1
+    43  2147 208521             		jsr found	; und runterwrap
+    44  214a 60                 		rts
+    45                          
+    46                          ; splittet VOLLE Wrap-Zeilen
+    47  214b ac2b17             linefull	ldy llen	; Zeilenlaenge-1
+    48  214e 88                 		dey
+    49  214f 4c8521             		jmp found	; wrap
+    50                          
+    51  2152 4cf020             cancelwrp	jmp memfull	; Zeilen alle
+    52                          
+    53                          ;multiwrap:
+    54                          		;jsr getlvek	; LineVek
+    55                          		;!by 44		; Wrap (bit-Trick)
+    56                          !zone
+    57  2155 a209               poswrap		ldx #POS
+    58  2157 8e1b17             		stx xindex	; sichern
+    59  215a bd1d17             		lda scry, x	; Zahl umkopieren
+    60  215d 8d3217             		sta wrpy
+    61  2160 bd1e17             		lda scry + 1, x
+    62  2163 8d3317             		sta wrpy + 1
+    63  2166 20f521             		jsr posparw	; PARW ?
+    64  2169 b068               		bcs proofparw	; Dann kein WRAP
+    65  216b ac2b17             		ldy llen	; LineEnd = Space ?
+    66  216e b185               		lda (lvek), y
+    67  2170 c920               		cmp #" "
+    68  2172 f05f               		beq proofparw	; Ja = > PARW
+    69  2174 88                 -			dey		; sonst zurueck bis zu
+    70  2175 f0d4               			beq linefull	; Space, "-", CR oder
+    71  2177 b185               			lda (lvek), y	; LineStart (bekommt
+    72  2179 c920               			cmp #" "	; Sonderbehandlung)
+    73  217b f008               			beq found
+    74  217d c92d               			cmp #"-"
+    75  217f f004               			beq found
+    76  2181 c90d               			cmp #Char_RETURN
+    77  2183 d0ef               			bne -
+    78                          
+    79                          !zone
+    80  2185 8c3117             found		sty wrpx	; puffert Y und addiert
+    81  2188 98                 		tya		; es zum Vektor, damit
+    82  2189 18                 		clc		; gut geshiftet wird
+    83  218a 6585               		adc lvek
+    84  218c 8589               		sta tmp2
+    85  218e a586               		lda lvek + 1
+    86  2190 6900               		adc #0
+    87  2192 858a               		sta tmp2 + 1
+    88  2194 ad2b17             		lda llen	; errechnet Anzahl zu
+    89  2197 38                 		sec		; shiftender Bytes
+    90  2198 ed3117             		sbc wrpx	; als 'zahl'
+    91  219b 85fe               		sta zahl
+    92  219d 20d21a             		jsr needline	; fordert Zeile
+    93  21a0 b0b0               		bcs cancelwrp	; ggfs Abbruch
+    94  21a2 20ec21             		jsr incwrp	; naechste Zeile holen
+    95  21a5 a215               		ldx #WRP	; neue Zeile in die
+    96  21a7 a012               		ldy #ZZB	; naechste
+    97  21a9 203f1c             		jsr rollfwd
+    98  21ac a4fe               		ldy zahl	; Anzahl Bytes
+    99  21ae a220               		ldx #" "	; Space
+   100  21b0 b189               -			lda (tmp2), y	; holt Byte und setzt
+   101  21b2 9185               			sta (lvek), y
+   102  21b4 8a                 			txa		; loescht Quelle
+   103  21b5 9189               			sta (tmp2), y
+   104  21b7 88                 			dey
+   105  21b8 d0f6               			bne -
+   106  21ba ae1b17             		ldx xindex	; errechnet neue
+   107  21bd bd1c17             		lda scrx, x	; Variablenwerte
+   108  21c0 38                 		sec		; Sind nur relevant,
+   109  21c1 ed3117             		sbc wrpx	; wenn Location
+   110  21c4 f00d               		beq proofparw	; mitgewrapped wurde.
+   111  21c6 300b               		bmi proofparw
+   112  21c8 9d1c17             		sta scrx, x
+   113  21cb fe1d17d003fe1e17   		+inc16x scry
+   114                          
+   115                          !zone
+   116  21d3 aed616             proofparw	ldx wrapflag	; Wrap erlaubt ?
+   117  21d6 f00d               		beq +		; Nein = > Ende
+   118  21d8 20ec21             .pl			jsr incwrp	; naechste Zeile
+   119  21db a215               			ldx #WRP
+   120  21dd 20bc19             			jsr getlvek	; LineVek
+   121  21e0 201022             			jsr parw	; PARWen
+   122  21e3 b0f3               			bcs .pl		; ggfs Schleife
+   123  21e5 ae1b17             +		ldx xindex	; Restore LineVek
+   124  21e8 20bc19             		jsr getlvek
+   125  21eb 60                 		rts
+   126                          
+   127                          !zone
+   128  21ec ee3217d003ee3317   incwrp		+inc16 wrpy	; Y hoeher
+   129  21f4 60                 		rts
+   130                          
+   131                          !zone
+   132  21f5 18                 posparw		clc
+   133  21f6 a209               		ldx #POS	; Cursor-Index
+   134  21f8 add616             		lda wrapflag	; Wrap erlaubt ?
+   135  21fb f008               		beq +		; ggfs Ende
+   136  21fd 201022             			jsr parw	; PARWed
+   137  2200 9003               			bcc +		; ggfs Variablen
+   138  2202 20c622             				jsr moveloc	; angleichen
+   139  2205 08                 +		php		; C sichern
+   140  2206 ae1b17             		ldx xindex	; Restore LineVek
+   141  2209 20bc19             		jsr getlvek
+   142  220c 28                 		plp		; C zurueck
+   143  220d 60                 		rts
+   144                          
+   145                          !zone
+   146  220e 18                 .no		clc		; C = 0 < = > nix PARWed
+   147  220f 60                 		rts
+   148  2210 8e1b17             parw		stx xindex	; Sichert Index
+   149  2213 a212               		ldx #ZZB	; mit PARW-Zeile vergleichen
+   150  2215 ac1b17             		ldy xindex
+   151  2218 20f01a             		jsr cmp16bit
+   152  221b 90f1               		bcc .no		; kleiner = > Abbruch
+   153  221d ae1b17             		ldx xindex	; X zurueck
+   154  2220 bd1e17             		lda scry + 1, x	; holt Vektor und
+   155  2223 bc1d17             		ldy scry, x	; zaehlt runter
+   156  2226 d003               		bne +
+   157  2228 38                 			sec
+   158  2229 e901               			sbc #1
+   159  222b 8d3617             +		sta prwy + 1	; Hi speichern
+   160  222e 88                 		dey		; Lo runter & speichern
+   161  222f 8c3517             		sty prwy
+   162  2232 0d3517             		ora prwy	; Vorige Zeile = 0 ?
+   163  2235 f0d7               		beq .no		; Dann Ende !
+   164  2237 a585               		lda lvek	; lvek in tmp2
+   165  2239 8589               		sta tmp2
+   166  223b a586               		lda lvek + 1
+   167  223d 858a               		sta tmp2 + 1
+   168  223f a218               		ldx #PRW	; lvek auf vorige Zeile
+   169  2241 20bc19             		jsr getlvek
+   170  2244 20f322             		jsr findend	; sucht Zeilenende
+   171  2247 d00f               		bne +		; Zeile leer ?
+   172  2249 20491d             			jsr delline	; loescht Zeile und
+   173  224c ad2b17             			lda llen	; stellt Werte ein,
+   174  224f 85fe               			sta zahl	; die die Location
+   175  2251 a900               			lda #0		; entsprechend
+   176  2253 8d3417             			sta prwx	; verschieben
+   177  2256 38                 			sec		; C = 1 < = > gePARWt
+   178  2257 60                 			rts
+   179  2258 c90d               +		cmp #Char_RETURN	; letztes Zeichen CR ?
+   180  225a f0b2               		beq .no		; Dann Ende !
+   181  225c c92d               		cmp #"-"
+   182  225e f001               		beq +		; Dann kein Space
+   183  2260 c8                 			iny		; reservieren
+   184  2261 8c3417             +		sty prwx	; Y auf LastByte
+   185  2264 ad2b17             		lda llen	; errechnet Versatz,
+   186  2267 38                 		sec		; bei dem Suche
+   187  2268 ed3417             		sbc prwx	; gestartet wird
+   188  226b f0a1               		beq .no		; nix frei = > Ende
+   189  226d a8                 		tay
+   190  226e ad3417             		lda prwx	; LineVek += Versatz, um
+   191  2271 18                 		clc		; besser zu shiften
+   192  2272 6585               		adc lvek
+   193  2274 8585               		sta lvek
+   194  2276 a586               		lda lvek + 1
+   195  2278 6900               		adc #0
+   196  227a 8586               		sta lvek + 1
+   197  227c b189               		lda (tmp2), y	; 1. Quellbyte holen
+   198  227e c920               -			cmp #" "
+   199  2280 f00d               			beq +
+   200  2282 88                 				dey
+   201  2283 f089               				beq .no		; LineStart = > Abbruch
+   202  2285 b189               				lda (tmp2),y	; next Quellbyte
+   203  2287 c92d               				cmp #"-"
+   204  2289 f004               				beq +
+   205  228b c90d               					cmp #Char_RETURN
+   206  228d d0ef               					bne -
+   207  228f 84fe               +		sty zahl	; Anzahl sichern
+   208  2291 9185               -			sta (lvek), y	; Zielbyte setzen
+   209  2293 88                 			dey
+   210  2294 f005               			beq +
+   211  2296 b189               			lda (tmp2), y	; Quellbyte holen
+   212  2298 4c9122             			jmp -		; Schleife
+   213  229b ad2b17             +		lda llen	; Zeilenlaenge minus
+   214  229e 38                 		sec		; 'zahl' Bytes muessen
+   215  229f e5fe               		sbc zahl	; noch shifted werden
+   216  22a1 8db722             		sta .m
+   217  22a4 a589               		lda tmp2	; Muss zum Schieben
+   218  22a6 18                 		clc		; wieder Vektor
+   219  22a7 65fe               		adc zahl	; aendern
+   220  22a9 8585               		sta lvek
+   221  22ab a58a               		lda tmp2 + 1
+   222  22ad 6900               		adc #0
+   223  22af 8586               		sta lvek + 1
+   224                          ; Y noch 0 !
+   225  22b1 c8                 -			iny		; Y weiter
+   226  22b2 b185               			lda (lvek), y	; holt & setzt Byte
+   227  22b4 9189               			sta (tmp2), y
+   228  22b6 c0ff               .m = * + 1:		cpy #MODIFIED8	; Anzahl Bytes
+   229  22b8 d0f7               			bne -
+   230  22ba a920               		lda #" "
+   231  22bc c8                 -			iny		; new line damit
+   232  22bd 9189               			sta (tmp2), y	; auffuellen
+   233  22bf cc2b17             			cpy llen	; bis Ende
+   234  22c2 d0f8               			bne -
+   235  22c4 38                 		sec		; C = 1 < = > PARWed
+   236  22c5 60                 		rts
+   237                          
+   238  22c6 ae1b17             moveloc		ldx xindex
+   239  22c9 a5fe               		lda zahl	; X-Pos vor PARWgrenze?
+   240  22cb dd1c17             		cmp scrx, x
+   241  22ce 9018               		bcc inline	; Dann Pos += Anzahl
+   242  22d0 18                 		clc
+   243  22d1 bd1c17             		lda scrx, x
+   244  22d4 6d3417             		adc prwx
+   245  22d7 9d1c17             		sta scrx, x
+   246  22da ad3517             		lda prwy	; verringerten Y-Wert
+   247  22dd 9d1d17             		sta scry, x	; einkopieren
+   248  22e0 ad3617             		lda prwy + 1
+   249  22e3 9d1e17             		sta scry + 1, x
+   250  22e6 38                 		sec		; C = 1
+   251  22e7 60                 		rts
+   252                          
+   253  22e8 bd1c17             inline		lda scrx, x	; (C = 1)
+   254  22eb e5fe               		sbc zahl	; setzt Cursor zurueck
+   255  22ed 6900               		adc #0		; +Carry
+   256  22ef 9d1c17             		sta scrx, x
+   257  22f2 60                 		rts		; (C = 0)
+   258                          
+   259                          !zone
+   260  22f3 ac2b17             findend		ldy llen	; Versatz auf Ende
+   261  22f6 b185               -			lda (lvek), y	; holt Zeichen bis
+   262  22f8 c920               			cmp #" "	; Zeilenstart oder
+   263  22fa d003               			bne endfound	; nicht-Space
+   264  22fc 88                 			dey
+   265  22fd d0f7               			bne -
+   266  22ff 60                 endfound	rts		; Z = 1 = > Zeile leer (fixme - save a byte)
+   267                          
+   268                          ; Menuevariablen
+   269  2300 00                 manywins	!byte 0	; Anzahl Wins
+   270  2301 00                 menunr		!byte 0	; Menunr
+   271  2302 0000               menupoint	!word 0	; Menupunkt+Puffer
+   272                          
+   273  2304 f022               changewin	beq lp19	; kein Nachbar = > Ende
+   274  2306 48                 		pha		; neue Nr sichern
+   275  2307 20222e             		jsr pullscr	; altes Win weg
+   276  230a 68                 		pla		; neue Nr holen
+   277  230b aa                 		tax		; prueft ob Menupunkt
+   278  230c 8e0123             		stx menunr	; beibehalten werden
+   279  230f ad0223             		lda menupoint	; kann. Ggfs auf 1
+   280  2312 ddf623             		cmp winhe, x	; setzen
+   281  2315 9005               		bcc menuloop
+   282  2317 a901               		lda #1
+   283  2319 8d0223             		sta menupoint
+   284                          
+   285                          !zone
+   286  231c 207c2c             menuloop	jsr makewin	; Window bauen
+   287  231f 20c623             pointloop	jsr calcpoint	; berechnet Adresse
+   288  2322 adc916             		lda clraktl	; holt Farbe
+   289  2325 203e2a             		jsr changeflg	; aendert Flag
+   290  2328 207519             lp19		jsr getchar	; Auf Zeichen warten
+   291  232b ae0123             		ldx menunr	; Verkuerzt folgende
+   292  232e ac0223             		ldy menupoint	; Abfragen
+   293  2331 c90d               		cmp #Char_RETURN
+   294  2333 f030               		beq menucom	; Ausfuehren
+   295  2335 c98d               		cmp #Char_ShiftRETURN
+   296  2337 f02c               		beq menucom	; Ausfuehren
+   297                          		;cmp #$80	; Linke Maustaste ?
+   298                          		;beq mouselft	; =>
+   299  2339 c991               		cmp #Char_CursorUp
+   300  233b d004               		bne +
+   301  233d 88                 			dey		; Punkt hoch & wech
+   302  233e 4ca023             			jmp prfpoint
+   303  2341 c911               +		cmp #Char_CursorDown
+   304  2343 d004               		bne +
+   305  2345 c8                 			iny		; Punkt runter & wech
+   306  2346 4ca023             			jmp prfpoint
+   307  2349 c99d               +		cmp #Char_CursorLeft
+   308  234b d006               		bne +
+   309  234d bd2624             			lda lftwin, x	; Nachbar holen & wech
+   310  2350 4c0423             			jmp changewin
+   311  2353 c91d               +		cmp #Char_CursorRight
+   312  2355 d006               		bne +
+   313  2357 bd3224             			lda rgtwin, x	; Nachbar holen & wech
+   314  235a 4c0423             			jmp changewin
+   315  235d c903               +		cmp #Char_STOP
+   316  235f d0c7               		bne lp19	; Nein = > Schleife
+   317  2361 20222e             menuend		jsr pullscr	; sonst restaurieren
+   318  2364 60                 		rts		; und Ende (fixme - could save a byte here)
+   319                          
+   320                          !zone
+   321  2365 48                 menucom		pha		; CR/CS sichern, dazu
+   322  2366 8a                 		txa		; die aktuelle Menunr
+   323  2367 48                 		pha		; und den Menupunkt
+   324  2368 98                 		tya
+   325  2369 48                 		pha
+   326  236a bd0224             		lda winadlo, x	; stellt Zeiger auf
+   327  236d 8587               		sta tmp1	; Menutexte
+   328  236f bd0e24             		lda winadhi, x
+   329  2372 8588               		sta tmp1 + 1
+   330  2374 a000               		ldy #0		; Versatz Null
+   331  2376 4c7f23             		jmp +		; in die Schleife
+   332  2379 c8                 -			iny		; naechstes Byte holen
+   333  237a b187               			lda (tmp1), y
+   334  237c d0fb               			bne -		; sucht Ende-Null
+   335  237e c8                 			iny		; Versatz auf Command
+   336  237f b187               +			lda (tmp1), y	; Command holen
+   337  2381 ce0223             			dec menupoint	; richtiger Punkt ?
+   338  2384 d0f3               			bne -		; Nein = > erneut
+   339  2386 aa                 		tax		; Ja = > Command !
+   340  2387 200a19             		jsr execom
+   341  238a 20932f             		jsr crsroff	; Sicherheitshalber...
+   342  238d 68                 		pla		; Werte zurueck
+   343  238e 8d0223             		sta menupoint
+   344  2391 68                 		pla
+   345  2392 8d0123             		sta menunr
+   346  2395 20c623             		jsr calcpoint	; Vektor stellen
+   347  2398 68                 		pla		; Ausloesecode zurueck
+   348  2399 c90d               		cmp #Char_RETURN
+   349  239b f0c4               		beq menuend	; Dann Ende
+   350  239d 4c2823             		jmp lp19	; Sonst Schleife (ShiftRETURN)
+   351                          ;-----
+   352                          ;mouselft:
+   353                          ;		jmp lp19	; Linke Maustaste
+   354                          ;-----
+   355                          
+   356                          !zone
+   357  23a0 98                 prfpoint	tya		; Wenn Punkt = 0,
+   358  23a1 d007               		bne ++		; dann Punkt: = Letzter
+   359  23a3 bcf623             			ldy winhe, x
+   360  23a6 88                 			dey
+   361  23a7 4cb123             			jmp +
+   362  23aa ddf623             ++		cmp winhe, x	; Wenn Punkt zu gross,
+   363  23ad 9002               		bcc +		; dann Punkt: = 1
+   364  23af a001               			ldy #1
+   365  23b1 8c0323             +		sty menupoint + 1	; neuen Punkt sichern
+   366  23b4 20c623             		jsr calcpoint		; alten berechnen und
+   367  23b7 adca16             		lda clrboxs		; mit WinFarbe faerben
+   368  23ba 203e2a             		jsr changeflg
+   369  23bd ac0323             		ldy menupoint + 1	; neuen Punkt holen,
+   370  23c0 8c0223             		sty menupoint		; wird aktueller
+   371  23c3 4c1f23             		jmp pointloop
+   372                          
+   373                          ; errechnet Adresse des Menupunkts
+   374                          !zone
+   375  23c6 ae0123             calcpoint	ldx menunr	; holt Nummer & damit
+   376  23c9 bde42d             		lda winhi, x	; Screen-Addy
+   377  23cc 8588               		sta tmp1 + 1	; Hi setzen
+   378  23ce bdd82d             		lda winlo, x
+   379  23d1 ae0223             		ldx menupoint	; holt Punkt
+   380  23d4 38                 		sec		; +1 (Rand weg)
+   381  23d5 6950               -			adc #scrcols	; addiert Zeile
+   382  23d7 9003               			bcc +		; Page sichern
+   383  23d9 e688               				inc tmp1 + 1
+   384  23db 18                 				clc
+   385  23dc ca                 +			dex		; ggfs
+   386  23dd d0f6               			bne -		; Schleife
+   387  23df 8587               		sta tmp1	; Lo setzen
+   388  23e1 38                 		sec		; Erledigt Arbeit fuer
+   389  23e2 ae0123             		ldx menunr	; aufrufende Routinen,
+   390  23e5 bcea23             		ldy winwi, x	; da X, Y, C richtig
+   391  23e8 88                 		dey		; belegt werden
+   392  23e9 60                 		rts
+   393                          
+   394                          ; Windowdaten:
+   395                          hWindow_InfoBox		= 0
+   396                          ; 1 bis 6 sind Menuleiste
+   397                          hWindow_FirstAfterMenu	= 7
+   398                          hWindow_NoMemLeft	= 7
+   399                          hWindow_Filename	= 8
+   400                          hWindow_DCS		= 9
+   401                          hWindow_Load		= 10
+   402                          hWindow_Save		= 11
+   403                          
+   404  23ea 1f10070d0a0e0819...winwi	!byte 31, 16, 7, 13, 10, 14, 8, 25, 25, 32, 10, 15	; Breite - 1
+   405  23f6 0808050305080205...winhe	!byte  8,  8, 5,  3,  5,  8, 2,  5,  5,  8,  2,  2	; Hoehe  - 1
+   406                          
+   407                          ; Vektoren auf Texte:
+   408  2402 3ee0233d4f77       winadlo	!byte <info,	<datei,	<edit,		<block,	<format,<switch
+   409  2408 b8c00c40bbc4       	!byte <hilfe,	<nomem,	<namewin,	<dcswin,<lwin,	<swin
+   410  240e 242425252525       winadhi	!byte >info,	>datei,	>edit,		>block,	>format,>switch
+   411  2414 252526262626       	!byte >hilfe,	>nomem,	>namewin,	>dcswin,>lwin,	>swin
+   412                          
+   413  241a 0100000000000002...winclr	!byte 1, 0, 0, 0, 0, 0, 0, 2, 1, 0, 1, 1	; FarbIndex
+   414  2426 0006010203040500...lftwin	!byte 0, 6, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0	; Linker Nachbar
+   415  2432 0002030405060100...rgtwin	!byte 0, 2, 3, 4, 5, 6, 1, 0, 0, 0, 0, 0	; Rechter Nachbar
+   416                          
+   417                          ; Menutexte
+   418  243e 0001010101010101...info	!text 0,_,_,_,_,_,_,_,_, "---MacEdit---", 0
+   419  2455 00d6455253494f4e...	!text 0, "Version",_, "0.7",_,_,_,_,_,_,_,_, "vom",_, "19.4.97",0
+   420  2475 0047455343485249...	!text 0, "geschrieben",_, "von:", 0
+   421  2487 0001010101010101...	!text 0,_,_,_,_,_,_,_,_,_,_,_,_, "Mac",_, "Bacon/TekLords",0
+   422  24a7 000101010101c449...	!text 0,_,_,_,_,_, "Dies",_, "ist",_, "Freeware",_, "!",0
+   423  24c1 0000               	!byte 0, 0
+   424  24c3 00010101c2495454...	!text 0,_,_,_, "Bitte",_, "eine",_, "Taste",_, "dr",ü, "cken", 0
+   425  24e0 6fce455500         datei	!text $6f, "Neu", 0
+   426  24e5 75cc4144454e00     	!text $75, "Laden", 0
+   427  24ec 76ce4143484c4144...	!text $76, "Nachladen", 0
+   428  24f7 f5d3504549434845...	!text $f5, "Speichern", 0
+   429  2502 f6d3504549434845...	!text $f6, "Speichern",_, "unter", 0
+   430  2513 e1c24153494300     	!text $e1, "Basic", 0
+   431  251a 61c245454e44454e...	!text $61, "Beenden", 0
+   432  2523 79c3555400         edit	!text $79, "Cut", 0
+   433  2528 7ac34f505900       	!text $7a, "Copy", 0
+   434  252e 7bd04153544500     	!text $7b, "Paste", 0
+   435  2535 14c4454c45544500   	!text $14, "Delete", 0
+   436  253d 00cc4144454e00     block	!text   0, "Laden", 0
+   437  2544 00d3504549434845...	!text   0, "Speichern", 0
+   438  254f f9cc494e4b5300     format	!text $f9, "Links", 0
+   439  2556 fa010101d2454348...	!text $fa,_,_,_, "Rechts", 0
+   440  2561 fbda454e54524945...	!text $fb, "Zentriert", 0
+   441  256c fcc24c4f434b5341...	!text $fc, "Blocksatz", 0
+   442  2577 19d74f5244d75241...switch	!text $19, "WordWrap", 0
+   443  2581 07c245455000       	!text $07, "Beep", 0
+   444  2587 00c155544fc94e53...	!text   0, "AutoInsert", 0
+   445  2593 15c645545400       	!text $15, "Fett", 0
+   446  2599 16cb555253495600   	!text $16, "Kursiv", 0
+   447  25a1 17d54e5445525354...	!text $17, "Unterstrichen", 0
+   448  25b0 00d2455645525300   	!text   0, "Revers", 0
+   449  25b8 e4ce4f4348ce4958   hilfe	!text $e4, "NochNix"
+   450  25c0 00                 nomem	!byte 0	; Auch 'hilfe'-Ende
+   451  25c1 2d2d2d01010101c1...	!text "---",_,_,_,_, "Achtung",_, "!",_,_,_, "---", 0
+   452  25d8 00c4455201d35045...	!text 0, "Der",_, "Speicher",_, "ist",_, "voll",_, "!", 0
+   453  25f1 0000               	!byte 0, 0
+   454  25f3 00c2495454450145...	!text 0, "Bitte",_, "eine",_, "Taste",_, "dr", ü, "cken"
+   455  260c 00                 namewin	!byte 0	; Auch 'nomem'-Ende
+   456  260d c24954544501c649...	!text "Bitte",_, "Filenamen",_, "eingeben", 0
+   457  2626 0000               	!byte 0, 0
+   458  2628 000101013a010101...	!text 0,_,_,_, ":",_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_, ":", 0
+   459  263f 00                 	!byte 0	; Rest unten
+   460  2640 0000               dcswin	!byte 0, 0	; Auch fuer 'namewin'
+   461  2642 00                 	!byte 0	; Auch fuer 'namewin'
+   462  2643 0101d54e47455350...	!text _,_, "Ungespeicherte",_, Ä, "nderungen",_, "!",_,_, 0
+   463  2663 0000               	!byte 0, 0
+   464  2665 0000               	!byte 0, 0
+   465  2667 00015bc4c5cc5d01...	!text 0,_, "[DEL]",_,_,_,_, "Verwerfen...", 0
+   466  267f 00015bd2c5d4d5d2...	!text 0,_, "[RETURN]",_, "Speichern...",_,_,_,_, "*", 0
+   467  269c 00015bd3d4cfd05d...	!text 0,_, "[STOP]",_,_,_, "Aktion",_, "abbrechen...", 0
+   468  26bb 00                 lwin	!byte 0	; Auch fuer 'dcswin'
+   469  26bc 01cc4144452e2e2e   	!text _, "Lade..."
+   470  26c4 00                 swin	!byte 0	; Auch fuer 'lwin'
+   471  26c5 01d3504549434845...	!text _, "Speichere...", 0
+   472                          
+   473                          ;-----Screen-Routines (VDC-Version)-----
+   474                          ; V1 R1 rev4 vom 4.5.96
+   475                          ; labels
+   476                          
+   477                          	scrlo	= $f0	; screentextstart
+   478                          	scrhi	= 0
+   479                          	attrhi	= 8	; colorRAM Hi
+   480                          	scrcols	= 80	; columns & lines
+   481                          	scrlins	= 22	; (screen)
+   482                          	preflen	= 80	; pref-linelength
+   483                          	bckgrnd	= 26	; screencolor-register
+   484                          	flnmpos	= 87	; filenameposition
+   485                          	wsstart	= $0fd0	; windowstack-start
+   486                          !addr	tcolor	= $f2	; attribute-buffer
+   487                          
+   488                          ; Subs:
+   489                          !zone
+   490  26d3 aed916             init		ldx repeatedtry	; first start ?
+   491  26d6 d003               		bne +
+   492  26d8 8dd916             			sta repeatedtry
+   493  26db ba                 +		tsx		; buffer stack, bank &
+   494  26dc 8e8616             		stx stck	; NMI for end
+   495  26df ae00ff             		ldx conreg
+   496  26e2 8ecd16             		stx bank
+   497  26e5 ac1803             		ldy nmivek
+   498  26e8 ae1903             		ldx nmivek + 1
+   499  26eb 8c8716             		sty nmibuf
+   500  26ee 8e8816             		stx nmibuf + 1
+   501  26f1 a2008e00ff         		+xbank15
+   502  26f6 e8                 		inx		; X = 1 => 2 MHz
+   503  26f7 8e30d0             		stx takt
+   504  26fa ca                 		dex
+   505  26fb 86c7               		stx fnbank	; filename-CR
+   506  26fd ca                 		dex
+   507  26fe 86f7               		stx locks	; 'CBM-shift' off
+   508  2700 8ec50a             		stx addr($0ac5)	; 'ASC/DIN' off
+   509  2703 8efd12             		stx basic	; 'Basic-IRQ' off
+   510  2706 20e42f             		jsr crsrinit	; init crsr
+   511  2709 a20b               		ldx #$0b	; VIC off
+   512  270b 8ee711             		stx addr($11e7)
+   513  270e a5d7               		lda mode	; which mode ?
+   514  2710 3003               		bmi +		; if 40 then
+   515  2712 202ecd             			jsr e_switchmode	; switch mode
+   516  2715 a96f               +		lda #111	; DIN on
+   517  2717 8500               		sta D8502
+   518  2719 a933               		lda #%..##..##
+   519  271b 8501               		sta R8502
+   520  271d 2027c0             		jsr e_copyfont
+   521  2720 a92f               		lda #47		; DIN off
+   522  2722 8500               		sta D8502
+   523  2724 a99a               		lda #<addfont1_start	; adjust font...
+   524  2726 8587               		sta tmp1
+   525  2728 a928               		lda #>addfont1_start
+   526  272a 8588               		sta tmp1 + 1
+   527  272c a935               		lda #>addfont1_target	; Hi
+   528  272e a2f1               		ldx #<addfont1_target	; Lo
+   529  2730 a0c9               		ldy #addfont1_end - addfont1_start - 1	; length
+   530  2732 20d62a             		jsr ram2vdc	; copy first part
+   531  2735 a964               		lda #<addfont2_start
+   532  2737 8587               		sta tmp1
+   533  2739 a929               		lda #>addfont2_start
+   534  273b 8588               		sta tmp1 + 1
+   535  273d a93f               		lda #>addfont2_target	; Hi
+   536  273f a2f0               		ldx #<addfont2_target	; Lo
+   537  2741 a007               		ldy #addfont2_end - addfont2_start - 1	; length
+   538  2743 20d62a             		jsr ram2vdc	; copy second part
+   539  2746 adc716             		lda clrmenu	; set attribute
+   540  2749 85f1               		sta color
+   541  274b 207dff             		jsr primm	; make menu
+   542  274e 131393             		!byte Char_HOME, Char_HOME, Char_CLEAR
+   543  2751 c441544549202020...		!text "Datei     ", Char_CursorRight, Char_CursorRight
+   544  275d c245415242454954...		!text "Bearbeiten", Char_CursorRight, Char_CursorRight
+   545  2769 c24c4f434b202020...		!text "Block     ", Char_CursorRight, Char_CursorRight
+   546  2775 c64f524d41542020...		!text "Format    ", Char_CursorRight, Char_CursorRight
+   547  2781 d34348414c544552...		!text "Schalter  ", Char_CursorRight, Char_CursorRight
+   548  278d c8494c4645202020...		!text "Hilfe     ", Char_RETURN, Char_NUL
+   549  2799 a98e               		lda #%#...###.	; set attribute
+   550  279b 85f1               		sta color
+   551  279d 207dff             		jsr primm	; make screen
+   552  27a0 d53a3030           		!text "U:00"
+   553  27a4 2020202020202020...		!fill 51, " "
+   554  27d7 9845534341504520...		!text Char_Grey2, "escape   WBI   FKUR   <=>", Char_BlueL
+   555  27f2 a6a6a6a6a6a6a6a6...		!fill 80, $a6	; separatorline (TABs)
+   556  2842 9b1b4000           		!byte Char_Grey3, Char_ESCAPE, Char_At, Char_NUL
+   557                          !zone
+   558  2846 a91a               		lda #26		; Backgroundcolor
+   559  2848 8d00d6             		sta vdc
+   560  284b adc416             		lda clrback
+   561  284e 2c00d610fb         		+wait_for_vdc
+   562  2853 8d01d6             		sta reg
+   563  2856 a901               		lda #<nmirtn	; new NMI
+   564  2858 a219               		ldx #>nmirtn
+   565  285a 8d1803             		sta nmivek
+   566  285d 8e1903             		stx nmivek + 1
+   567  2860 8d01ff             		sta conreg + 1	; full RAM
+   568  2863 a20b               		ldx #$0b	; loop for new
+   569  2865 bd0d13             -			lda keyb, x	; keyboard-tabs
+   570  2868 9d3e03             			sta addr($033e), x
+   571  286b ca                 			dex
+   572  286c 10f7               			bpl -
+   573  286e 203d1e             		jsr handleid	; old ID ?
+   574  2871 900e               		bcc +		; then ok !
+   575  2873 203f1a             			jsr fillmem	; else fill memory
+   576  2876 204719             			jsr newtext	; defaults
+   577  2879 20d21a             			jsr needline	; wanting line
+   578  287c a200               			ldx #FALSE
+   579  287e 8ed316             			stx changes
+   580  2881 20eb20             +		jsr F_info	; credits
+   581  2884 a9ff               		lda #TRUE	; update screen
+   582  2886 8dd416             		sta nwfrm
+   583  2889 8dd816             		sta updatewbi	; update flags
+   584  288c aed916             		ldx repeatedtry	; first start ?
+   585  288f d006               		bne +		; then load defaulttext
+   586  2891 ced916             			dec repeatedtry
+   587  2894 20e11e             			jsr load
+   588  2897 4c7718             +		jmp mainloop
+   589                          
+   590                          addfont1_target = $35f1
+   591                          addfont1_start
+   592  289a 7f                 	!byte %.#######
+   593  289b 7d                 	!byte %.#####.#
+   594  289c 6d                 	!byte %.##.##.#
+   595  289d 41                 	!byte %.#.....#
+   596  289e 6f                 	!byte %.##.####
+   597  289f 7f                 	!byte %.#######
+   598  28a0 0000000000000000...	!fill 15, 0
+   599  28af 55                 	!byte %.#.#.#.#
+   600  28b0 0000000000000000...	!fill  9, 0
+   601  28b9 08                 	!byte %....#...
+   602  28ba 08                 	!byte %....#...
+   603  28bb 08                 	!byte %....#...
+   604  28bc 08                 	!byte %....#...
+   605  28bd 08                 	!byte %....#...
+   606  28be 08                 	!byte %....#...
+   607  28bf 08                 	!byte %....#...
+   608  28c0 08                 	!byte %....#...
+   609  28c1 08                 	!byte %....#...
+   610  28c2 08                 	!byte %....#...
+   611  28c3 08                 	!byte %....#...
+   612  28c4 08                 	!byte %....#...
+   613  28c5 08                 	!byte %....#...
+   614  28c6 08                 	!byte %....#...
+   615  28c7 08                 	!byte %....#...
+   616  28c8 08                 	!byte %....#...
+   617                          
+   618  28c9 08                 	!byte %....#...
+   619  28ca 08                 	!byte %....#...
+   620  28cb 08                 	!byte %....#...
+   621  28cc 08                 	!byte %....#...
+   622  28cd 0f                 	!byte %....####
+   623  28ce 0000000000000000...	!fill 11, 0
+   624                          
+   625  28d9 08                 	!byte %....#...
+   626  28da 08                 	!byte %....#...
+   627  28db 08                 	!byte %....#...
+   628  28dc 08                 	!byte %....#...
+   629  28dd ff                 	!byte %########
+   630  28de 0000000000000000...	!fill 11, 0
+   631                          
+   632  28e9 08                 	!byte %....#...
+   633  28ea 08                 	!byte %....#...
+   634  28eb 08                 	!byte %....#...
+   635  28ec 08                 	!byte %....#...
+   636  28ed f8                 	!byte %#####...
+   637  28ee 0000000000000000...	!fill 11, 0
+   638                          
+   639  28f9 08                 	!byte %....#...
+   640  28fa 08                 	!byte %....#...
+   641  28fb 08                 	!byte %....#...
+   642  28fc 08                 	!byte %....#...
+   643  28fd 0f                 	!byte %....####
+   644  28fe 08                 	!byte %....#...
+   645  28ff 08                 	!byte %....#...
+   646  2900 08                 	!byte %....#...
+   647  2901 08                 	!byte %....#...
+   648  2902 08                 	!byte %....#...
+   649  2903 08                 	!byte %....#...
+   650  2904 08                 	!byte %....#...
+   651  2905 08                 	!byte %....#...
+   652  2906 08                 	!byte %....#...
+   653  2907 08                 	!byte %....#...
+   654  2908 08                 	!byte %....#...
+   655                          
+   656  2909 00000000           	!fill  4, 0
+   657  290d ff                 	!byte %########
+   658  290e 0000000000000000...	!fill 11, 0
+   659                          
+   660  2919 08                 	!byte %....#...
+   661  291a 08                 	!byte %....#...
+   662  291b 08                 	!byte %....#...
+   663  291c 08                 	!byte %....#...
+   664  291d f8                 	!byte %#####...
+   665  291e 08                 	!byte %....#...
+   666  291f 08                 	!byte %....#...
+   667  2920 08                 	!byte %....#...
+   668  2921 08                 	!byte %....#...
+   669  2922 08                 	!byte %....#...
+   670  2923 08                 	!byte %....#...
+   671  2924 08                 	!byte %....#...
+   672  2925 08                 	!byte %....#...
+   673  2926 08                 	!byte %....#...
+   674  2927 08                 	!byte %....#...
+   675  2928 08                 	!byte %....#...
+   676                          
+   677  2929 00000000           	!fill  4, 0
+   678  292d 0f                 	!byte %....####
+   679  292e 08                 	!byte %....#...
+   680  292f 08                 	!byte %....#...
+   681  2930 08                 	!byte %....#...
+   682  2931 08                 	!byte %....#...
+   683  2932 08                 	!byte %....#...
+   684  2933 08                 	!byte %....#...
+   685  2934 08                 	!byte %....#...
+   686  2935 08                 	!byte %....#...
+   687  2936 08                 	!byte %....#...
+   688  2937 08                 	!byte %....#...
+   689  2938 08                 	!byte %....#...
+   690                          
+   691  2939 00000000           	!fill  4, 0
+   692  293d ff                 	!byte %########
+   693  293e 08                 	!byte %....#...
+   694  293f 08                 	!byte %....#...
+   695  2940 08                 	!byte %....#...
+   696  2941 08                 	!byte %....#...
+   697  2942 08                 	!byte %....#...
+   698  2943 08                 	!byte %....#...
+   699  2944 08                 	!byte %....#...
+   700  2945 08                 	!byte %....#...
+   701  2946 08                 	!byte %....#...
+   702  2947 08                 	!byte %....#...
+   703  2948 08                 	!byte %....#...
+   704                          
+   705  2949 00000000           	!fill  4, 0
+   706  294d f8                 	!byte %#####...
+   707  294e 08                 	!byte %....#...
+   708  294f 08                 	!byte %....#...
+   709  2950 08                 	!byte %....#...
+   710  2951 08                 	!byte %....#...
+   711  2952 08                 	!byte %....#...
+   712  2953 08                 	!byte %....#...
+   713  2954 08                 	!byte %....#...
+   714  2955 08                 	!byte %....#...
+   715  2956 08                 	!byte %....#...
+   716  2957 08                 	!byte %....#...
+   717  2958 08                 	!byte %....#...
+   718                          
+   719  2959 08                 	!byte %....#...
+   720  295a 08                 	!byte %....#...
+   721  295b 08                 	!byte %....#...
+   722  295c 08                 	!byte %....#...
+   723  295d ff                 	!byte %########
+   724  295e 08                 	!byte %....#...
+   725  295f 08                 	!byte %....#...
+   726  2960 08                 	!byte %....#...
+   727  2961 08                 	!byte %....#...
+   728  2962 08                 	!byte %....#...
+   729  2963 08                 	!byte %....#...
+   730                          addfont1_end
+   731                          addfont2_target = $3ff0
+   732                          addfont2_start
+   733  2964 00                 	!byte %........
+   734  2965 00                 	!byte %........
+   735  2966 00                 	!byte %........
+   736  2967 08                 	!byte %....#...
+   737  2968 00                 	!byte %........
+   738  2969 00                 	!byte %........
+   739  296a 00                 	!byte %........
+   740  296b 00                 	!byte %........
+   741                          addfont2_end
+   742                          
+   743  296c 60                 gonot		rts		; fixme - could save a byte here
+   744  296d 20721e             F_goout		jsr willblost	; changes saved ?
+   745  2970 f0fa               		beq gonot
+   746  2972 a9008d00ff         F_gosys		+bank15
+   747  2977 2042c1             		jsr e_cls	; CLS
+   748  297a a900               		lda #0		; '0' for
+   749  297c 85f7               		sta locks	; 'CBM-Shift' on
+   750  297e 8dc50a             		sta addr($0ac5)	; 'ASC/DIN' on
+   751  2981 8dfd12             		sta basic	; 'Basic-IRQ' on
+   752  2984 ad8716             		lda nmibuf	; restore NMI
+   753  2987 ae8816             		ldx nmibuf + 1
+   754  298a 8d1803             		sta nmivek
+   755  298d 8e1903             		stx nmivek + 1
+   756  2990 aecd16             		ldx bank	; restore bank & stack
+   757  2993 8e00ff             		stx conreg
+   758  2996 ae8616             		ldx stck
+   759  2999 9a                 		txs
+   760  299a 60                 		rts
+   761                          
+   762                          !zone
+   763  299b a900               bigtext		lda #0		; no empty lines,
+   764  299d a016               		ldy #scrlins	; full text
+   765  299f 4cd629             		jmp m61
+   766                          
+   767  29a2 a0008c00ff         newframe	+ybank15
+   768  29a7 a900               		lda #scrhi	; textstart on screen
+   769  29a9 a2f0               		ldx #scrlo
+   770  29ab 20f92e             		jsr ramaccess	; set vdc
+   771  29ae 8c01ff             		sty conreg + 1	; full RAM
+   772  29b1 a200               		ldx #SCR
+   773  29b3 20a119             		jsr getvvek	; set VekVek
+   774  29b6 8ed416             		stx nwfrm	; clear jobflag
+   775  29b9 ad2f17             		lda zzbe	; Test: less text than
+   776  29bc 38                 		sec		; screen ?
+   777  29bd ed1d17             		sbc scry	; calculates both
+   778  29c0 a8                 		tay		; numbers
+   779  29c1 ad3017             		lda zzbe + 1
+   780  29c4 ed1e17             		sbc scry + 1
+   781  29c7 d0d2               		bne bigtext
+   782  29c9 c015               		cpy #scrlins - 1
+   783  29cb b0ce               		bcs bigtext
+   784  29cd c8                 		iny		; Base 1
+   785  29ce 8cd529             		sty .m1
+   786  29d1 a916               		lda #scrlins
+   787  29d3 38                 		sec
+   788  29d4 e9ff               .m1=*+1:	sbc #MODIFIED8	; errechnet Leerzeilen
+   789                          ; Parameter: A = Leerzeilen, Y = Textzeilen
+   790                          
+   791                          !zone
+   792  29d6 8589               m61		sta tmp2	; Leerzeilen
+   793  29d8 84fc               		sty line	; zu zeigende Zeilen
+   794  29da a000               --			ldy #0		; Low-Byte
+   795  29dc b183               			lda (vvek), y	; holen
+   796  29de 8585               			sta lvek	; & speichern
+   797  29e0 c8                 			iny		; High-Byte
+   798  29e1 b183               			lda (vvek), y	; holen
+   799  29e3 8586               			sta lvek + 1	; & speichern
+   800  29e5 a950               			lda #scrcols	; darzustellende
+   801  29e7 85fd               			sta col		; Spalten
+   802  29e9 ac1c17             			ldy scrx	; x-Versatz holen
+   803  29ec b185               -				lda (lvek), y	; Zeichen holen
+   804  29ee a2008e00ff         				+xbank15
+   805  29f3 aa                 				tax		; & in Screencode
+   806  29f4 bd4715             				lda atst,x	; konvertieren
+   807  29f7 2c00d610fb         				+wait_for_vdc
+   808  29fc 8d01d6             				sta reg		; in VDC
+   809  29ff 8d01ff             				sta conreg + 1	; full RAM
+   810  2a02 c8                 				iny		; Versatz erhoehen
+   811  2a03 c6fd               				dec col		; naechste Spalte
+   812  2a05 d0e5               				bne -		; schon alle = >
+   813  2a07 e683               			inc vvek	; naechster Vektor (2 Byte !)
+   814  2a09 e683d002e684       			+inc16 vvek
+   815  2a0f c6fc               			dec line	; naechste Zeile
+   816  2a11 d0c7               			bne --		; schon alle ? = >
+   817  2a13 a9008d00ff         		+bank15
+   818  2a18 a920               		lda #" "
+   819  2a1a c689               --			dec tmp2	; Anzahl runter
+   820  2a1c 3010               			bmi +		; ggfs Ende
+   821  2a1e a050               			ldy #scrcols	; Spaltenzahl
+   822  2a20 2c00d610fb         -				+wait_for_vdc
+   823  2a25 8d01d6             				sta reg		; Space setzen
+   824  2a28 88                 				dey		; alle Spalten ?
+   825  2a29 d0f5               				bne -
+   826  2a2b 4c1a2a             			jmp --
+   827  2a2e 8d01ff             +		sta conreg + 1	; full RAM
+   828  2a31 60                 		rts
+   829                          
+   830                          ; Folgende Routine aendert ScreenFlag,
+   831                          ; z.B. esc, Menupunkte. Parameter:
+   832                          ;-A = Attribut-Code
+   833                          ; Einsprung setflagdata:
+   834                          ;-X = Flagnr (Routine holt Daten)
+   835                          ; Einsprung changeflg:
+   836                          ;-Y = Laenge
+   837                          ;-tmp1 = Vektor auf Position
+   838  2a32 bc6e2a             setflagdata	ldy flgadr, x	; Setzt Adresse (Lo)
+   839  2a35 8487               		sty tmp1
+   840  2a37 a000               		ldy #scrhi
+   841  2a39 8488               		sty tmp1 + 1
+   842  2a3b bc7f2a             		ldy flglen, x	; Holt Laenge
+   843                          
+   844                          !zone
+   845  2a3e 8d5a2a             changeflg	sta .m3		; buffer color
+   846  2a41 8c5c2a             		sty .m2		; buffer length
+   847  2a44 a908               		lda #attrhi - scrhi
+   848  2a46 18                 		clc		; bend vector to
+   849  2a47 6588               		adc tmp1 + 1	; attributes
+   850  2a49 8588               		sta tmp1 + 1
+   851  2a4b ac00ff             		ldy conreg	; buffer bank
+   852  2a4e 8c692a             		sty .m1
+   853  2a51 a0008c00ff         		+ybank15
+   854  2a56 20f52e             		jsr tmpaccess	; set vdc
+   855  2a59 a9ff               .m3 = * + 1:	lda #MODIFIED8	; attribute
+   856  2a5b a0ff               .m2 = * + 1:	ldy #MODIFIED8	; length
+   857  2a5d 2c00d610fb         -			+wait_for_vdc
+   858  2a62 8d01d6             			sta reg		; set attributes
+   859  2a65 88                 			dey		; count
+   860  2a66 d0f5               			bne -
+   861  2a68 a0ff               .m1 = * + 1:	ldy #MODIFIED8	; bank
+   862  2a6a 8c00ff             		sty conreg
+   863  2a6d 60                 		rts
+   864                          
+   865                          hFlag_Escape	= 0
+   866                          ; 1-6 = datei, edit, block, format, switch, hilfe
+   867                          hFlag_Wrap	= 7
+   868                          hFlag_Beep	= 8
+   869                          hFlag_Insert	= 9
+   870                          
+   871  2a6e 87000c1824303c90...flgadr	!byte 135,   0,  12,  24,  36,  48,  60, 144, 145, 146
+   872  2a78 969798999d9e9f     	!byte 150, 151, 152, 153, 157, 158, 159	; f k u r < = >
+   873  2a7f 060a0a0a0a0a0a01...flglen	!byte   6,  10,  10,  10,  10,  10,  10,   1,   1,   1
+   874  2a89 01010101010101     	!byte   1,   1,   1,   1,   1,   1,   1
+   875                          
+   876                          !zone
+   877  2a90 adc516             showwbi		lda clraktv	; Aktiv-Farbe
+   878  2a93 acd616             		ldy wrapflag	; Flag pruefen
+   879  2a96 d003               		bne +		; ggfs andere Farbe
+   880  2a98 adc616             			lda clrinak
+   881  2a9b a207               +		ldx #hFlag_Wrap
+   882  2a9d 20322a             		jsr setflagdata	; Farbe setzen
+   883  2aa0 adc516             		lda clraktv	; Ab hier Wiederholung
+   884  2aa3 a4f9               		ldy beep
+   885  2aa5 f003               		beq +
+   886  2aa7 adc616             			lda clrinak
+   887  2aaa a208               +		ldx #hFlag_Beep
+   888  2aac 20322a             		jsr setflagdata
+   889  2aaf adc516             		lda clraktv
+   890  2ab2 acd716             		ldy esca
+   891  2ab5 d003               		bne +
+   892  2ab7 adc616             			lda clrinak
+   893  2aba a209               +		ldx #hFlag_Insert
+   894  2abc 20322a             		jsr setflagdata
+   895  2abf a916               		lda #>txtname	; set vector
+   896  2ac1 8588               		sta tmp1 + 1
+   897  2ac3 a9db               		lda #<txtname
+   898  2ac5 8587               		sta tmp1
+   899  2ac7 a900               		lda #>flnmpos	; show filename
+   900  2ac9 a257               		ldx #<flnmpos
+   901  2acb a00f               		ldy #$0f
+   902  2acd 20fd2a             		jsr copystr
+   903  2ad0 a000               		ldy #FALSE	; clear flag
+   904  2ad2 8cd816             		sty updatewbi
+   905  2ad5 60                 		rts
+   906                          
+   907                          ; X/A = VDC-Vector, Y = length, tmp1 = RAMpos
+   908                          !zone
+   909  2ad6 8d2e2b             ram2vdc		sta vimm4	; buffer all
+   910  2ad9 8e302b             		stx vimm5
+   911  2adc 8cf42a             		sty .m2
+   912  2adf ad00ff             ram2vdc1	lda conreg	; buffer bank
+   913  2ae2 8df82a             		sta .m1
+   914  2ae5 20282b             		jsr vdcprep	; prepare vdc
+   915  2ae8 c8                 -			iny		; next
+   916  2ae9 b187               			lda (tmp1), y	; get byte
+   917  2aeb 2c00d610fb         			+wait_for_vdc
+   918  2af0 8d01d6             			sta reg		; set byte
+   919  2af3 c0ff               .m2 = * + 1:		cpy #MODIFIED8	; length
+   920  2af5 d0f1               			bne -
+   921  2af7 a9ff               .m1 = * + 1:	lda #MODIFIED8	; bank
+   922  2af9 8d00ff             		sta conreg
+   923  2afc 60                 		rts
+   924                          
+   925                          ; X/A = VDC-Vector, Y = length, tmp1 = RAMpos
+   926                          !zone
+   927  2afd 8d2e2b             copystr		sta vimm4	; buffer all
+   928  2b00 8e302b             		stx vimm5
+   929  2b03 8c1f2b             		sty vimm6
+   930  2b06 ad00ff             copystr1	lda conreg	; buffer bank
+   931  2b09 8d232b             		sta .m1
+   932  2b0c 20282b             		jsr vdcprep	; prepare vdc
+   933  2b0f c8                 -			iny		; next
+   934  2b10 b187               			lda (tmp1), y	; get byte
+   935  2b12 aa                 			tax		; convert
+   936  2b13 bd4715             			lda atst, x
+   937  2b16 2c00d610fb         			+wait_for_vdc
+   938  2b1b 8d01d6             			sta reg		; set byte
+   939  2b1e c0ff               vimm6 = * + 1:		cpy #MODIFIED8	; length
+   940  2b20 d0ed               			bne -
+   941  2b22 a9ff               .m1 = * + 1:	lda #MODIFIED8	; bank
+   942  2b24 8d00ff             		sta conreg
+   943  2b27 60                 		rts
+   944                          
+   945                          ; preparations for ram2vdc & copystr
+   946                          !zone
+   947  2b28 a9008d00ff         vdcprep		+bank15
+   948  2b2d a9ff               vimm4 = * + 1:	lda #MODIFIED8	; High
+   949  2b2f a2ff               vimm5 = * + 1:	ldx #MODIFIED8	; Low
+   950  2b31 20f92e             		jsr ramaccess
+   951  2b34 a0ff               		ldy #$ff	; pre-index
+   952  2b36 60                 		rts
+   953                          
+   954  2b37 00                 xpos	!byte 0	; rename-Var
+   955                          
+   956                          F_rnmtxt
+   957  2b38 a90f               		lda #$0f	; TEXTname !
+   958                          
+   959                          !zone
+   960  2b3a 48                 rename		pha		; sichert Namepointer
+   961  2b3b a8                 		tay
+   962  2b3c a20f               		ldx #$0f	; copy Filename
+   963  2b3e b9db16             -			lda txtname, y
+   964  2b41 9d9316             			sta dosname, x
+   965  2b44 88                 			dey
+   966  2b45 ca                 			dex
+   967  2b46 10f6               			bpl -
+   968  2b48 ad00ff             		lda conreg	; Bank sichern
+   969  2b4b 48                 		pha
+   970  2b4c a93e8d00ff         		+ram0io
+   971  2b51 a200               		ldx #0		; Cursor an Start
+   972  2b53 8e372b             		stx xpos
+   973  2b56 20b12f             		jsr crsrnew	; new copy
+   974  2b59 a208               		ldx #hWindow_Filename	; Namensfenster bauen
+   975  2b5b 8e0123             		stx menunr
+   976  2b5e 207c2c             		jsr makewin
+   977  2b61 a203               		ldx #3		; 3. "Menupunkt"
+   978  2b63 8e0223             		stx menupoint
+   979  2b66 20c623             		jsr calcpoint	; Adresse berechnen
+   980  2b69 6903               		adc #3		; +4 (C = 1)
+   981  2b6b 8d302b             		sta vimm5	; set Lo
+   982  2b6e 9002               		bcc +
+   983  2b70 e688               			inc tmp1 + 1
+   984  2b72 a588               +		lda tmp1 + 1
+   985  2b74 8d2e2b             		sta vimm4	; set Hi
+   986  2b77 a093               		ldy #<dosname	; set rampointer
+   987  2b79 8487               		sty tmp1
+   988  2b7b a016               		ldy #>dosname
+   989  2b7d 8488               		sty tmp1 + 1
+   990  2b7f a00f               		ldy #$0f	; set length
+   991  2b81 8c1f2b             		sty vimm6
+   992                          
+   993                          !zone
+   994  2b84 20062b             showname	jsr copystr1	; show name
+   995  2b87 a009               --			ldy #9		; Y- und X-Wert
+   996  2b89 ad372b             			lda xpos	; errechnen
+   997  2b8c 18                 			clc
+   998  2b8d 6920               			adc #$20
+   999  2b8f 202a2f             			jsr crsrset	; Cursor setzen
+  1000  2b92 207519             -			jsr getchar	; Byte holen und
+  1001  2b95 aa                 			tax		; sichern
+  1002  2b96 2960               			and #%.##.....	; Command ?
+  1003  2b98 f019               			beq +		; ggfs =>
+  1004  2b9a 4960               				eor #%.##.....
+  1005  2b9c f015               				beq +
+  1006  2b9e add716             					lda esca	; AutoInsert ?
+  1007  2ba1 f003               					beq ++		; ggfs
+  1008  2ba3 20442c             						jsr einf1	; insert
+  1009  2ba6 8a                 ++					txa		; Zeichen an Position
+  1010  2ba7 ac372b             					ldy xpos	; setzen
+  1011  2baa 999316             					sta dosname, y
+  1012  2bad 20132c             					jsr rechts1	; eins rechts
+  1013  2bb0 4c842b             					jmp showname
+  1014  2bb3 8a                 +			txa		; Byte holen
+  1015  2bb4 c91d               			cmp #Char_CursorRight
+  1016  2bb6 f040               			beq rechts
+  1017  2bb8 c99d               			cmp #Char_CursorLeft
+  1018  2bba f042               			beq links
+  1019  2bbc c914               			cmp #Char_DEL
+  1020  2bbe f044               			beq back
+  1021  2bc0 c974               			cmp #CharOwn_Delete
+  1022  2bc2 f043               			beq dele
+  1023  2bc4 c994               			cmp #Char_INST
+  1024  2bc6 f045               			beq einf
+  1025  2bc8 c90d               			cmp #Char_RETURN
+  1026  2bca f006               			beq +
+  1027  2bcc c903               				cmp #Char_STOP
+  1028  2bce d0c2               				bne -		; Nein = >
+  1029  2bd0 a900               				lda #0		; Stop-
+  1030  2bd2 8d372b             +			sta xpos	; Flag sichern
+  1031  2bd5 20222e             			jsr pullscr	; Window weg
+  1032  2bd8 20cf2f             			jsr crsrold	; old copy
+  1033  2bdb 68                 			pla		; alte Bank
+  1034  2bdc 8d00ff             			sta conreg
+  1035  2bdf 68                 			pla		; Y: = Namepointer
+  1036  2be0 a8                 			tay
+  1037  2be1 ad372b             			lda xpos	; STOP ?
+  1038  2be4 f011               			beq .noname	; Nein: Namen kopieren
+  1039  2be6 a20f               			ldx #$0f
+  1040  2be8 bd9316             -				lda dosname, x
+  1041  2beb 99db16             				sta txtname, y
+  1042  2bee 88                 				dey
+  1043  2bef ca                 				dex
+  1044  2bf0 10f6               				bpl -
+  1045  2bf2 a9ff               			lda #TRUE	; und Update fordern
+  1046  2bf4 8dd816             			sta updatewbi
+  1047  2bf7 60                 .noname			rts		; Z = Stopflag
+  1048  2bf8 20132c             rechts			jsr rechts1	; Eins weiter
+  1049  2bfb 4c872b             			jmp --
+  1050  2bfe 20192c             links			jsr links1	; Eins zurück
+  1051  2c01 4c872b             			jmp --
+  1052  2c04 20192c             back		jsr links1	; Erst zurück, dann
+  1053  2c07 202d2c             dele		jsr dele1	; löschen
+  1054  2c0a 4c842b             		jmp showname
+  1055  2c0d 20442c             einf		jsr einf1	; Eins freimachen
+  1056  2c10 4c842b             		jmp showname
+  1057                          
+  1058                          !zone
+  1059  2c13 ee372b             rechts1		inc xpos	; Pos += 1 & pruefen
+  1060  2c16 4c1c2c             		jmp +
+  1061                          
+  1062  2c19 ce372b             links1			dec xpos	; Pos- = 1 & pruefen
+  1063  2c1c ad372b             +		lda xpos		; Negativ ?
+  1064  2c1f 1002               		bpl +
+  1065  2c21 a900               			lda #0		; Dann Pos 0
+  1066  2c23 c90c               +		cmp #$0c		; Ende ?
+  1067  2c25 9002               		bcc +
+  1068  2c27 a90b               			lda #$0b	; Dann zum Rand
+  1069  2c29 8d372b             +		sta xpos		; Pos setzen
+  1070  2c2c 60                 		rts
+  1071                          
+  1072                          !zone
+  1073  2c2d ac372b             dele1		ldy xpos	; Start bei Cursor
+  1074  2c30 c00b               -			cpy #$0b	; schon am Rand ?
+  1075  2c32 f00a               			beq +		; Dann Ende !
+  1076  2c34 b99416             			lda dosname + 1, y	; Sonst shiften
+  1077  2c37 999316             			sta dosname, y
+  1078  2c3a c8                 			iny
+  1079  2c3b 4c302c             			jmp -
+  1080                          
+  1081  2c3e a920               +		lda #" "	; Space setzen
+  1082  2c40 999316             		sta dosname, y
+  1083  2c43 60                 		rts
+  1084                          
+  1085                          !zone
+  1086  2c44 a00b               einf1		ldy #$0b	; Start am Rand
+  1087  2c46 cc372b             -			cpy xpos	; schon fertig ?
+  1088  2c49 f00a               			beq +		; Ja = >
+  1089  2c4b b99216             			lda dosname - 1, y	; Zeichen shiften
+  1090  2c4e 999316             			sta dosname, y
+  1091  2c51 88                 			dey
+  1092  2c52 4c462c             			jmp -
+  1093                          
+  1094  2c55 a920               +		lda #" "	; Space an Pos
+  1095  2c57 999316             		sta dosname, y
+  1096  2c5a 60                 		rts
+  1097                          
+  1098                          !zone
+  1099                          ; access for new window
+  1100  2c5b add22eaed12e       wsnew		+ldax wspntr
+  1101  2c61 4c6a2c             		jmp +
+  1102                          
+  1103                          ; access for old window
+  1104  2c64 add42eaed32e       wsold		+ldax wsback
+  1105  2c6a a018               +		ldy #24		; VDC (Vscroll)
+  1106  2c6c 8c00d6             		sty vdc
+  1107  2c6f a0a0               		ldy #$a0	; 'block-copy'
+  1108  2c71 2c00d610fb         		+wait_for_vdc
+  1109  2c76 8c01d6             		sty reg		; set
+  1110  2c79 4cf92e             		jmp ramaccess
+  1111                          
+  1112                          ; sichert Screen & erzeugt Rahmen und BG fuer Window
+  1113                          ; Windownr in menunr !
+  1114                          !zone
+  1115  2c7c ee0023             makewin		inc manywins	; eins mehr !
+  1116  2c7f ad00ff             		lda conreg	; Bank sichern
+  1117  2c82 48                 		pha
+  1118  2c83 a93e8d00ff         		+ram0io
+  1119  2c88 ae0123             		ldx menunr	; Holt Nummer
+  1120  2c8b f00a               		beq +		; Ist das Window ein
+  1121  2c8d e007               			cpx #hWindow_FirstAfterMenu	; Menu-Window, wird
+  1122  2c8f b006               			bcs +		; das Flag aktiviert
+  1123  2c91 adc816             				lda clrmenu1
+  1124  2c94 20322a             				jsr setflagdata
+  1125  2c97 205b2c             +		jsr wsnew	; macht VDC zum Stack
+  1126  2c9a acd42e             		ldy wsback + 1	; alter end-pointer
+  1127  2c9d 8dd42e             		sta wsback + 1	; wird zu neuem
+  1128  2ca0 add32e             		lda wsback	; last-pointer
+  1129  2ca3 8ed32e             		stx wsback
+  1130  2ca6 20212f             		jsr stashbt	; buffer last pointer
+  1131  2ca9 98                 		tya
+  1132  2caa 20212f             		jsr stashbt	; (Hi)
+  1133  2cad ae0123             		ldx menunr	; get Win-Nr
+  1134  2cb0 8a                 		txa
+  1135  2cb1 20212f             		jsr stashbt	; wird gestacked
+  1136  2cb4 bdd82d             		lda winlo, x	; Holt mit X die
+  1137  2cb7 8587               		sta tmp1	; anderen Parameter
+  1138  2cb9 8589               		sta tmp2
+  1139  2cbb bde42d             		lda winhi, x
+  1140  2cbe 8588               		sta tmp1 + 1
+  1141  2cc0 18                 		clc
+  1142  2cc1 6908               		adc #attrhi - scrhi
+  1143  2cc3 858a               		sta tmp2 + 1
+  1144  2cc5 bcea23             		ldy winwi, x	; get width
+  1145  2cc8 8c1c2d             		sty .m1		; for colorate
+  1146  2ccb c8                 		iny		; convert
+  1147  2ccc 8c0e2e             		sty mWidth	; for push
+  1148  2ccf bd1a24             		lda winclr, x	; get colorcode
+  1149  2cd2 a8                 		tay		; convert
+  1150  2cd3 b9ca16             		lda clrboxs, y	; get color
+  1151  2cd6 8d132d             		sta .m2		; in Immediate
+  1152  2cd9 20f02d             		jsr scrn2stck	; push chars
+  1153  2cdc a589               		lda tmp2	; attrib-vector
+  1154  2cde 8587               		sta tmp1
+  1155  2ce0 a58a               		lda tmp2 + 1
+  1156  2ce2 8588               		sta tmp1 + 1
+  1157  2ce4 20f02d             		jsr scrn2stck	; push attributes
+  1158  2ce7 a012               		ldy #18		; VDC (access Hi)
+  1159  2ce9 8c00d6             		sty vdc
+  1160  2cec 20182f             		jsr fetchbt	; get pointerHi
+  1161  2cef 8dd22e             		sta wspntr + 1	; set pointerHi
+  1162  2cf2 c8                 		iny		; VDC (access Lo)
+  1163  2cf3 8c00d6             		sty vdc
+  1164  2cf6 20182f             		jsr fetchbt	; get pointerLo
+  1165  2cf9 8dd12e             		sta wspntr	; set pointerLo
+  1166                          ; ab hier wird gefaerbt
+  1167  2cfc a018               		ldy #24		; VDC (Vscroll)
+  1168  2cfe 8c00d6             		sty vdc
+  1169  2d01 a920               		lda #$20	; 'block-write'
+  1170  2d03 20212f             		jsr stashbt
+  1171  2d06 bdf623             		lda winhe, x	; get height
+  1172  2d09 85fc               		sta line
+  1173  2d0b a58aa689           -			+ldax tmp2	; get target
+  1174  2d0f 20f92e             			jsr ramaccess	; set vdc
+  1175  2d12 a9ff               .m2 = * + 1:		lda #MODIFIED8	; attribute
+  1176  2d14 20212f             			jsr stashbt	; set attribute
+  1177  2d17 88                 			dey		; VDC (counter)
+  1178  2d18 8c00d6             			sty vdc
+  1179  2d1b a9ff               .m1 = * + 1:		lda #MODIFIED8	; width
+  1180  2d1d 20212f             			jsr stashbt	; start write
+  1181  2d20 a950               			lda #scrcols	; address for next row
+  1182  2d22 18                 			clc
+  1183  2d23 6589               			adc tmp2
+  1184  2d25 8589               			sta tmp2
+  1185  2d27 9002               			bcc +
+  1186  2d29 e68a               				inc tmp2 + 1
+  1187  2d2b c6fc               +			dec line	; alle Zeilen ?
+  1188  2d2d 10dc               			bpl -		; Nein = >
+  1189                          ; bisher Backup und Faerben, jetzt Win
+  1190  2d2f ae0123             		ldx menunr	; get Win-Nr
+  1191  2d32 bdd82d             		lda winlo, x	; get location, width,
+  1192  2d35 8587               		sta tmp1	; heigth & textvector
+  1193  2d37 bde42d             		lda winhi, x
+  1194  2d3a 8588               		sta tmp1 + 1
+  1195  2d3c bdea23             		lda winwi, x
+  1196  2d3f 85fd               		sta col
+  1197  2d41 bdf623             		lda winhe, x
+  1198  2d44 85fc               		sta line
+  1199  2d46 bd0224             		lda winadlo, x
+  1200  2d49 8589               		sta tmp2
+  1201  2d4b bd0e24             		lda winadhi, x
+  1202  2d4e 858a               		sta tmp2 + 1
+  1203                          ; hier oberer Rand
+  1204  2d50 20f52e             		jsr tmpaccess	; set vdc
+  1205  2d53 a6fd               		ldx col		; get width &
+  1206  2d55 ca                 		dex		; convert
+  1207  2d56 a968               		lda #chrol	; 'Oben Links'
+  1208  2d58 20212f             		jsr stashbt	; set
+  1209  2d5b a966               		lda #chroo	; 'Oben'
+  1210  2d5d 20212f             -			jsr stashbt	; set
+  1211  2d60 ca                 			dex
+  1212  2d61 d0fa               			bne -
+  1213  2d63 a96a               		lda #chror	; 'Oben Rechts'
+  1214  2d65 20212f             		jsr stashbt	; set
+  1215  2d68 c6fc               		dec line	; naechste Zeile
+  1216                          ; jetzt die Zeilen
+  1217  2d6a a950               .field		lda #scrcols	; rechnet den
+  1218  2d6c 18                 		clc		; Vektor auf die
+  1219  2d6d 6587               		adc tmp1	; naechste Zeile
+  1220  2d6f 8587               		sta tmp1	; um
+  1221  2d71 9002               		bcc +
+  1222  2d73 e688               			inc tmp1 + 1
+  1223  2d75 20f52e             +		jsr tmpaccess	; set vdc
+  1224  2d78 a001               		ldy #1		; textindex 1
+  1225  2d7a a961               		lda #chrll	; 'Links'
+  1226  2d7c 20212f             		jsr stashbt	; set
+  1227  2d7f b189               -			lda (tmp2), y	; get char
+  1228  2d81 f00b               			beq +		; end ? if not then
+  1229  2d83 aa                 			tax		; convert to screencode
+  1230  2d84 bd4715             			lda atst, x
+  1231  2d87 20212f             			jsr stashbt	; output
+  1232  2d8a c8                 			iny		; next column
+  1233  2d8b 4c7f2d             			jmp -
+  1234  2d8e 98                 +		tya		; if string has ended then
+  1235  2d8f aa                 		tax		; remember memory offset in x
+  1236  2d90 c4fd               -			cpy col		; finished ?
+  1237  2d92 f009               			beq +		; if not then
+  1238  2d94 a920               			lda #chrmm	; output inner space
+  1239  2d96 20212f             			jsr stashbt
+  1240  2d99 c8                 			iny		; next column
+  1241  2d9a 4c902d             			jmp -
+  1242  2d9d a961               +		lda #chrrr	; when finished, output right border
+  1243  2d9f 20212f             		jsr stashbt
+  1244  2da2 8a                 		txa		; calculate new memory pointer
+  1245  2da3 38                 		sec
+  1246  2da4 6589               		adc tmp2	; line
+  1247  2da6 8589               		sta tmp2
+  1248  2da8 9002               		bcc +
+  1249  2daa e68a               			inc tmp2 + 1
+  1250  2dac c6fc               +		dec line	; schon alle Zeilen ?
+  1251  2dae d0ba               		bne .field	; ggfs Schleife
+  1252                          ; jetzt der Unterrand
+  1253  2db0 a950               		lda #scrcols	; calculate next line
+  1254  2db2 18                 		clc
+  1255  2db3 6587               		adc tmp1
+  1256  2db5 8587               		sta tmp1
+  1257  2db7 9002               		bcc +
+  1258  2db9 e688               			inc tmp1 + 1
+  1259  2dbb 20f52e             +		jsr tmpaccess	; set vdc
+  1260  2dbe a6fd               		ldx col		; get width &
+  1261  2dc0 ca                 		dex		; convert
+  1262  2dc1 a962               		lda #chrul	; 'Unten Links'
+  1263  2dc3 20212f             		jsr stashbt	; set
+  1264  2dc6 a966               		lda #chruu	; 'Unten'
+  1265  2dc8 20212f             -			jsr stashbt	; set
+  1266  2dcb ca                 			dex
+  1267  2dcc d0fa               			bne -
+  1268  2dce a964               		lda #chrur	; 'Unten Rechts'
+  1269  2dd0 20212f             		jsr stashbt	; set
+  1270  2dd3 68                 		pla		; alte Bank
+  1271  2dd4 8d00ff             		sta conreg
+  1272  2dd7 60                 		rts
+  1273                          
+  1274                          ; Windowdaten:
+  1275                          ; 0 = StartBox
+  1276                          ; 1 bis 6 sind Menuleiste
+  1277                          ; 7 = MemFull
+  1278                          ; 8 = FileName
+  1279                          ; 9 = SaveChanges?
+  1280                          ; 10 = Load
+  1281                          ; 11 = Save
+  1282                          ; Addys (Ecke links oben):
+  1283  2dd8 98505c6874808ceb...winlo	!byte 152, 80, 92, 104, 116, 128, 140, 235, 235, 151, 146, 144
+  1284  2de4 0200000000000002...winhi	!byte   2,  0,  0,   0,   0,   0,   0,   2,   2,   2,   3,   3
+  1285                          
+  1286                          !zone
+  1287  2df0 bdf623             scrn2stck	lda winhe, x	; get height
+  1288  2df3 85fc               		sta line
+  1289  2df5 a020               -			ldy #32		; VDC (source Hi)
+  1290  2df7 8c00d6             			sty vdc
+  1291  2dfa a588               			lda tmp1 + 1
+  1292  2dfc 20212f             			jsr stashbt	; set sourceHi
+  1293  2dff c8                 			iny		; VDC (source Lo)
+  1294  2e00 8c00d6             			sty vdc
+  1295  2e03 a587               			lda tmp1
+  1296  2e05 20212f             			jsr stashbt	; set sourceLo
+  1297  2e08 a01e               			ldy #30		; VDC (counter)
+  1298  2e0a 8c00d6             			sty vdc
+  1299  2e0d a9ff               mWidth = * + 1:		lda #MODIFIED8	; width
+  1300  2e0f 20212f             			jsr stashbt	; start copy
+  1301  2e12 a950               			lda #scrcols	; address for next row
+  1302  2e14 18                 			clc
+  1303  2e15 6587               			adc tmp1
+  1304  2e17 8587               			sta tmp1
+  1305  2e19 9002               			bcc +
+  1306  2e1b e688               				inc tmp1 + 1
+  1307  2e1d c6fc               +			dec line	; alle Zeilen ?
+  1308  2e1f 10d4               			bpl -		; Nein = >
+  1309  2e21 60                 		rts
+  1310                          
+  1311                          !zone
+  1312  2e22 ad00ff             pullscr		lda conreg	; Bank sichern
+  1313  2e25 48                 		pha
+  1314  2e26 a93e8d00ff         		+ram0io
+  1315  2e2b 20642c             		jsr wsold	; init stack for read
+  1316  2e2e 8dd22e             		sta wspntr + 1	; new write-start
+  1317  2e31 8ed12e             		stx wspntr	; new write-start
+  1318  2e34 20182f             		jsr fetchbt	; get old laststart
+  1319  2e37 8dd32e             		sta wsback	; and use
+  1320  2e3a 20182f             		jsr fetchbt
+  1321  2e3d 8dd42e             		sta wsback + 1
+  1322  2e40 20182f             		jsr fetchbt	; get handle from stack
+  1323  2e43 aa                 		tax
+  1324  2e44 bdd82d             		lda winlo, x	; Holt mit X die
+  1325  2e47 8587               		sta tmp1	; anderen Parameter
+  1326  2e49 8589               		sta tmp2
+  1327  2e4b bde42d             		lda winhi, x
+  1328  2e4e 8588               		sta tmp1 + 1
+  1329  2e50 18                 		clc
+  1330  2e51 6908               		adc #attrhi - scrhi
+  1331  2e53 858a               		sta tmp2 + 1
+  1332  2e55 bcea23             		ldy winwi, x	; get width
+  1333  2e58 c8                 		iny		; convert
+  1334  2e59 8cbd2e             		sty .m1
+  1335  2e5c a012               		ldy #18		; VDC (access Hi)
+  1336  2e5e 8c00d6             		sty vdc
+  1337  2e61 20182f             		jsr fetchbt	; get Hi
+  1338  2e64 a020               		ldy #32		; VDC (source Hi)
+  1339  2e66 8c00d6             		sty vdc
+  1340  2e69 20212f             		jsr stashbt	; set Hi
+  1341  2e6c a013               		ldy #19		; VDC (access Lo)
+  1342  2e6e 8c00d6             		sty vdc
+  1343  2e71 20182f             		jsr fetchbt	; get Lo
+  1344  2e74 a021               		ldy #33		; VDC (source Lo)
+  1345  2e76 8c00d6             		sty vdc
+  1346  2e79 20212f             		jsr stashbt	; set Lo
+  1347  2e7c 209f2e             		jsr stck2scrn	; pull chars
+  1348  2e7f a589               		lda tmp2	; attrib-vector
+  1349  2e81 8587               		sta tmp1
+  1350  2e83 a58a               		lda tmp2 + 1
+  1351  2e85 8588               		sta tmp1 + 1
+  1352  2e87 209f2e             		jsr stck2scrn	; pull attributes
+  1353  2e8a 8a                 		txa		; if menu-window,
+  1354  2e8b f00a               		beq +		; then deactivate flag
+  1355  2e8d c907               			cmp #7
+  1356  2e8f b006               			bcs +
+  1357  2e91 adc716             				lda clrmenu
+  1358  2e94 20322a             				jsr setflagdata
+  1359  2e97 ce0023             +		dec manywins	; minus one win
+  1360  2e9a 68                 		pla		; restore bank
+  1361  2e9b 8d00ff             		sta conreg
+  1362  2e9e 60                 		rts
+  1363  2e9f bdf623             stck2scrn	lda winhe, x	; get height
+  1364  2ea2 85fc               		sta line
+  1365  2ea4 a012               -			ldy #18		; VDC (access Hi)
+  1366  2ea6 8c00d6             			sty vdc
+  1367  2ea9 a588               			lda tmp1 + 1
+  1368  2eab 20212f             			jsr stashbt	; set targetHi
+  1369  2eae c8                 			iny		; VDC (access Lo)
+  1370  2eaf 8c00d6             			sty vdc
+  1371  2eb2 a587               			lda tmp1
+  1372  2eb4 20212f             			jsr stashbt	; set targetLo
+  1373  2eb7 a01e               			ldy #30		; VDC (counter)
+  1374  2eb9 8c00d6             			sty vdc
+  1375  2ebc a9ff               .m1 = * + 1:		lda #MODIFIED8	; width
+  1376  2ebe 20212f             			jsr stashbt	; start copy
+  1377  2ec1 a950               			lda #scrcols	; address for next row
+  1378  2ec3 18                 			clc
+  1379  2ec4 6587               			adc tmp1
+  1380  2ec6 8587               			sta tmp1
+  1381  2ec8 9002               			bcc +
+  1382  2eca e688               				inc tmp1 + 1
+  1383  2ecc c6fc               +			dec line	; alle Zeilen ?
+  1384  2ece 10d4               			bpl -		; Nein = >
+  1385  2ed0 60                 		rts
+  1386                          
+  1387  2ed1 d00f               wspntr	!word wsstart		; win-stackpointer
+  1388  2ed3 d00f               wsback	!word wsstart		; last pointer
+  1389                          
+  1390  2ed5 a9d0               F_menu		lda #<wsstart	; init win-stack
+  1391  2ed7 8dd12e             		sta wspntr
+  1392  2eda a90f               		lda #>wsstart
+  1393  2edc 8dd22e             		sta wspntr + 1
+  1394  2edf 20b12f             		jsr crsrnew	; new copy
+  1395  2ee2 a200               		ldx #0		; yet no windows
+  1396  2ee4 8e0023             		stx manywins
+  1397  2ee7 e8                 		inx		; menu 1 & point 1
+  1398  2ee8 8e0123             		stx menunr
+  1399  2eeb 8e0223             		stx menupoint
+  1400  2eee 201c23             		jsr menuloop	; menu-routine
+  1401  2ef1 20cf2f             		jsr crsrold	; old copy
+  1402  2ef4 60                 		rts		; fixme - could save one byte here
+  1403                          
+  1404  2ef5 a588a687           tmpaccess	+ldax tmp1
+  1405                          
+  1406                          ; A = Highbyte, X = Lowbyte
+  1407                          !zone
+  1408  2ef9 a012               ramaccess	ldy #18		; VDC (access Hi)
+  1409  2efb 8c00d6             		sty vdc
+  1410  2efe 2c00d610fb         		+wait_for_vdc
+  1411  2f03 8d01d6             		sta reg		; set Hi
+  1412  2f06 c8                 		iny		; VDC (access Lo)
+  1413  2f07 8c00d6             		sty vdc
+  1414  2f0a 2c00d610fb         		+wait_for_vdc
+  1415  2f0f 8e01d6             		stx reg		; set Lo
+  1416  2f12 a01f               		ldy #31		; VDC (ram data)
+  1417  2f14 8c00d6             		sty vdc
+  1418  2f17 60                 		rts
+  1419                          
+  1420  2f18 2c00d610fb         fetchbt		+wait_for_vdc
+  1421  2f1d ad01d6             		lda reg		; fetch byte
+  1422  2f20 60                 		rts
+  1423                          
+  1424  2f21 2c00d610fb         stashbt		+wait_for_vdc
+  1425  2f26 8d01d6             		sta reg		; stash byte
+  1426  2f29 60                 		rts
+
+; ******** Source: .\macedit.a
+
+; ******** Source: me\cursor.a
+     1                          ;ACME 0.94.4
+     2                          
+     3                          ; ab hier liegt die Cursorsteuerung
+     4                          ; A = screenx, Y = screeny
+     5                          !zone
+     6  2f2a 8d5c2f             crsrset		sta .m		; buffer x
+     7  2f2d c8                 		iny		; adjust height
+     8  2f2e c8                 		iny
+     9  2f2f c8                 		iny
+    10  2f30 8c3b2f             		sty .n		; buffer y
+    11  2f33 20932f             		jsr crsroff
+    12  2f36 a900               		lda #0		; clear Hi
+    13  2f38 858e               		sta vtemp + 1
+    14  2f3a a9ff               .n = * + 1:	lda #MODIFIED8	; y
+    15  2f3c 0a                 		asl		; *2
+    16  2f3d 0a                 		asl		; *4
+    17  2f3e 268e               		rol vtemp + 1
+    18  2f40 0a                 		asl		; *8
+    19  2f41 268e               		rol vtemp + 1
+    20  2f43 0a                 		asl		; *16
+    21  2f44 268e               		rol vtemp + 1
+    22  2f46 858d               		sta vtemp	; stash Lo
+    23  2f48 a48e               		ldy vtemp + 1	; copy Hi
+    24  2f4a 848f               		sty vtemp + 2
+    25  2f4c 0a                 		asl		; *32
+    26  2f4d 268f               		rol vtemp + 2
+    27  2f4f 0a                 		asl		; *64
+    28  2f50 268f               		rol vtemp + 2
+    29  2f52 658d               		adc vtemp	; + 16er-Lo
+    30  2f54 858d               		sta vtemp	; 80er-Lo in vtemp
+    31  2f56 9003               		bcc +		; page
+    32  2f58 e68e               			inc vtemp + 1
+    33  2f5a 18                 			clc
+    34                          +
+    35  2f5b 69ff               .m = * + 1:	adc #MODIFIED8	; x
+    36  2f5d 858d               		sta vtemp	; store Lo
+    37  2f5f a58e               		lda vtemp + 1	; get 16er-Hi
+    38  2f61 658f               		adc vtemp + 2	; add 64er-Hi
+    39  2f63 6908               		adc #attrhi	; add base
+    40  2f65 858e               		sta vtemp + 1	; store Hi
+    41                          
+    42                          !zone
+    43  2f67 ad00ff             crsron		lda conreg	; buffert CR
+    44  2f6a 8d8e2f             		sta .m
+    45  2f6d a9008d00ff         		+bank15
+    46  2f72 200d30             		jsr vpntcrsr	; set address
+    47  2f75 2c00d610fb         		+wait_for_vdc
+    48  2f7a ad01d6             		lda reg		; get attribute
+    49  2f7d 85f2               		sta tcolor	; buffer it
+    50  2f7f 200d30             		jsr vpntcrsr	; set address
+    51  2f82 adc316             		lda clrcrsr	; get crsr
+    52  2f85 2c00d610fb         		+wait_for_vdc
+    53  2f8a 8d01d6             		sta reg		; set crsr
+    54  2f8d a9ff               .m = * + 1:	lda #MODIFIED8	; bank
+    55  2f8f 8d00ff             		sta conreg	; restore CR
+    56  2f92 60                 		rts
+    57                          
+    58                          !zone
+    59  2f93 ad00ff             crsroff		lda conreg	; buffer CR
+    60  2f96 8dac2f             		sta .m
+    61  2f99 a9008d00ff         		+bank15
+    62  2f9e 200d30             		jsr vpntcrsr	; set address
+    63  2fa1 a5f2               		lda tcolor	; get attribute
+    64  2fa3 2c00d610fb         		+wait_for_vdc
+    65  2fa8 8d01d6             		sta reg		; set attribute
+    66  2fab a9ff               .m = * + 1:	lda #MODIFIED8	; bank
+    67  2fad 8d00ff             		sta conreg	; restore CR
+    68  2fb0 60                 		rts
+    69                          
+    70                          ; push data
+    71                          !zone
+    72  2fb1 aeec2f             crsrnew		ldx crsrheap	; get stackpointer
+    73  2fb4 a58d               		lda vtemp	; get low
+    74  2fb6 9dec2f             		sta crsrheap, x	; push
+    75  2fb9 a58e               		lda vtemp + 1	; get high
+    76  2fbb 9ded2f             		sta crsrheap + 1, x	; push
+    77  2fbe e8                 		inx		; inc stackpointer
+    78  2fbf e8                 		inx
+    79  2fc0 8eec2f             		stx crsrheap	; set stackpointer
+    80  2fc3 20932f             		jsr crsroff
+    81                          
+    82                          !zone
+    83  2fc6 a23f               crsrhide	ldx #$3f	; place cursor
+    84  2fc8 868e               		stx vtemp + 1	; outside visible
+    85  2fca a2ff               		ldx #$ff	; area
+    86  2fcc 868d               		stx vtemp
+    87  2fce 60                 		rts
+    88                          
+    89                          !zone
+    90  2fcf aeec2f             crsrold		ldx crsrheap	; get stackpointer
+    91  2fd2 ca                 		dex		; previous entry !
+    92  2fd3 ca                 		dex
+    93  2fd4 bdec2f             		lda crsrheap, x	; get lo
+    94  2fd7 858d               		sta vtemp	; set lo
+    95  2fd9 bded2f             		lda crsrheap + 1, x	; get hi
+    96  2fdc 858e               		sta vtemp + 1	; set hi
+    97  2fde 8eec2f             		stx crsrheap	; set stackpointer
+    98  2fe1 4c672f             		jmp crsron
+    99                          
+   100                          !zone
+   101  2fe4 a201               crsrinit	ldx #1		; init cursorstack
+   102  2fe6 8eec2f             		stx crsrheap
+   103  2fe9 4cc62f             		jmp crsrhide	; and hide cursor
+   104                          
+   105  2fec 2121212121212121...crsrheap	!fill 33, 33
+   106                          
+   107  300d a58ea68d           vpntcrsr	+ldax vtemp
+   108  3011 4cf92e             		jmp ramaccess	; set vdc
+
+; ******** Source: .\macedit.a
+    33                          
+    34                          linebuf
+    35                          	progend = linebuf+128
+    36  3014 00                 	!byte 0			; 128 Byte Zeilenpuffer
+    37                          

@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
-using Righthand.ViceMonitor.Bridge.Shared;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
 {
@@ -97,7 +96,8 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             {
                 acmeFiles[0] = files[0] with { Lines = lines };
             }
-            return new AcmePdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels);
+            return new AcmePdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels,
+                lines.Where(l => l.StartAddress.HasValue).ToImmutableArray());
         }
         internal AcmeFile CreateAcmeFile(AcmeFile source, ImmutableArray<AcmeLine> lines)
         {

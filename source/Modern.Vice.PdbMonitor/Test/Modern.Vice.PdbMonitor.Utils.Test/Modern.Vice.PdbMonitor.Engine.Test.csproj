@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture.AutoNSubstitute" Version="4.17.0" />
+    <PackageReference Include="AutoFixture.Community.ImmutableCollections" Version="1.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="NSubstitute" Version="4.2.2" />
     <PackageReference Include="NUnit" Version="3.13.2" />
@@ -14,6 +15,12 @@
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Samples\macedit.lbl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\macedit.rep">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Samples\SamplePdbFile.pdb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

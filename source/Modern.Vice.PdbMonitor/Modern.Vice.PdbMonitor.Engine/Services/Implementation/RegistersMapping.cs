@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Righthand.ViceMonitor.Bridge.Responses;

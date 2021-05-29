@@ -1,11 +1,12 @@
-﻿using System.IO;
-using System.Linq;
-using Microsoft.Extensions.Logging;
-using Modern.Vice.PdbMonitor.Engine.Models;
-using System.ComponentModel;
+﻿using System;
 using System.Collections.Immutable;
-using Righthand.MessageBus;
+using System.ComponentModel;
+using System.IO;
+using System.Reflection;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Messages;
+using Modern.Vice.PdbMonitor.Engine.Models;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -56,44 +57,65 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 
         void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            var lines = globals.Pdb?.Lines;
+            var lines = globals.Pdb?.LinesWithAddress;
             ushort? address = Registers.Current.PC;
             if (lines.HasValue && address.HasValue)
             {
-                var matchingLine = GetAcmeLineMatchingAddress(lines.Value, address.Value);
+                var matchingLine = BinarySearch(lines.Value, address.Value);
                 if (matchingLine is not null)
                 {
                     var file = globals.Pdb!.Files[matchingLine.FileRelativePath];
                     int matchingLineNumber = file.Lines.IndexOf(matchingLine);
                     dispatcher.Dispatch(
-                        new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber));
+                        new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
+                    );
                 }
             }
         }
-        AcmeLine? GetAcmeLineMatchingAddress(ImmutableArray<AcmeLine> lines, ushort address)
+
+        internal AcmeLine? BinarySearch(ImmutableArray<AcmeLine> lines, ushort address)
         {
-            AcmeLine? lastAddressLine = null;
-            foreach (var line in lines.Take(lines.Length - 1))
+            int from = 0;
+            int to = lines.Length - 1;
+            AcmeLine? line = null;
+            AcmeLine? nextLine = null;
+            if (lines.Length == 0)
             {
-                if (line.StartAddress.HasValue)
+                return null;
+            }
+            // if there is no next line, then address has to fall between StartAddress and bytes length even though it might not be correct,
+            // or before the StartAddress of the next line
+            bool IsAddressWithinLine(AcmeLine l, AcmeLine? nl) => 
+                address == l!.StartAddress 
+                || address > l.StartAddress && (nl is not null && address < nl.StartAddress || address < l.StartAddress + l.Data!.Value.Length);
+            while (from < to)
+            {
+                int middle = (from + to) / 2;
+                line = lines[middle];
+                nextLine = middle + 1 < lines.Length ? lines[middle+1]: null;
+
+                // address has to be in an earlier line
+                if (address < line.StartAddress)
                 {
-                    if (lastAddressLine is null)
-                    {
-                        lastAddressLine = line;
-                    }
-                    else
-                    {
-                        if (address >= lastAddressLine.StartAddress!.Value && address < line.StartAddress.Value)
-                        {
-                            return lastAddressLine;
-                        }
-                        else
-                        {
-                            lastAddressLine = line;
-                        }
-                    }
+                    to = Math.Max(middle - 1, from);
+                }
+                
+                else if (IsAddressWithinLine(line, nextLine))
+                {
+                    return line;
+                }
+                else
+                {
+                    from = Math.Min(middle + 1, to);
                 }
             }
+            line = lines[from];
+            nextLine = from + 1 < lines.Length ? lines[from + 1] : null;
+            if (IsAddressWithinLine(line!, nextLine))
+            {
+                return line;
+            }
+
             return null;
         }
         void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
