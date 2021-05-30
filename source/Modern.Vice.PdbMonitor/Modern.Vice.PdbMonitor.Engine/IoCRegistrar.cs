@@ -21,6 +21,7 @@ namespace Modern.Vice.PdbMonitor.Engine
             services.AddSingleton<RegistersViewModel>();
             services.AddSingleton<RegistersMapping>();
             services.AddSingleton<ExecutionStatusViewModel>();
+            services.AddSingleton<BreakpointsViewModel>();
             services.AddTransient<SourceFileViewModel>();
             services.AddSingleton<Globals>();
             services.AddSingleton<IAcmePdbParser, AcmePdbParser>();

@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             x:DataType="vm:BreakpointsViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.Breakpoints">
+  <DataGrid Items="{Binding Breakpoints}" AutoGenerateColumns="False">
+    <DataGrid.Resources>
+      <c:HexAddressConverter x:Key="HexAddressConverter" />
+    </DataGrid.Resources>
+    <DataGrid.Columns>
+      <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" />
+      <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+    </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

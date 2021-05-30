@@ -15,6 +15,7 @@
       <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
       <c:HexAddressConverter x:Key="HexAddressConverter" />
       <c:BoolToColorConverter x:Key="ExecutionRowToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
+      <c:BoolToColorConverter x:Key="BreakpointIconBackgroundConverter" OnTrue="Red" OnFalse="Transparent" />
     </ScrollViewer.Resources>
     <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
       <ItemsRepeater.ItemTemplate>
@@ -25,6 +26,18 @@
                 <Setter Property="FontFamily" Value="Fira Code" />
               </Style>
             </StackPanel.Styles>
+            <Button Width="14" Height="14" Margin="4,0" Foreground="Gray" VerticalAlignment="Center"
+              Command="{Binding #lines.DataContext.AddOrRemoveBreakpointCommand}" CommandParameter="{Binding}">
+              <Button.Template>
+                <ControlTemplate TargetType="Button">
+                  <!--<TextBlock Text="B" IsVisible="{Binding Breakpoint, Converter={x:Static ObjectConverters.IsNull}}" Width="20" Margin="4,0" />-->
+                  <Border CornerRadius="7" ClipToBounds="True"
+                    Background="{Binding HasBreakpoint, Converter={StaticResource BreakpointIconBackgroundConverter}}" >
+                  </Border>
+                </ControlTemplate>
+              </Button.Template>
+            </Button>
+            <!--<TextBlock Text="B" IsVisible="{Binding Breakpoint, Converter={x:Static ObjectConverters.IsNotNull}}" />-->
             <TextBlock Text="{Binding Row}" Width="50" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Address, Converter={StaticResource HexAddressConverter}}" Width="50" TextAlignment="Right" Foreground="Gray" Margin="8,0,0,0" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Content, Converter={StaticResource TabsToSpacesConverter}}" Margin="8,0,0,0" VerticalAlignment="Center" />

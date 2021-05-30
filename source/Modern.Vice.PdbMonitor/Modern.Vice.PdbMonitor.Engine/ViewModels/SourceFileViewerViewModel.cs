@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -39,9 +38,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (item is null)
             {
                 var content = acmeFile.Lines
-                    .Select((l, i) => new LineViewModel(l.LineNumber, l.StartAddress, l.Text))
+                    .Select((l, i) => new LineViewModel(l, l.LineNumber, l.StartAddress, l.Text))
                     .ToImmutableArray();
-                item = serviceProvider.CreateScopedSourceFileViewModel(acmeFile.RelativePath, content);
+                item = serviceProvider.CreateScopedSourceFileViewModel(acmeFile, content);
                 Files.Add(item);
             }
             if (item is not null)

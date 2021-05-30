@@ -81,6 +81,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
         public ScopedViewModel Content { get; private set; } = default!;
         public RegistersViewModel RegistersViewModel { get; private set; } = default!;
+        public BreakpointsViewModel BreakpointsViewModel { get; private set; } = default!;
         public ScopedViewModel? OverlayContent { get; private set; }
         TaskCompletionSource stoppedExecution;
         TaskCompletionSource resumedExecution;
@@ -104,7 +105,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
             ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
             IProjectPrgFileWatcher projectPdbFileWatcher, RegistersMapping registersMapping, RegistersViewModel registers, 
-            ExecutionStatusViewModel executionStatusViewModel)
+            ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel)
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
@@ -116,6 +117,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.projectPdbFileWatcher = projectPdbFileWatcher;
             this.executionStatusViewModel = executionStatusViewModel;
             RegistersViewModel = registers;
+            BreakpointsViewModel = breakpointsViewModel;
             executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
             uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             commandsManager = new CommandsManager(this, uiFactory);

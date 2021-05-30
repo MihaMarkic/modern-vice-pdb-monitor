@@ -188,6 +188,9 @@
       <TabItem Header="Registers">
         <v:Registers DataContext="{Binding RegistersViewModel}" />
       </TabItem>
+      <TabItem Header="Breakpoints">
+        <v:Breakpoints DataContext="{Binding BreakpointsViewModel}" />
+      </TabItem>
     </TabControl>
     <ContentControl>
       <ContentControl.Content>
