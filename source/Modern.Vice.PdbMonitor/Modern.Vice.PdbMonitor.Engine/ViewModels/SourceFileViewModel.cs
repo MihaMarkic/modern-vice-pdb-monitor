@@ -86,11 +86,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (line!.Breakpoint is null)
             {
-                breakpoints.AddBreakpointAsync(file, line!.SourceLine, condition: null);
+                int lineNumber = Lines.IndexOf(line);
+                await breakpoints.AddBreakpointAsync(file, line!.SourceLine, lineNumber, condition: null);
             }
             else
             {
-                breakpoints.RemoveBreakpointAsync(line!.Breakpoint);
+                await breakpoints.RemoveBreakpointAsync(line!.Breakpoint);
             }
         }
         public void SetExecutionRow(int rowIndex)

@@ -13,8 +13,15 @@
       <c:HexAddressConverter x:Key="HexAddressConverter" />
     </DataGrid.Resources>
     <DataGrid.Columns>
+      <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" />
       <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" />
-      <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Line" Binding="{Binding File}" IsReadOnly="true" />
+      <DataGridTextColumn Header="File" Binding="{Binding FileName}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Condition" Binding="{Binding Condition, Mode=OneTime}" IsReadOnly="true" />
     </DataGrid.Columns>
   </DataGrid>
 </UserControl>

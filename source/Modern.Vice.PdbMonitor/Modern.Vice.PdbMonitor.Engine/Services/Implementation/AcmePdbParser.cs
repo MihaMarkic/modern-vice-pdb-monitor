@@ -71,8 +71,17 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                     case ReportCodeLine reportCodeLine:
                         if (file is not null)
                         {
-                            var line = new AcmeLine(file.RelativePath, reportCodeLine.LineNumber, reportCodeLine.StartAddress, reportCodeLine.Data, reportCodeLine.IsMoreData,
-                                reportCodeLine.Text);
+                            ushort dataLength;
+                            if (reportCodeLine.Data.Length > 0 && !(reportCodeLine.IsMoreData ?? false))
+                            {
+                                dataLength = (ushort)reportCodeLine.Data.Length;
+                            }
+                            else
+                            {
+                                dataLength = 0;
+                            }
+                            var line = new AcmeLine(file.RelativePath, reportCodeLine.LineNumber, reportCodeLine.StartAddress, 
+                                reportCodeLine.Data, dataLength, reportCodeLine.IsMoreData, reportCodeLine.Text);
                             linesBuilder.Add(line);
                         }
                         else
@@ -83,7 +92,8 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                 }
             }
             var files = filesBuilder.Values.ToImmutableArray();
-            var lines = linesBuilder.ToImmutable();
+            var rawLines = linesBuilder.ToArray();
+            var lines = FixLinesDataLength(rawLines);
             AcmeFile[] acmeFiles = new AcmeFile[files.Length];
             if (acmeFiles.Length > 1)
             {
@@ -98,6 +108,58 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             }
             return new AcmePdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels,
                 lines.Where(l => l.StartAddress.HasValue).ToImmutableArray());
+        }
+        /// <summary>
+        /// Adds DataLength to those lines with more data than reported by ACME
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns>An immutable array of lines with set DataLength</returns>
+        internal ImmutableArray<AcmeLine> FixLinesDataLength(AcmeLine[] source)
+        {
+            if (source.Length == 0)
+            {
+                return ImmutableArray<AcmeLine>.Empty;
+            }
+            AcmeLine? incomplete = null;
+            int? incompleteIndex = null;
+            int i = 0;
+            while (i < source.Length)
+            {
+                bool proceedWithNext = true;
+                AcmeLine line = source[i];
+                if (incomplete is null)
+                {
+                    if (line.HasMoreData ?? false)
+                    {
+                        incomplete = line;
+                        incompleteIndex = i;
+                    }
+                }
+                else
+                {
+                    if (line.StartAddress.HasValue)
+                    {
+                        incomplete = incomplete with { DataLength = (ushort)(line.StartAddress!.Value - incomplete.StartAddress!.Value) };
+                        source[incompleteIndex!.Value] = incomplete;
+                        incomplete = null;
+                        incompleteIndex = null;
+                        proceedWithNext = !(line.HasMoreData ?? false);
+                    }
+                }
+                // when a line with StartAddress if found
+                if (proceedWithNext)
+                {
+                    i++;
+                }
+            }
+            // fix last line, just set the length to whatever
+            AcmeLine lastLine = source[^1];
+            if (lastLine.HasMoreData ?? false)
+            {
+                lastLine = lastLine with { DataLength = (ushort)lastLine.Data!.Value.Length };
+                source[^1] = lastLine;
+            }
+            return source.ToImmutableArray();
         }
         internal AcmeFile CreateAcmeFile(AcmeFile source, ImmutableArray<AcmeLine> lines)
         {

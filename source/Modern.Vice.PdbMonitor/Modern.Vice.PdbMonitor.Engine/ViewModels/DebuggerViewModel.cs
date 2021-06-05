@@ -72,27 +72,27 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
         }
-
+        /// <summary>
+        /// Applies binary search for line with given <paramref name="address"/>.
+        /// </summary>
+        /// <param name="lines">Code lines containing data.</param>
+        /// <param name="address">Address to search for.</param>
+        /// <returns></returns>
         internal AcmeLine? BinarySearch(ImmutableArray<AcmeLine> lines, ushort address)
         {
             int from = 0;
             int to = lines.Length - 1;
             AcmeLine? line = null;
-            AcmeLine? nextLine = null;
             if (lines.Length == 0)
             {
                 return null;
             }
             // if there is no next line, then address has to fall between StartAddress and bytes length even though it might not be correct,
             // or before the StartAddress of the next line
-            bool IsAddressWithinLine(AcmeLine l, AcmeLine? nl) => 
-                address == l!.StartAddress 
-                || address > l.StartAddress && (nl is not null && address < nl.StartAddress || address < l.StartAddress + l.Data!.Value.Length);
             while (from < to)
             {
                 int middle = (from + to) / 2;
                 line = lines[middle];
-                nextLine = middle + 1 < lines.Length ? lines[middle+1]: null;
 
                 // address has to be in an earlier line
                 if (address < line.StartAddress)
@@ -100,7 +100,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     to = Math.Max(middle - 1, from);
                 }
                 
-                else if (IsAddressWithinLine(line, nextLine))
+                else if (line.IsAddressWithinLine(address))
                 {
                     return line;
                 }
@@ -110,8 +110,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
             line = lines[from];
-            nextLine = from + 1 < lines.Length ? lines[from + 1] : null;
-            if (IsAddressWithinLine(line!, nextLine))
+            if (line.IsAddressWithinLine(address))
             {
                 return line;
             }

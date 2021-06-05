@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Immutable;
+using System.Linq;
+using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Modern.Vice.PdbMonitor.Utils.Test;
 using NUnit.Framework;
@@ -79,6 +81,59 @@ namespace Modern.Vice.PdbMonitor.Engine.Test.Services.Implementation
                 var actual = (ReportCodeLine)Target.ParseCodeLine(line, 1, new AcmePdbParser.Context());
 
                 return actual.Text;
+            }
+        }
+
+        [TestFixture]
+        public class FixLinesDataLength : AcmePdbParserTest
+        {
+            [Test]
+            public void WhenSourceIsEmptyArray_ReturnsEmptyArray()
+            {
+                var source = new AcmeLine[0];
+
+                var actual = Target.FixLinesDataLength(source);
+
+                Assert.That(actual.Length, Is.Zero);
+            }
+            [Test]
+            public void WhenFirstLineHasMoreData_ItsDataLengthIsSetCorrectly()
+            {
+                var source = new AcmeLine[] {
+                    new AcmeLine(default, default, 0x0000, default, 0, true, default),
+                    new AcmeLine(default, default, 0x0010, default, 0, false, default),
+                };
+
+                var actual = Target.FixLinesDataLength(source);
+
+                Assert.That(actual.Length, Is.EqualTo(2));
+                Assert.That(actual[0].DataLength, Is.EqualTo(0x10));
+            }
+            [Test]
+            public void WhenNextLineHasAlsoMoreData_ItsDataLengthIsSetCorrectly()
+            {
+                var source = new AcmeLine[] {
+                    new AcmeLine(default, default, 0x0000, default, 0, true, default),
+                    new AcmeLine(default, default, 0x0010, default, 0, true, default),
+                    new AcmeLine(default, default, 0x0025, default, 0, true, default),
+                    new AcmeLine(default, default, 0x0010, default, 0, false, default),
+                };
+
+                var actual = Target.FixLinesDataLength(source);
+
+                Assert.That(actual[1].DataLength, Is.EqualTo(0x15));
+            }
+            [Test]
+            public void WhenLastLineHasMoreData_ItsDataLengthIsSetDataLength()
+            {
+                var data = Enumerable.Range(0, 8).Select(i => (byte)i).ToImmutableArray();
+                var source = new AcmeLine[] {
+                    new AcmeLine(default, default, 0x0000, data, 0, true, default),
+                };
+
+                var actual = Target.FixLinesDataLength(source);
+
+                Assert.That(actual[0].DataLength, Is.EqualTo(8));
             }
         }
     }
