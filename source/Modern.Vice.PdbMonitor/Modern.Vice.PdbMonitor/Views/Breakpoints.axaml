@@ -8,20 +8,28 @@
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              x:DataType="vm:BreakpointsViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.Breakpoints">
+  <UserControl.Resources>
+      <c:BoolToColorConverter x:Key="IsHitToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="DataGridCell.colored">
+      <Setter Property="Background" Value="{Binding IsCurrentlyHit, Mode=OneWay, Converter={StaticResource IsHitToBackgroundConverter}}"/>
+    </Style>
+  </UserControl.Styles>
   <DataGrid Items="{Binding Breakpoints}" AutoGenerateColumns="False">
     <DataGrid.Resources>
       <c:HexAddressConverter x:Key="HexAddressConverter" />
     </DataGrid.Resources>
     <DataGrid.Columns>
-      <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" />
-      <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" />
-      <DataGridTextColumn Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
-      <DataGridTextColumn Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
-      <DataGridTextColumn Header="Line" Binding="{Binding File}" IsReadOnly="true" />
-      <DataGridTextColumn Header="File" Binding="{Binding FileName}" IsReadOnly="true" />
-      <DataGridTextColumn Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="true" />
-      <DataGridTextColumn Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="true" />
-      <DataGridTextColumn Header="Condition" Binding="{Binding Condition, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" CellStyleClasses="colored" />
+      <DataGridCheckBoxColumn CellStyleClasses="colored" Header="Enabled" Binding="{Binding IsEnabled}" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Line" Binding="{Binding LineNumber}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="File" Binding="{Binding FileName}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="true" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Condition" Binding="{Binding Condition, Mode=OneTime}" IsReadOnly="true" Width="*" />
     </DataGrid.Columns>
   </DataGrid>
 </UserControl>

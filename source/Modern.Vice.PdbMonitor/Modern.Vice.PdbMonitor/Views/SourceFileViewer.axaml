@@ -27,13 +27,36 @@
               </Style>
             </StackPanel.Styles>
             <Button Width="14" Height="14" Margin="4,0" Foreground="Gray" VerticalAlignment="Center"
-              Command="{Binding #lines.DataContext.AddOrRemoveBreakpointCommand}" CommandParameter="{Binding}">
+              Command="{Binding #lines.DataContext.AddOrRemoveBreakpointCommand}" CommandParameter="{Binding}"
+              >
+              <Button.Styles>
+                <Style Selector="Button /template/ Border">
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+                <Style Selector="Button:pointerover /template/ Border">
+                  <Setter Property="Background" Value="LightGray" />
+                </Style>
+                <Style Selector="Button:pressed /template/ Border">
+                  <Setter Property="Background" Value="{DynamicResource ThemeControlHighBrush}" />
+                </Style>
+                <!-- has breakpoint -->
+                <Style Selector="Button /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="Red" />
+                </Style>
+                <Style Selector="Button:pointerover /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="Orange" />
+                </Style>
+                <Style Selector="Button:pressed /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="DarkOrange" />
+                </Style>
+              </Button.Styles>
               <Button.Template>
                 <ControlTemplate TargetType="Button">
-                  <!--<TextBlock Text="B" IsVisible="{Binding Breakpoint, Converter={x:Static ObjectConverters.IsNull}}" Width="20" Margin="4,0" />-->
-                  <Border CornerRadius="7" ClipToBounds="True"
-                    Background="{Binding HasBreakpoint, Converter={StaticResource BreakpointIconBackgroundConverter}}" >
-                  </Border>
+                  <!--<Border Name="host" CornerRadius="10" ClipToBounds="True">-->
+                    <Border Name="host1" CornerRadius="7" ClipToBounds="True" 
+                      b:ToggleClassOnBoolChangeBehavior.Trigger="{Binding HasBreakpoint}" b:ToggleClassOnBoolChangeBehavior.Class="breakpoint" />
+                    <!-- Background="{Binding HasBreakpoint, Converter={StaticResource BreakpointIconBackgroundConverter}}" -->
+                  <!--</Border>-->
                 </ControlTemplate>
               </Button.Template>
             </Button>

@@ -88,6 +88,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         Process? viceProcess;
         CancellationTokenSource? startDebuggingCts;
         readonly TaskFactory uiFactory;
+        /// <summary>
+        /// When true the engine should reapply breakpoint upon debugging start. Typical reasons are connection lost or pdb refresh.
+        /// </summary>
+        bool requiresBreakpointsRefresh;
         public string Caption
         {
             get
@@ -159,6 +163,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
+            requiresBreakpointsRefresh = true;
         }
         /// <summary>
         /// Relays execution status
@@ -243,6 +248,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             uiFactory.StartNew(() =>
             {
+                if (!e.IsConnected)
+                {
+                    requiresBreakpointsRefresh = true;
+                }
                 IsViceConnected = e.IsConnected;
             });
         }
@@ -291,6 +300,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     if (!viceBridge.IsConnected)
                     {
                         await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
+                    }
+                    if (requiresBreakpointsRefresh)
+                    {
+                        await BreakpointsViewModel.ReapplyBreakpoints(startDebuggingCts.Token);
+                        requiresBreakpointsRefresh = false;
                     }
                     // make sure vice isn't in paused state
                     if (IsDebuggingPaused)
@@ -480,7 +494,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
                 try
                 {
-                    //string arguments = $"-binarymonitor -autostartprgmode 1 {globals.FullPrgPath}";
                     string arguments = $"-binarymonitor";
                     return Process.Start(path, arguments);
                 }
@@ -648,6 +661,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     {
                         projectPdbFileWatcher.Stop();
                     }
+                    break;
+                case nameof(IsUpdatedPdbAvailable):
+                    requiresBreakpointsRefresh = true;
                     break;
             }
         }

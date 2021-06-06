@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -30,6 +31,24 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             openSourceFileSubscription = dispatcher.Subscribe<OpenSourceFileMessage>(OpenSourceFile);
             CloseSourceFileCommand = new(CloseSourceFile);
             Files = new();
+            executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        }
+
+        void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(ExecutionStatusViewModel.IsDebugging) when !executionStatusViewModel.IsDebugging:
+                    ClearExecutionRow();
+                    break;
+            }
+        }
+        void ClearExecutionRow()
+        {
+            foreach (var file in Files)
+            {
+                file.ClearExecutionRow();
+            }
         }
         internal void OpenSourceFile(object sender, OpenSourceFileMessage? message)
         {
@@ -72,7 +91,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (disposing)
             {
-                foreach(var file in Files)
+                executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+                foreach (var file in Files)
                 {
                     file.Scope!.Dispose();
                 }
