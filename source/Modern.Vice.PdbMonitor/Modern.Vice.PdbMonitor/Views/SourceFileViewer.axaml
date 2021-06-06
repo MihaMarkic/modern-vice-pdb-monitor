@@ -30,6 +30,7 @@
               Command="{Binding #lines.DataContext.AddOrRemoveBreakpointCommand}" CommandParameter="{Binding}"
               >
               <Button.Styles>
+                <!-- has no breakpoint -->
                 <Style Selector="Button /template/ Border">
                   <Setter Property="Background" Value="Transparent" />
                 </Style>
