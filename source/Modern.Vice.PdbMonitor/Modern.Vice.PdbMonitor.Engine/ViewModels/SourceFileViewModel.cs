@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Righthand.ViceMonitor.Bridge;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -12,6 +14,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
     {
         readonly BreakpointsViewModel breakpoints;
         readonly AcmeFile file;
+        readonly IViceBridge viceBridge;
+        readonly TaskFactory uiFactory;
         public string Path => file.RelativePath;
         public ImmutableArray<LineViewModel> Lines { get; }
         public int CursorColumn { get; set; }
@@ -27,13 +31,22 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// Constructor arguments are passed by <see cref="ServiceProviderExtension.CreateSourceFileViewModel"/>.
         /// It is mandatory that they are in sync.
         /// </remarks>
-        public SourceFileViewModel(AcmeFile file, ImmutableArray<LineViewModel> lines, BreakpointsViewModel breakpoints)
+        public SourceFileViewModel(IViceBridge viceBridge, AcmeFile file, ImmutableArray<LineViewModel> lines, BreakpointsViewModel breakpoints)
         {
+            this.viceBridge = viceBridge;
             this.breakpoints = breakpoints;
             this.file = file;
+            uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             Lines = lines;
-            AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync, l => l?.Address is not null);
+            viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
+            AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
+               canExecute: l => l?.Address is not null && viceBridge.IsConnected);
             breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
+        }
+
+        void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
+        {
+            uiFactory.StartNew(() => AddOrRemoveBreakpointCommand.RaiseCanExecuteChanged());
         }
 
         void Breakpoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -104,6 +117,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (disposing)
             {
                 breakpoints.Breakpoints.CollectionChanged -= Breakpoints_CollectionChanged;
+                viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
             }
             base.Dispose(disposing);
         }

@@ -68,7 +68,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 {
                     item.CursorRow = message.Line.Value;
                 }
-                item.ClearExecutionRow();
+                ClearExecutionRow();
                 if (message.ExecutingLine.HasValue && executionStatusViewModel.IsDebugging)
                 {
                     item.SetExecutionRow(message.ExecutingLine.Value);

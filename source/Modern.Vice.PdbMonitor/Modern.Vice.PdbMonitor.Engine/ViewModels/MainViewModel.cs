@@ -199,14 +199,25 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 switch (e.Response)
                 {
                     case StoppedResponse:
-                        executionStatusViewModel.IsDebuggingPaused = true;
-                        stoppedExecution.SetResult();
-                        stoppedExecution = new TaskCompletionSource();
+                        if (executionStatusViewModel.IsDebugging)
+                        {
+                            executionStatusViewModel.IsDebuggingPaused = true;
+                            stoppedExecution.SetResult();
+                            stoppedExecution = new TaskCompletionSource();
+                        }
+                        else
+                        {
+                            // when not debugging, stopping VICE is not desired. i.e. when a checkpoint is added
+                            viceBridge.EnqueueCommand(new ExitCommand());
+                        }
                         break;
                     case ResumedResponse:
-                        executionStatusViewModel.IsDebuggingPaused = false;
-                        resumedExecution.SetResult();
-                        resumedExecution = new TaskCompletionSource();
+                        if (executionStatusViewModel.IsDebugging)
+                        {
+                            executionStatusViewModel.IsDebuggingPaused = false;
+                            resumedExecution.SetResult();
+                            resumedExecution = new TaskCompletionSource();
+                        }
                         break;
                 }
             });
