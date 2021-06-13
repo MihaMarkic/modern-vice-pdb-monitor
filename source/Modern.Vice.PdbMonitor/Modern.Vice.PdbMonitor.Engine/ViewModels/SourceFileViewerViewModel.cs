@@ -31,7 +31,21 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             openSourceFileSubscription = dispatcher.Subscribe<OpenSourceFileMessage>(OpenSourceFile);
             CloseSourceFileCommand = new(CloseSourceFile);
             Files = new();
+            globals.PropertyChanged += Globals_PropertyChanged;
             executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        }
+
+        void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(Globals.Project):
+                    while (Files.Count > 0)
+                    {
+                        CloseSourceFile(Files[0]);
+                    }
+                    break;
+            }
         }
 
         void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -39,11 +53,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             switch (e.PropertyName)
             {
                 case nameof(ExecutionStatusViewModel.IsDebugging) when !executionStatusViewModel.IsDebugging:
+                case nameof(ExecutionStatusViewModel.IsDebuggingPaused) when !executionStatusViewModel.IsDebuggingPaused:
                     ClearExecutionRow();
                     break;
             }
         }
-        void ClearExecutionRow()
+        internal void ClearExecutionRow()
         {
             foreach (var file in Files)
             {
@@ -92,6 +107,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (disposing)
             {
                 executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+                globals.PropertyChanged -= Globals_PropertyChanged;
                 foreach (var file in Files)
                 {
                     file.Scope!.Dispose();

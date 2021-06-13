@@ -33,7 +33,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             watcher.Path = path;
             watcher.Filter = filter;
             watcher.EnableRaisingEvents = true;
-            logger.LogDebug("Started watching changes for file {File} in {Directory}", watcher.Path, watcher.Filter);
+            logger.LogDebug("Started watching changes for file {File} in {Directory}", watcher.Filter, watcher.Path);
         }
 
         public void Stop()

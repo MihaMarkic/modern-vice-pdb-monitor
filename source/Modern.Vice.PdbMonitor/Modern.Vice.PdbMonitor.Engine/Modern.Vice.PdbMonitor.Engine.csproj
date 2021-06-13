@@ -11,9 +11,10 @@
     </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FuzzySharp" Version="2.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="PropertyChanged.Fody" Version="3.3.3" />
+    <PackageReference Include="PropertyChanged.Fody" Version="3.4.0" />
     <PackageReference Include="Righthand.MessageBus" Version="1.1.2" />
     <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.9" />
   </ItemGroup>

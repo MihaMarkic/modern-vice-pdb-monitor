@@ -29,7 +29,10 @@ namespace Modern.Vice.PdbMonitor.Core.Common
             return canExecute((T?)parameter);
         }
 
-        public virtual void Execute(object? parameter) => _ = execute((T)(parameter ?? throw new ArgumentNullException(nameof(parameter))));
+        public virtual void Execute(object? parameter)
+        {
+            _ = execute((T)(parameter ?? throw new ArgumentNullException(nameof(parameter))));
+        }
         public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }

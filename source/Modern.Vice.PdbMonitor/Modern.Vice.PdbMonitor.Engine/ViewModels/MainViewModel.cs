@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -20,6 +11,15 @@ using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -27,7 +27,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
     {
         readonly ILogger<MainViewModel> logger;
         readonly IAcmePdbParser acmePdbParser;
-        readonly Globals globals;
         readonly IDispatcher dispatcher;
         readonly ISettingsManager settingsManager;
         readonly IServiceScope scope;
@@ -35,13 +34,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IProjectPrgFileWatcher projectPdbFileWatcher;
         readonly CommandsManager commandsManager;
         readonly ExecutionStatusViewModel executionStatusViewModel;
-        public string AppName => "Modern VICE PDB Monitor";
+        public Globals Globals { get; }
         readonly Subscription closeOverlaySubscription;
         readonly Subscription prgFileChangedSubscription;
         readonly Subscription prgFilePathChangedSubscription;
-        public Project? Project => globals.Project;
-        public bool IsProjectOpen => Project is not null;
-        public ObservableCollection<string> RecentProjects => globals.Settings.RecentProjects;
+        public bool IsProjectOpen => Globals.Project is not null;
+        public ObservableCollection<string> RecentProjects => Globals.Settings.RecentProjects;
         public RelayCommand ShowSettingsCommand { get; }
         public RelayCommand ShowProjectCommand { get; }
         public RelayCommand TestCommand { get; }
@@ -92,20 +90,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// When true the engine should reapply breakpoint upon debugging start. Typical reasons are connection lost or pdb refresh.
         /// </summary>
         bool requiresBreakpointsRefresh;
-        public string Caption
-        {
-            get
-            {
-                if (Project is null)
-                {
-                    return AppName;
-                }
-                else
-                {
-                    return $"{AppName} - {globals.Settings.RecentProjects[0]}";
-                }
-            }
-        }
         public MainViewModel(ILogger<MainViewModel> logger, IAcmePdbParser acmePdbParser, Globals globals, IDispatcher dispatcher,
             ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
             IProjectPrgFileWatcher projectPdbFileWatcher, RegistersMapping registersMapping, RegistersViewModel registers, 
@@ -113,7 +97,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             this.logger = logger;
             this.acmePdbParser = acmePdbParser;
-            this.globals = globals;
+            this.Globals = globals;
             this.dispatcher = dispatcher;
             this.settingsManager = settingsManager;
             this.scope = scope;
@@ -236,18 +220,18 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             IsParsingPdb = true;
             try
             {
-                if (Project!.PrgPath is not null)
+                if (Globals.Project!.PrgPath is not null)
                 {
 #if DEBUG
                     await Task.Delay(5000);
 #endif
-                    var debugFiles = GetDebugFilesPath(Project.PrgPath);
-                    globals.Pdb = await ParsePdbAsync(debugFiles);
+                    var debugFiles = GetDebugFilesPath(Globals.Project.PrgPath);
+                    Globals.Pdb = await ParsePdbAsync(debugFiles);
                     IsUpdatedPdbAvailable = false;
                 }
                 else
                 {
-                    globals.Pdb = null;
+                    Globals.Pdb = null;
                 }
             }
             finally
@@ -303,6 +287,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 executionStatusViewModel.IsDebugging = true;
                 try
                 {
+                    bool hasPdbChanged = IsUpdatedPdbAvailable;
                     if (IsUpdatedPdbAvailable)
                     {
                         await UpdatePdbAsync();
@@ -314,7 +299,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     }
                     if (requiresBreakpointsRefresh)
                     {
-                        await BreakpointsViewModel.ReapplyBreakpoints(startDebuggingCts.Token);
+                        await BreakpointsViewModel.ReapplyBreakpoints(hasPdbChanged, startDebuggingCts.Token);
                         requiresBreakpointsRefresh = false;
                     }
                     // make sure vice isn't in paused state
@@ -325,14 +310,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     await RegistersViewModel.InitAsync();
 
                     var command = viceBridge.EnqueueCommand(
-                        new AutoStartCommand(runAfterLoading: Project!.AutoStartMode == DebugAutoStartMode.Vice, 0, globals.FullPrgPath!));
+                        new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 0, Globals.FullPrgPath!));
                     await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
                     await stoppedExecution.Task;
 
-                    if (Project!.StopAtLabel != "[None]")
+                    if (Globals.Project!.StopAtLabel != "[None]")
                     {
-                        if (!string.IsNullOrWhiteSpace(Project!.StopAtLabel) && globals.Pdb is not null
-                            && globals.Pdb.Labels.TryGetValue(Project!.StopAtLabel, out var label))
+                        if (!string.IsNullOrWhiteSpace(Globals.Project!.StopAtLabel) && Globals.Pdb is not null
+                            && Globals.Pdb.Labels.TryGetValue(Globals.Project!.StopAtLabel, out var label))
                         {
                             var checkpoint = viceBridge.EnqueueCommand(
                             new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
@@ -341,26 +326,22 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         else
                         {
                             dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Start debugging",
-                                $"Couldn't set auto start checkpoint for label {Project!.StopAtLabel}"));
+                                $"Couldn't set auto start checkpoint for label {Globals.Project!.StopAtLabel}"));
                         }
                     }
 
-                    if (Project!.AutoStartMode == DebugAutoStartMode.AtAddress)
+                    if (Globals.Project!.AutoStartMode == DebugAutoStartMode.AtAddress)
                     {
-                        if (globals.Pdb is not null&& globals.Pdb.Labels.TryGetValue("start", out var label))
+                        if (Globals.Pdb is not null && Globals.Pdb.Labels.TryGetValue("start", out var label))
                         {
                             await RegistersViewModel.SetStartAddressAsync(label!.Address, startDebuggingCts.Token);
                         }
                         else
                         {
                             dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Warning, "Start debugging", 
-                                $"Couldn't auto start using AtAddress for label {Project!.StopAtLabel}"));
+                                $"Couldn't auto start using AtAddress for label {Globals.Project!.StopAtLabel}"));
                         }
                     }
-                    //if (Project!.StopAtLabel != "[None]")
-                    //{
-                    //    await ExitViceMonitorAsync();
-                    //}
                 }
                 catch (OperationCanceledException)
                 {
@@ -487,22 +468,37 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             switch (e.PropertyName)
             {
                 case nameof(Globals.Project):
-                    OnPropertyChanged(nameof(Project));
-                    OnPropertyChanged(nameof(Caption));
                     OnPropertyChanged(nameof(IsProjectOpen));
                     break;
+                case nameof(Globals.ProjectDirectory):
+                    UpdateDirectoryChangesTracker();
+                    break;
+            }
+        }
+        void UpdateDirectoryChangesTracker()
+        {
+            if (Globals.Project?.PrgPath is not null)
+            {
+                string fullPrgPath = Path.Combine(Globals.ProjectDirectory!, Globals.Project.PrgPath);
+                string prgDirectoryPath = Path.GetDirectoryName(fullPrgPath)!;
+                string filter = Path.GetFileName(fullPrgPath);
+                projectPdbFileWatcher.Start(prgDirectoryPath, filter);
+            }
+            else
+            {
+                projectPdbFileWatcher.Stop();
             }
         }
         internal void CloseProject()
         {
-            globals.Project = null;
-            globals.Pdb = null;
+            Globals.Project = null;
+            Globals.Pdb = null;
         }
         internal Process? StartVice()
         {
-            if (!string.IsNullOrWhiteSpace(globals.Settings.VicePath))
+            if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
             {
-                string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
+                string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64dtv.exe");
                 try
                 {
                     string arguments = $"-binarymonitor";
@@ -522,14 +518,19 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         void Test()
         {
-            if (!string.IsNullOrWhiteSpace(globals.Settings.VicePath))
+            if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
             {
-                string path = Path.Combine(globals.Settings.VicePath, "bin", "x64dtv.exe");
+                string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64dtv.exe");
                 var proc = Process.Start(path, "-binarymonitor");
             }
         }
-        internal void OpenProjectFromPath(string? path) => _ = OpenProjectFromPathInternal(path);
-        internal async Task<bool> OpenProjectFromPathInternal(string? path)
+        internal async void OpenProjectFromPath(string? path)
+        {
+            // runs async because it manipulates most recent list
+            await Task.Delay(1);
+            await OpenProjectFromPathInternalAsync(path);
+        }
+        internal async Task<bool> OpenProjectFromPathInternalAsync(string? path)
         {
             const string ErrorTitle = "Failed opening project";
             if (path is null)
@@ -545,15 +546,20 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     return false;
                     //globals.Pdb = await ParsePdbAsync(GetPdbPath(prgPath));
                 }
-                globals.Pdb = null;
+                Globals.Pdb = null;
                 var project = settingsManager.Load<Project>(path)!;
-                globals.Project = project;
+                Globals.Project = project;
+                Globals.ProjectFile = path;
                 if (project!.PrgPath is not null)
                 {
                     var debugFiles = GetDebugFilesPath(project.PrgPath);
-                    globals.Pdb = await ParsePdbAsync(debugFiles);
+                    Globals.Pdb = await ParsePdbAsync(debugFiles);
                 }
-                globals.Settings.AddRecentProject(path);
+                else
+                {
+                    Globals.Pdb = null;
+                }
+                Globals.Settings.AddRecentProject(path);
             }
             catch (Exception ex)
             {
@@ -569,10 +575,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (ShowOpenProjectFileDialogAsync is not null)
             {
-                string? projectPath = await ShowOpenProjectFileDialogAsync(globals.Settings.LastAccessedDirectory, CancellationToken.None);
+                string? projectPath = await ShowOpenProjectFileDialogAsync(Globals.Settings.LastAccessedDirectory, CancellationToken.None);
                 if (!string.IsNullOrWhiteSpace(projectPath))
                 {
-                    _ = OpenProjectFromPathInternal(projectPath);
+                    _ = OpenProjectFromPathInternalAsync(projectPath);
                 }
             }
         }
@@ -580,13 +586,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (ShowCreateProjectFileDialogAsync is not null)
             {
-                string? projectPath = await ShowCreateProjectFileDialogAsync(globals.Settings.LastAccessedDirectory, CancellationToken.None);
+                string? projectPath = await ShowCreateProjectFileDialogAsync(Globals.Settings.LastAccessedDirectory, CancellationToken.None);
                 if (!string.IsNullOrWhiteSpace(projectPath))
                 {
                     bool success = CreateProject(projectPath);
                     if (success)
                     {
-                        globals.Settings.AddRecentProject(projectPath);
+                        Globals.Settings.AddRecentProject(projectPath);
                     }
                 }
             }
@@ -604,7 +610,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 {
                     var project = new Project();
                     settingsManager.Save(project, projectPath, false);
-                    globals.Project = project;
+                    Globals.Project = project;
+                    Globals.ProjectFile = projectPath;
                     return true;
                 }
                 catch (Exception ex)
@@ -616,10 +623,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         }
         internal DebugFiles GetDebugFilesPath(string prgPath)
         {
-            string directory = Path.Combine(globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "");
+            string directory = Path.Combine(Globals.ProjectDirectory!, Path.GetDirectoryName(prgPath) ?? "");
             return new DebugFiles(
-                Path.Combine(directory, globals.GetReportFileName(prgPath)),
-                Path.Combine(directory, globals.GetLabelsFileName(prgPath)));
+                Path.Combine(directory, Globals.GetReportFileName(prgPath)),
+                Path.Combine(directory, Globals.GetLabelsFileName(prgPath)));
         }
         internal async Task<AcmePdb?> ParsePdbAsync(DebugFiles debugFiles)
         {
@@ -636,7 +643,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             IsParsingPdb = true;
             try
             {
-                var result = await Task.Run(() => acmePdbParser.ParseAsync(debugFiles));
+                var result = await Task.Run(() => acmePdbParser.ParseAsync(Globals.ProjectDirectory!, debugFiles));
                 if (result.Errors.Length > 0)
                 {
                     string errorMessage = string.Join('\n', result.Errors.Select(e => e.ErrorText));
@@ -663,16 +670,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             base.OnPropertyChanged(name);
             switch (name)
             {
-                case nameof(Project):
-                    if (Project?.PrgPath is not null)
-                    {
-                        projectPdbFileWatcher.Start(globals.ProjectDirectory!, Project.PrgPath);
-                    }
-                    else
-                    {
-                        projectPdbFileWatcher.Stop();
-                    }
-                    break;
                 case nameof(IsUpdatedPdbAvailable):
                     requiresBreakpointsRefresh = true;
                     break;
@@ -686,7 +683,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
                 viceBridge.ViceResponse -= ViceBridge_ViceResponse;
                 executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
-                globals.PropertyChanged -= Globals_PropertyChanged;
+                Globals.PropertyChanged -= Globals_PropertyChanged;
                 closeOverlaySubscription.Dispose();
                 prgFileChangedSubscription.Dispose();
                 prgFilePathChangedSubscription.Dispose();

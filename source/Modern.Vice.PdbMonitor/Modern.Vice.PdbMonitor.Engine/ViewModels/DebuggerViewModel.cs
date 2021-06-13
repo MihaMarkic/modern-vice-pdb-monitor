@@ -69,8 +69,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     dispatcher.Dispatch(
                         new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
                     );
+                    return;
                 }
             }
+            SourceFileViewerViewModel.ClearExecutionRow();
         }
         /// <summary>
         /// Applies binary search for line with given <paramref name="address"/>.

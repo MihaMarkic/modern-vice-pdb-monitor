@@ -6,6 +6,6 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Abstract
 {
     public interface IAcmePdbParser
     {
-        Task<AcmePdbParseResult<AcmePdb>> ParseAsync(DebugFiles debugFiles, CancellationToken ct = default);
+        Task<AcmePdbParseResult<AcmePdb>> ParseAsync(string projectDirectory, DebugFiles debugFiles, CancellationToken ct = default);
     }
 }

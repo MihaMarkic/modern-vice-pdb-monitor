@@ -20,11 +20,12 @@ namespace Modern.Vice.PdbMonitor.Engine.Test.ViewModels
             [SetUp]
             public async Task SetUpAsync()
             {
-                string repPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Samples", "macedit.rep");
-                string lblPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Samples", "macedit.lbl");
+                var projectDirectory = Path.Combine(TestContext.CurrentContext.TestDirectory, "Samples");
+                string repPath = Path.Combine(projectDirectory, "macedit.rep");
+                string lblPath = Path.Combine(projectDirectory, "macedit.lbl");
                 var debugFiles = new DebugFiles(repPath, lblPath);
                 var parser = new AcmePdbParser();
-                var result = await parser.ParseAsync(debugFiles);
+                var result = await parser.ParseAsync(Path.Combine(TestContext.CurrentContext.TestDirectory, "Samples"), debugFiles);
                 pdb = result.ParsedData;
             }
             [Test]

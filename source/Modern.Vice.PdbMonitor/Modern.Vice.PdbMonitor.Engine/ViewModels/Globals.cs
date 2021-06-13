@@ -10,15 +10,18 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
     public class Globals : NotifiableObject
     {
+        public string AppName => "Modern VICE PDB Monitor";
+
         readonly ILogger<Globals> logger;
         readonly ISettingsManager settingsManager;
         public Settings Settings { get; set; } = default!;
         public Project? Project { get; set; }
-        public string? ProjectFile => Settings.RecentProjects.Count > 0 ? Settings.RecentProjects[0] : null;
-        public string? ProjectDirectory => Settings.RecentProjects.Count > 0 ? Path.GetDirectoryName(Settings.RecentProjects[0]) : null;
+        public string? ProjectFile { get; set; }
+        public string? ProjectDirectory => Path.GetDirectoryName(ProjectFile);
         public string? FullPrgPath => IsPrgSet ? Path.Combine(ProjectDirectory!, Project!.PrgPath!) : null;
         public bool IsPrgSet => !string.IsNullOrWhiteSpace(Project?.PrgPath);
         public AcmePdb? Pdb { get; set; }
+        public string Caption => ProjectDirectory is null ? AppName : $"{AppName} - {ProjectFile}";
         public Globals(ILogger<Globals> logger, ISettingsManager settingsManager)
         {
             this.logger = logger;
@@ -29,13 +32,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// </summary>
         /// <param name="prgPath"></param>
         /// <returns></returns>
-        internal string GetReportFileName(string prgPath) => GetRelatedFileName(prgPath,"rep");
+        internal string GetReportFileName(string prgPath) => GetRelatedFileName(prgPath,"report");
         /// <summary>
         /// Labels file has name with extension .lbl
         /// </summary>
         /// <param name="prgPath"></param>
         /// <returns></returns>
-        internal string GetLabelsFileName(string prgPath) => GetRelatedFileName(prgPath, "lbl");
+        internal string GetLabelsFileName(string prgPath) => GetRelatedFileName(prgPath, "labels");
         internal string GetRelatedFileName(string prgPath, string extension) => $"{Path.GetFileNameWithoutExtension(prgPath)}.{extension}";
         public void Load()
         {

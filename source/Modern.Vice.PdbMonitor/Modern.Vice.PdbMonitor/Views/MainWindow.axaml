@@ -11,7 +11,7 @@
         MinHeight="200" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="{Binding Caption}">
+        Title="{Binding Globals.Caption}">
   <Window.Resources>
     <SolidColorBrush x:Key="DisabledBrush">#c6c6c6</SolidColorBrush>
     <c:FirstNonNullConverter x:Key="FirstNonNullConverter" />

@@ -32,14 +32,14 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             public void AddError(AcmePdbParseError error) => errors.Add(error);
             public ImmutableArray<AcmePdbParseError> Errors => errors.ToImmutableArray();
         }
-        public async Task<AcmePdbParseResult<AcmePdb>> ParseAsync(DebugFiles debugFiles, CancellationToken ct = default)
+        public async Task<AcmePdbParseResult<AcmePdb>> ParseAsync(string projectDirectory, DebugFiles debugFiles, CancellationToken ct = default)
         {
             var reportTask = Task.Run(() => ParseReport(debugFiles.Report), ct);
             var labels = await Task.Run(() => ParseLabels(debugFiles.Labels, ct), ct);
             var report = await reportTask;
 
             var context = new ThreadSafeContext();
-            var acmePdb = CreatePdb(report.ParsedData, labels.ParsedData, context);
+            var acmePdb = CreatePdb(projectDirectory, debugFiles.Report, report.ParsedData, labels.ParsedData, context);
             var errors = context.Errors;
             var allErrors = errors.Union(report.Errors).Union(labels.Errors).ToImmutableArray();
 
@@ -52,7 +52,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
         /// <param name="labels"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        internal AcmePdb CreatePdb(ImmutableArray<ReportLine> report, ImmutableDictionary<string, AcmeLabel> labels, IContext context)
+        internal AcmePdb CreatePdb(string projectDirectory, string reportDirectory, ImmutableArray<ReportLine> report, ImmutableDictionary<string, AcmeLabel> labels, IContext context)
         {
             var linesBuilder = ImmutableArray.CreateBuilder<AcmeLine>();
             var filesBuilder = ImmutableDictionary.CreateBuilder<string, AcmeFile>();
@@ -64,7 +64,14 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                     case ReportSource reportSource:
                         if (!filesBuilder.TryGetValue(reportSource.RelativePath, out file))
                         {
-                            file = new AcmeFile(BeautifyRelativePath(reportSource.RelativePath));
+                            string reportFilePath = reportSource.RelativePath;
+                            // source file could be relative to report
+                            if (reportFilePath.StartsWith('.'))
+                            {
+                                reportFilePath = Path.Combine(reportDirectory, reportFilePath);
+                            }
+                            string relativePath = Path.GetRelativePath(projectDirectory, reportSource.RelativePath);
+                            file = new AcmeFile(relativePath);
                             filesBuilder.Add(file.RelativePath, file);
                         }
                         break;

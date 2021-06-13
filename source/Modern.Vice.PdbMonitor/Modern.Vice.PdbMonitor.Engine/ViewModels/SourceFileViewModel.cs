@@ -104,7 +104,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             else
             {
-                await breakpoints.RemoveBreakpointAsync(line!.Breakpoint);
+                await breakpoints.RemoveBreakpointAsync(line!.Breakpoint, forceRemove: false);
             }
         }
         public void SetExecutionRow(int rowIndex)
