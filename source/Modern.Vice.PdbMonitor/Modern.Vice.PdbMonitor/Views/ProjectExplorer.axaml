@@ -9,26 +9,21 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
-  <Border BorderThickness="1" BorderBrush="Black" Padding="4">
-    <DockPanel LastChildFill="True">
-      <TextBlock DockPanel.Dock="Top">Project Explorer</TextBlock>
-      <TreeView x:Name="Tree" Items="{Binding Nodes}" b:DoubleTappedBehavior.Command="{Binding OpenSourceFileCommand}"
-              b:DoubleTappedBehavior.CommandParameter="{Binding #Tree.SelectedItem}">
-        <TreeView.DataTemplates>
-          <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
-            <TextBlock Text="{Binding Name}" />
-          </TreeDataTemplate >
-          <TreeDataTemplate  DataType="m:AcmeFile">
-            <TextBlock Text="{Binding RelativePath}"/>
-          </TreeDataTemplate >
-          <TreeDataTemplate  DataType="m:AcmeLabel">
-            <StackPanel Orientation="Horizontal">
-              <TextBlock Text="{Binding Address, StringFormat={}${0:x4}}" Foreground="Gray" FontFamily="Fira Coda" />
-              <TextBlock Text="{Binding Name}" Margin="2,0,0,0" />
-            </StackPanel>
-          </TreeDataTemplate >
-          </TreeView.DataTemplates>
-      </TreeView>
-    </DockPanel>
-  </Border>
+  <TreeView x:Name="Tree" Items="{Binding Nodes}" b:DoubleTappedBehavior.Command="{Binding OpenSourceFileCommand}"
+          b:DoubleTappedBehavior.CommandParameter="{Binding #Tree.SelectedItem}">
+    <TreeView.DataTemplates>
+      <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
+        <TextBlock Text="{Binding Name}" />
+      </TreeDataTemplate >
+      <TreeDataTemplate  DataType="m:AcmeFile">
+        <TextBlock Text="{Binding RelativePath}"/>
+      </TreeDataTemplate >
+      <TreeDataTemplate  DataType="m:AcmeLabel">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding Address, StringFormat={}${0:x4}}" Foreground="Gray" FontFamily="{StaticResource CodeFont}" />
+          <TextBlock Text="{Binding Name}" Margin="2,0,0,0" />
+        </StackPanel>
+      </TreeDataTemplate >
+    </TreeView.DataTemplates>
+  </TreeView>
 </UserControl>

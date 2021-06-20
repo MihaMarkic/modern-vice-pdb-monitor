@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Assets\Fonts\FiraCode-Bold.ttf" />
+    <None Remove="Assets\Fonts\FiraCode-Regular.ttf" />
     <None Remove="Assets\Icons\cog.svg" />
     <None Remove="Assets\Icons\disabled_link.svg" />
     <None Remove="Assets\Icons\disabled_sync.svg" />
@@ -18,6 +20,8 @@
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Assets\Fonts\FiraCode-Bold.ttf" />
+    <EmbeddedResource Include="Assets\Fonts\FiraCode-Regular.ttf" />
     <AvaloniaResource Include="Assets\Icons\cog.svg" />
     <AvaloniaResource Include="Assets\Icons\disabled_link.svg" />
     <AvaloniaResource Include="Assets\Icons\link.svg" />

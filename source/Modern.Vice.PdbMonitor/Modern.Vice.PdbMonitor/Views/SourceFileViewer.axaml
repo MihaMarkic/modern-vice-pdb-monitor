@@ -23,7 +23,7 @@
           <StackPanel Orientation="Horizontal" Height="18" Background="{Binding IsExecution, Converter={StaticResource ExecutionRowToBackgroundConverter}}">
             <StackPanel.Styles>
               <Style Selector="TextBlock">
-                <Setter Property="FontFamily" Value="Fira Code" />
+                <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
               </Style>
             </StackPanel.Styles>
             <Button Width="14" Height="14" Margin="4,0" Foreground="Gray" VerticalAlignment="Center"

@@ -181,7 +181,7 @@
           Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">PDB sync</TextBlock>
       </StackPanel>
     </DockPanel>
-    <TabControl DockPanel.Dock="Bottom" Height="200">
+    <TabControl DockPanel.Dock="Bottom" Height="200" Margin="0,6,0,0">
       <TabItem Header="Errors">
         <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
       </TabItem>

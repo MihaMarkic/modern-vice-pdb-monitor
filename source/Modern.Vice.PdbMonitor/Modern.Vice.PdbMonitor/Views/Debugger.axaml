@@ -8,7 +8,11 @@
              x:Class="Modern.Vice.PdbMonitor.Views.Debugger"
              x:DataType="vm:DebuggerViewModel">
   <DockPanel LastChildFill="True">
-    <v:ProjectExplorer DataContext="{Binding ProjectExplorer}" Width="200" />
+    <TabControl Width="200">
+      <TabItem Header="Project Explorer">
+        <v:ProjectExplorer DataContext="{Binding ProjectExplorer}" />
+      </TabItem>
+    </TabControl>
     <v:SourceFilesViewer DataContext="{Binding SourceFileViewerViewModel}" />
   </DockPanel>
 </UserControl>

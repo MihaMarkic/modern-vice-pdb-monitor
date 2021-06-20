@@ -15,16 +15,21 @@
 
     <Style Selector="TabItem">
         <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="MinHeight" Value="24" />
     </Style>
 
     <Style Selector="TextBlock.register_label">
-        <Setter Property="FontFamily" Value="Fira Code" />
+        <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
         <Setter Property="Foreground" Value="Gray" />
         <Setter Property="FontSize" Value="10" />
         <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <Style Selector="TextBlock.register_value">
-        <Setter Property="FontFamily" Value="Fira Code" />
+        <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TreeViewItem">
+        <Setter Property="MinHeight" Value="0" />
     </Style>
 </Styles>

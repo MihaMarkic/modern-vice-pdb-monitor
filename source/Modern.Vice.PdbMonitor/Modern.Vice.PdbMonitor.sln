@@ -16,11 +16,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA13D2EF-AA14-4F6D-B47E-16E933E8B700}"
 	ProjectSection(SolutionItems) = preProject
 		..\..\.gitignore = ..\..\.gitignore
+		3rd_party_libraries.md = 3rd_party_libraries.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Core.Test", "Test\Modern.Vice.PdbMonitor.Core.Test\Modern.Vice.PdbMonitor.Core.Test.csproj", "{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modern.Vice.PdbMonitor.Test", "Test\Modern.Vice.PdbMonitor.Test\Modern.Vice.PdbMonitor.Test.csproj", "{ACF16C52-ACE0-471A-92A3-BDD188C9714D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Test", "Test\Modern.Vice.PdbMonitor.Test\Modern.Vice.PdbMonitor.Test.csproj", "{ACF16C52-ACE0-471A-92A3-BDD188C9714D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
