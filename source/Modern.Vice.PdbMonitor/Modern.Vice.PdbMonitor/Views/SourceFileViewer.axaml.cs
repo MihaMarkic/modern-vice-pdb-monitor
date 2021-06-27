@@ -1,4 +1,6 @@
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -13,6 +15,10 @@ namespace Modern.Vice.PdbMonitor.Views
         int cursorRow;
         int? executionRow;
         double itemHeight;
+        /// <summary>
+        /// Prevents resetting cursor row when initializing and setting cursor row at the same time
+        /// </summary>
+        bool settingCursorRow;
         readonly ItemsRepeater lines;
         readonly ScrollViewer scroller;
         public static readonly DirectProperty<SourceFileViewer, int> CursorRowProperty =
@@ -42,6 +48,8 @@ namespace Modern.Vice.PdbMonitor.Views
             //    cursorRow = lines.GetElementIndex((IControl)firstVisibleChild);
             //}
             //else
+            // don't clear it until it isn't set
+            if (!settingCursorRow)
             {
                 cursorRow = -1;
             }
@@ -67,7 +75,9 @@ namespace Modern.Vice.PdbMonitor.Views
             //    lines.ElementPrepared += Lines_ElementPrepared;
             //}
         }
-
+        /// <summary>
+        /// Row to jump to.
+        /// </summary>
         public int CursorRow
         {
             get => cursorRow;
@@ -80,22 +90,42 @@ namespace Modern.Vice.PdbMonitor.Views
                 }
             }
         }
-        void CursorRowChanged()
+        async Task CursorRowChanged()
         {
-            bool success = ScrollToCursorRow();
-            if (!success)
+            if (CursorRow >= 0)
             {
-                lines.ElementPrepared += Lines_ElementPrepared;
+                bool success = ScrollToCursorRow();
+                if (!success)
+                {
+                    settingCursorRow = true;
+                    try
+                    {
+                        while (!success)
+                        {
+                            await WaitForLayoutUpdatedAsync();
+                            success = ScrollToCursorRow();
+                        }
+                    }
+                    finally
+                    {
+                        settingCursorRow = false;
+                    }
+                }
             }
+        }
+        Task WaitForLayoutUpdatedAsync()
+        {
+            var tcs = new TaskCompletionSource();
+            EventHandler layoutUpdatedHandler = default!;
+            layoutUpdatedHandler = (s, e) =>
+            {
+                lines.LayoutUpdated -= layoutUpdatedHandler;
+                tcs.SetResult();
+            };
+            lines.LayoutUpdated += layoutUpdatedHandler;
+            return tcs.Task;
         }
 
-        void Lines_ElementPrepared(object? sender, ItemsRepeaterElementPreparedEventArgs e)
-        {
-            if (ScrollToCursorRow())
-            {
-                lines.ElementPrepared -= Lines_ElementPrepared;
-            }
-        }
         void CalculateItemHeight()
         {
             if (itemHeight > 0)

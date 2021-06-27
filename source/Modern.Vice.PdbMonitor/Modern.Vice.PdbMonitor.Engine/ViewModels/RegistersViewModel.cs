@@ -23,6 +23,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly RegistersMapping mapping;
         readonly CommandsManager commandsManager;
         readonly IDispatcher dispatcher;
+        readonly TaskFactory uiFactory;
         public Registers6510 Current { get; private set; } = Registers6510.Empty;
         public Registers6510 Previous { get; private set; } = Registers6510.Empty;
         public bool IsLoadingMappings { get; private set; }
@@ -34,6 +35,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.viceBridge = viceBridge;
             this.mapping = mapping;
             this.dispatcher = dispatcher;
+            uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             UpdateCommand = commandsManager.CreateRelayCommandAsync(Update, () => !IsLoadingMappings && IsLoadingRegisters);
@@ -56,7 +58,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case RegistersResponse registerResponse:
                     if (!IsLoadingMappings)
                     {
-                        _ = UpdateRegistersFromResponseAsync(registerResponse);
+                        _ = uiFactory.StartNew(() => UpdateRegistersFromResponseAsync(registerResponse));
                     }
                     break;
             }

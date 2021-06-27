@@ -1,14 +1,14 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
@@ -18,18 +18,24 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly ILogger<ProjectExplorerViewModel> logger;
         readonly IDispatcher dispatcher;
         readonly Globals globals;
+        readonly IAcmePdbManager acmePdbManager;
+        readonly BreakpointsViewModel breakpoints;
         public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
         public Project? Project => globals.Project;
         public ImmutableArray<ProjectExplorerHeaderNode> Nodes { get; private set; }
         public RelayCommand<object> OpenSourceFileCommand { get; }
-        //ImmutableDictionary<int, AcmePdbAddress> addresses = ImmutableDictionary<int, AcmePdbAddress>.Empty;
+        public RelayCommandAsync<AcmeLabel> AddBreakpointOnLabelCommand { get; }
         ImmutableArray<AcmeFile> files = ImmutableArray<AcmeFile>.Empty;
-        public ProjectExplorerViewModel(IDispatcher dispatcher, ILogger<ProjectExplorerViewModel> logger, Globals globals)
+        public ProjectExplorerViewModel(IDispatcher dispatcher, ILogger<ProjectExplorerViewModel> logger, Globals globals, IAcmePdbManager acmePdbManager,
+            BreakpointsViewModel breakpoints)
         {
             this.dispatcher = dispatcher;
             this.logger = logger;
             this.globals = globals;
+            this.acmePdbManager = acmePdbManager;
+            this.breakpoints = breakpoints;
             OpenSourceFileCommand = new RelayCommand<object>(OpenSourceFile, canExecute: o => o is AcmeFile || o is AcmeLabel);
+            AddBreakpointOnLabelCommand = new RelayCommandAsync<AcmeLabel>(AddBreakpointOnLabelAsync, CanAddBreakpointOnLabel);
             globals.PropertyChanged += Globals_PropertyChanged;
             UpdateNodes();
         }
@@ -47,18 +53,41 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     break;
             }
         }
-        internal void OpenSourceFile(object? message)
+        internal bool CanAddBreakpointOnLabel(AcmeLabel? label)
+{
+            if (label is not null)
+            {
+                var line = acmePdbManager.FindLineUsingAddress(label.Address);
+                return line is not null;
+            }
+            return false;
+        }
+        internal async Task AddBreakpointOnLabelAsync(AcmeLabel? label)
         {
-            switch (message)
+            if (label is not null)
+            {
+                await breakpoints.AddBreakpointForLabelAsync(label, condition: null);
+            }
+        }
+        internal void OpenSourceFile(object? item)
+        {
+            switch (item)
             {
                 case AcmeFile acmeFile:
                     dispatcher.Dispatch(new OpenSourceFileMessage(acmeFile));
                     break;
                 case AcmeLabel label:
-                    //if (addresses.TryGetValue(label.Address, out var address))
-                    //{
-                    //    dispatcher.Dispatch(new OpenSourceFileMessage(files[address.FileIndex], address.Line));
-                    //}
+                    var line = acmePdbManager.FindLineUsingAddress(label.Address);
+                    if (line is not null)
+                    {
+                        var file = acmePdbManager.FindFileOfLine(line);
+                        // file can't be null actually
+                        if (file is not null)
+                        {
+                            int lineNumber = file.Lines.IndexOf(line);
+                            dispatcher.Dispatch(new OpenSourceFileMessage(file, lineNumber, null));
+                        }
+                    }
                     break;
             }
         }

@@ -41,6 +41,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
             AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
                canExecute: l => l?.Address is not null && viceBridge.IsConnected);
+            var fileBreakpoints = breakpoints.Breakpoints.Where(b => b.File == file).ToImmutableArray();
+            AddBreakpointsToLine(fileBreakpoints);
             breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         }
 
@@ -56,14 +58,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case NotifyCollectionChangedAction.Add:
                     {
                         var newBreakpoints = e.NewItems!.Cast<BreakpointViewModel>().ToImmutableArray();
-                        foreach (var newBreakpoint in newBreakpoints)
-                        {
-                            if (newBreakpoint.File == file)
-                            {
-                                var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
-                                targetLine.Breakpoint = newBreakpoint;
-                            }
-                        }
+                        AddBreakpointsToLine(newBreakpoints);
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
@@ -88,6 +83,18 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
 
+        void AddBreakpointsToLine(ImmutableArray<BreakpointViewModel> newBreakpoints)
+        {
+            foreach (var newBreakpoint in newBreakpoints)
+            {
+                if (newBreakpoint.File == file)
+                {
+                    var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
+                    targetLine.Breakpoint = newBreakpoint;
+                }
+            }
+        }
+
         public void ClearExecutionRow()
         {
             foreach (var line in Lines)
@@ -100,7 +107,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (line!.Breakpoint is null)
             {
                 int lineNumber = Lines.IndexOf(line);
-                await breakpoints.AddBreakpointAsync(file, line!.SourceLine, lineNumber, condition: null);
+                await breakpoints.AddBreakpointAsync(file, line!.SourceLine, lineNumber, label: null, condition: null);
             }
             else
             {

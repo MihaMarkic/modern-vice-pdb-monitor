@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
@@ -14,6 +15,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,18 +28,20 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly IViceBridge viceBridge;
         readonly ExecutionStatusViewModel executionStatusViewModel;
         readonly Globals globals;
+        readonly IAcmePdbManager acmePdbManager;
         public ObservableCollection<BreakpointViewModel> Breakpoints { get; }
         readonly Dictionary<AcmeLine, BreakpointViewModel> breakpointsLinesMap;
         readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
         public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
         public bool IsWorking { get; private set; }
         public BreakpointsViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, IDispatcher dispatcher, Globals globals,
-            ExecutionStatusViewModel executionStatusViewModel)
+            IAcmePdbManager acmePdbManager, ExecutionStatusViewModel executionStatusViewModel)
         {
             this.logger = logger;
             this.viceBridge = viceBridge;
             this.dispatcher = dispatcher;
             this.globals = globals;
+            this.acmePdbManager = acmePdbManager;
             this.executionStatusViewModel = executionStatusViewModel;
             Breakpoints = new ObservableCollection<BreakpointViewModel>();
             breakpointsLinesMap = new Dictionary<AcmeLine, BreakpointViewModel>();
@@ -86,6 +90,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 breakpoint.IsCurrentlyHit = false;
             }
         }
+        /// <summary>
+        /// Removes all breakpoints and reapplies them again.
+        /// </summary>
+        /// <param name="hasPdbChanged"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        /// <remarks>This method is required when lost contact with VICE or when debugging symbols change.</remarks>
         public async Task ReapplyBreakpoints(bool hasPdbChanged, CancellationToken ct)
         {
             var checkpointsListCommand = viceBridge.EnqueueCommand(new CheckpointListCommand());
@@ -117,17 +128,40 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 foreach (var breakpoint in breakpoints)
                 {
-                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File,
+                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, 
+                        breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
                         breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
                 }
             }
         }
+        /// <summary>
+        /// There are three types of breakpoint to reapply: bound to label, line and unbound.
+        /// </summary>
+        /// <param name="breakpoints"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         internal async Task ApplyOriginalBreakpointsOnNewPdbAsync(ImmutableArray<BreakpointViewModel> breakpoints, CancellationToken ct)
         {
             var newBreakpoints = new List<BreakpointViewModel>(breakpoints.Length);
             foreach (var breakpoint in breakpoints)
             {
-                if (breakpoint.File is not null && breakpoint.Line is not null)
+                bool isBreakpointReapplied = false;
+                // first reapply breakpoints bound to a label
+                if (breakpoint.Label is not null)
+                {
+                    var label = acmePdbManager.FindLabel(breakpoint.Label.Name);
+                    if (label is not null)
+                    {
+                        var line = acmePdbManager.FindLineUsingAddress(breakpoint.Label.Address);
+                        isBreakpointReapplied = true;
+                    }
+                    else
+                    {
+                        logger.Log(LogLevel.Information, "Breakpoint on label {label} not reapplied", breakpoint.Label.Name);
+                    }
+                }
+                // then ones bound to a line
+                else if (breakpoint.File is not null && breakpoint.Line is not null)
                 {
                     var match = FindMatchingLine(globals.Pdb, breakpoint.File, breakpoint.Line);
                     if (match is not null)
@@ -135,15 +169,30 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         breakpoint.Line = match.Value.Line;
                         breakpoint.File = match.Value.File;
                         newBreakpoints.Add(breakpoint);
+                        isBreakpointReapplied = true;
+                    }
+                    else
+                    {
+                        logger.Log(LogLevel.Information, "Breakpoint on file  {file} and line {line_number} {line} not reapplied", 
+                            breakpoint.File.RelativePath, breakpoint.Line.LineNumber, breakpoint.Line.Text);
                     }
                 }
                 // for now set all non-line breakpoints as well
                 else
                 {
                     newBreakpoints.Add(breakpoint);
+                    isBreakpointReapplied = true;
                 }
-                await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File,
-                    breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+                if (isBreakpointReapplied)
+                {
+                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled,
+                        breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
+                        breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+                }
+            }
+            if (newBreakpoints.Count == breakpoints.Length)
+            {
+                logger.Log(LogLevel.Information, "All {number} breakpoints were reapplied", breakpoints.Length);
             }
         }
         /// <summary>
@@ -178,6 +227,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             return default;
         }
+        /// <summary>
+        /// Tries to match the line when the exact original one is gone.
+        /// </summary>
+        /// <param name="maxDelta"></param>
+        /// <param name="minScoreToMatch"></param>
+        /// <param name="originalLine"></param>
+        /// <param name="lines"></param>
+        /// <returns></returns>
         internal static AcmeLine? FuzzyFindLine(int maxDelta, int minScoreToMatch, AcmeLine originalLine, ImmutableArray<AcmeLine> lines)
         {
             int lineIndex = originalLine.LineNumber - 1;
@@ -249,14 +306,32 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 breakpoint.IgnoreCount = checkpointInfo.IgnoreCount;
             }
         }
-
-        public async Task AddBreakpointAsync(AcmeFile file, AcmeLine line, int lineNumber, string? condition, CancellationToken ct = default)
+        public async Task AddBreakpointForLabelAsync(AcmeLabel label, string? condition, CancellationToken ct = default)
+        {
+            // doesn't make sense that there is no line for given label's address
+            var line = acmePdbManager.FindLineUsingAddress(label.Address)!;
+            if (line.StartAddress is not null)
+            {
+                if (!breakpointsLinesMap.TryGetValue(line, out var breakpoint))
+                {
+                    var file = acmePdbManager.FindFileOfLine(line)!;
+                    int lineNumber = file.Lines.IndexOf(line);
+                    await AddBreakpointAsync(true, true, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
+                }
+                // in case breakpoint at that line already exists, just update it's Label property
+                else
+                {
+                    breakpoint.Label = label;
+                }
+            }
+        }
+        public async Task AddBreakpointAsync(AcmeFile file, AcmeLine line, int lineNumber, AcmeLabel? label, string? condition, CancellationToken ct = default)
         {
             if (line.StartAddress is not null)
             {
                 if (!breakpointsLinesMap.TryGetValue(line, out var breakpoint))
                 {
-                    await AddBreakpointAsync(true, true, line, lineNumber, file, line.StartAddress.Value, line.EndAddress!.Value, null);
+                    await AddBreakpointAsync(true, true, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
                 }
             }
         }
@@ -285,7 +360,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// <param name="ct"></param>
         /// <returns></returns>
         internal async Task<BreakpointViewModel?> AddBreakpointAsync(bool stopWhenHit, bool isEnabled,
-            AcmeLine? line, int? lineNumber, AcmeFile? file, ushort startAddress, ushort endAddress, string? condition, 
+            AcmeLine? line, int? lineNumber, AcmeFile? file, AcmeLabel? label, ushort startAddress, ushort endAddress, string? condition, 
             CancellationToken ct = default)
         {
             var checkpointSetCommand = viceBridge.EnqueueCommand(
@@ -293,6 +368,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             var checkpointSetResponse = await checkpointSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointSetCommand, ct: ct);
             if (checkpointSetResponse is not null)
             {
+                // apply condition to checkpoint if any
                 if (!string.IsNullOrWhiteSpace(condition))
                 {
                     var conditionSetCommand = viceBridge.EnqueueCommand(new ConditionSetCommand(checkpointSetResponse.CheckpointNumber, condition));
@@ -306,7 +382,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     }
                 }
                 var breakpoint = new BreakpointViewModel(checkpointSetResponse.CheckpointNumber, checkpointSetResponse.StopWhenHit, checkpointSetResponse.Enabled, 
-                            line, lineNumber+1, file,
+                            line, lineNumber+1, file, label,
                             checkpointSetResponse.StartAddress, checkpointSetResponse.EndAddress, condition);
                 Breakpoints.Add(breakpoint);
                 if (line is not null)
@@ -352,36 +428,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
             }
             base.Dispose(disposing);
-        }
-    }
-
-    public class BreakpointViewModel: NotifiableObject
-    {
-        public uint CheckpointNumber { get; }
-        public bool IsCurrentlyHit { get; set; }
-        public bool StopWhenHit { get; set; }
-        public bool IsEnabled { get; set; }
-        public uint HitCount { get; set; }
-        public uint IgnoreCount { get; set; }
-        public AcmeLine? Line { get; set; }
-        public AcmeFile? File { get; set; }
-        public ushort StartAddress { get; }
-        public ushort EndAddress { get; }
-        public string? Condition { get; set; }
-        public string? FileName => File?.RelativePath;
-        public int? LineNumber { get; }
-        public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled, 
-            AcmeLine? line, int? lineNumber, AcmeFile? file, ushort startAddress, ushort endAddress, string? condition)
-        {
-            CheckpointNumber = checkpointNumber;
-            StopWhenHit = stopWhenHit;
-            IsEnabled = isEnabled;
-            Line = line;
-            LineNumber = lineNumber;
-            File = file;
-            StartAddress = startAddress;
-            EndAddress = endAddress;
-            Condition = condition;
         }
     }
 }
