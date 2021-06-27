@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="350"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             x:DataType="vm:BreakpointViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.BreakpointDetail">
+  <Grid Margin="8">
+    <Grid.Styles>
+      <Style Selector="Label">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="Margin" Value="0,10,4,10" />
+      </Style>
+      <Style Selector="TextBox">
+        <Setter Property="VerticalAlignment" Value="Center" />
+      </Style>
+      <Style Selector="ComboBox">
+        <Setter Property="VerticalAlignment" Value="Center" />
+      </Style>
+    </Grid.Styles>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <CheckBox Grid.Column="1">Is enabled</CheckBox>
+
+    <Label Grid.Column="0" Grid.Row="1">Address start</Label>
+    <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
+      <TextBox Text="{Binding StartAddress}" Width="100" />
+      <Label Margin="4,0">end</Label>
+      <TextBox Text="{Binding EndAddress}" Width="100" />
+    </StackPanel>
+
+    <Label Grid.Column="0" Grid.Row="2">Mode</Label>
+    <ComboBox Grid.Column="1" Grid.Row="2" Width="100" HorizontalAlignment="Left" />
+
+    <Label Grid.Column="0" Grid.Row="3">File</Label>
+    <StackPanel  Grid.Column="1" Grid.Row="3" Orientation="Horizontal">
+      <TextBox Text="{Binding FileName}" Width="100" />
+      <Label Margin="4,0">end</Label>
+      <TextBox Text="{Binding LineNumber}" Width="100" HorizontalContentAlignment="Right" />
+    </StackPanel>
+
+    <Label Grid.Column="0" Grid.Row="4">Label</Label>
+    <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Label}" Width="100" HorizontalAlignment="Left" />
+
+    <!-- blank label just to keep vertical distance -->
+    <Label Grid.Column="0" Grid.Row="3" />
+    <StackPanel  Grid.Column="1" Grid.Row="5" Orientation="Horizontal">
+      <Button Margin="0,0,8,0">Unbind to File</Button>
+      <Button>Full Unbind</Button>
+    </StackPanel>
+
+    <Label Grid.Column="0" Grid.Row="6">Condition</Label>
+    <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding Condition}" HorizontalAlignment="Stretch" />
+
+    <StackPanel  Grid.Column="1" Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right"
+      VerticalAlignment="Bottom" Margin="0,0,8,0">
+      <Button Margin="0,0,8,0">Create</Button>
+      <Button Margin="0,0,8,0">Cancel</Button>
+      <Button>Apply</Button>
+    </StackPanel>
+  </Grid>
+</UserControl>

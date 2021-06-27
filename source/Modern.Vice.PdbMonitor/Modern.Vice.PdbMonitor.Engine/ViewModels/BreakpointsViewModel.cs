@@ -1,4 +1,12 @@
-﻿using FuzzySharp;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using FuzzySharp;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -8,16 +16,6 @@ using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
@@ -128,7 +126,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 foreach (var breakpoint in breakpoints)
                 {
-                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, 
+                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
                         breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
                         breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
                 }
@@ -185,7 +183,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
                 if (isBreakpointReapplied)
                 {
-                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled,
+                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
                         breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
                         breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
                 }
@@ -316,7 +314,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 {
                     var file = acmePdbManager.FindFileOfLine(line)!;
                     int lineNumber = file.Lines.IndexOf(line);
-                    await AddBreakpointAsync(true, true, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
+                    await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
                 }
                 // in case breakpoint at that line already exists, just update it's Label property
                 else
@@ -331,7 +329,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 if (!breakpointsLinesMap.TryGetValue(line, out var breakpoint))
                 {
-                    await AddBreakpointAsync(true, true, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
+                    await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
                 }
             }
         }
@@ -359,7 +357,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// <param name="condition"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        internal async Task<BreakpointViewModel?> AddBreakpointAsync(bool stopWhenHit, bool isEnabled,
+        internal async Task<BreakpointViewModel?> AddBreakpointAsync(bool stopWhenHit, bool isEnabled, BreakpointMode mode,
             AcmeLine? line, int? lineNumber, AcmeFile? file, AcmeLabel? label, ushort startAddress, ushort endAddress, string? condition, 
             CancellationToken ct = default)
         {
@@ -381,7 +379,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                         return default;
                     }
                 }
-                var breakpoint = new BreakpointViewModel(checkpointSetResponse.CheckpointNumber, checkpointSetResponse.StopWhenHit, checkpointSetResponse.Enabled, 
+                var breakpoint = new BreakpointViewModel(checkpointSetResponse.CheckpointNumber, checkpointSetResponse.StopWhenHit, checkpointSetResponse.Enabled, mode,
                             line, lineNumber+1, file, label,
                             checkpointSetResponse.StartAddress, checkpointSetResponse.EndAddress, condition);
                 Breakpoints.Add(breakpoint);

@@ -11,6 +11,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool IsEnabled { get; set; }
         public uint HitCount { get; set; }
         public uint IgnoreCount { get; set; }
+        public BreakpointMode Mode { get; set; }
         public AcmeLine? Line { get; set; }
         public AcmeFile? File { get; set; }
         public AcmeLabel? Label { get; set; }
@@ -19,12 +20,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public string? Condition { get; set; }
         public string? FileName => File?.RelativePath;
         public int? LineNumber { get; }
-        public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled,
+        public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled, BreakpointMode mode,
             AcmeLine? line, int? lineNumber, AcmeFile? file, AcmeLabel? label, ushort startAddress, ushort endAddress, string? condition)
         {
             CheckpointNumber = checkpointNumber;
             StopWhenHit = stopWhenHit;
             IsEnabled = isEnabled;
+            Mode = mode;
             Line = line;
             LineNumber = lineNumber;
             File = file;

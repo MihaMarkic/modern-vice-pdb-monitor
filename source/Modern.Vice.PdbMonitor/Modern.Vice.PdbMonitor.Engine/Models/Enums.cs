@@ -11,4 +11,11 @@ namespace Modern.Vice.PdbMonitor.Engine.Models
         [Display(Description = "Auto starts at 'start' label address")]
         AtAddress,
     }
+
+    public enum BreakpointMode
+    {
+        Exec,
+        Load,
+        Store
+    }
 }
