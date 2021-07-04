@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models
 {
@@ -17,5 +18,18 @@ namespace Modern.Vice.PdbMonitor.Engine.Models
         Exec,
         Load,
         Store
+    }
+
+    [Flags]
+    public enum DialogButton
+    {
+        OK,
+        Cancel
+    }
+
+    public enum DialogResultCode
+    {
+        OK,
+        Cancel
     }
 }

@@ -16,7 +16,18 @@
       <Setter Property="Background" Value="{Binding IsCurrentlyHit, Mode=OneWay, Converter={StaticResource IsHitToBackgroundConverter}}"/>
     </Style>
   </UserControl.Styles>
-  <DataGrid Items="{Binding Breakpoints}" AutoGenerateColumns="False">
+  <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False">
+    <DataGrid.Styles>
+      <Style Selector="DataGridRow">
+        <Setter Property="ContextMenu">
+          <Setter.Value>
+              <ContextMenu>
+                <MenuItem Header="Properties..." Command="{Binding #Grid.DataContext.ShowBreakpointPropertiesCommand}" CommandParameter="{Binding}" />
+              </ContextMenu >
+          </Setter.Value>
+        </Setter>
+      </Style>
+    </DataGrid.Styles>
     <DataGrid.Resources>
       <c:HexAddressConverter x:Key="HexAddressConverter" />
     </DataGrid.Resources>

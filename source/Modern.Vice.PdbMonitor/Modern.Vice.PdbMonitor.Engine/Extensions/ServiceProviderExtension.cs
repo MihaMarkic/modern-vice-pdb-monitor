@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -26,6 +27,14 @@ namespace System
             var contentScope = serviceProvider.CreateScope();
             T viewModel = contentScope.ServiceProvider.GetService<T>() ?? throw new Exception($"Failed creating {typeof(T).Name} ViewModel");
             viewModel.AssignScope(contentScope);
+            return viewModel;
+        }
+        public static BreakpointDetailViewModel CreateScopedBreakpointDetailViewModel(this IServiceScope serviceScope, BreakpointViewModel breakpointViewModel)
+        {
+            var viewModel = ActivatorUtilities.CreateInstance<BreakpointDetailViewModel>(serviceScope.ServiceProvider, 
+                serviceScope.ServiceProvider.GetRequiredService<ILogger< BreakpointDetailViewModel>>(),
+                serviceScope.ServiceProvider.GetRequiredService<BreakpointsViewModel>(),
+                breakpointViewModel);
             return viewModel;
         }
     }

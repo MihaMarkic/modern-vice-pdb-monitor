@@ -1,9 +1,10 @@
-﻿using Modern.Vice.PdbMonitor.Core;
+﻿using System;
+using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
-    public class BreakpointViewModel : NotifiableObject
+    public class BreakpointViewModel : NotifiableObject, ICloneable
     {
         public uint CheckpointNumber { get; }
         public bool IsCurrentlyHit { get; set; }
@@ -34,6 +35,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             StartAddress = startAddress;
             EndAddress = endAddress;
             Condition = condition;
+        }
+        object ICloneable.Clone() => Clone();
+        public BreakpointViewModel Clone()
+        {
+            return (BreakpointViewModel)MemberwiseClone();
         }
     }
 }

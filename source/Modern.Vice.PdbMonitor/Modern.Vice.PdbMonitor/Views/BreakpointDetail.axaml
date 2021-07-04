@@ -6,7 +6,7 @@
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
-             x:DataType="vm:BreakpointViewModel"
+             x:DataType="vm:BreakpointDetailViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.BreakpointDetail">
   <Grid Margin="8">
     <Grid.Styles>
@@ -40,9 +40,9 @@
 
     <Label Grid.Column="0" Grid.Row="1">Address start</Label>
     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
-      <TextBox Text="{Binding StartAddress}" Width="100" />
+      <TextBox Text="{Binding Breakpoint.StartAddress}" Width="100" />
       <Label Margin="4,0">end</Label>
-      <TextBox Text="{Binding EndAddress}" Width="100" />
+      <TextBox Text="{Binding Breakpoint.EndAddress}" Width="100" />
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="2">Mode</Label>
@@ -50,13 +50,13 @@
 
     <Label Grid.Column="0" Grid.Row="3">File</Label>
     <StackPanel  Grid.Column="1" Grid.Row="3" Orientation="Horizontal">
-      <TextBox Text="{Binding FileName}" Width="100" />
+      <TextBox Text="{Binding Breakpoint.FileName}" Width="100" />
       <Label Margin="4,0">end</Label>
-      <TextBox Text="{Binding LineNumber}" Width="100" HorizontalContentAlignment="Right" />
+      <TextBox Text="{Binding Breakpoint.LineNumber}" Width="100" HorizontalContentAlignment="Right" />
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="4">Label</Label>
-    <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Label}" Width="100" HorizontalAlignment="Left" />
+    <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Breakpoint.Label}" Width="100" HorizontalAlignment="Left" />
 
     <!-- blank label just to keep vertical distance -->
     <Label Grid.Column="0" Grid.Row="3" />
@@ -66,12 +66,12 @@
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="6">Condition</Label>
-    <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding Condition}" HorizontalAlignment="Stretch" />
+    <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding Breakpoint.Condition}" HorizontalAlignment="Stretch" />
 
     <StackPanel  Grid.Column="1" Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right"
       VerticalAlignment="Bottom" Margin="0,0,8,0">
       <Button Margin="0,0,8,0">Create</Button>
-      <Button Margin="0,0,8,0">Cancel</Button>
+      <Button Margin="0,0,8,0" Command="{Binding CancelCommand, Mode=OneTime}">Cancel</Button>
       <Button>Apply</Button>
     </StackPanel>
   </Grid>

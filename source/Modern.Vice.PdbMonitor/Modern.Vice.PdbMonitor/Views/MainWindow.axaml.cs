@@ -8,6 +8,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views
@@ -28,14 +29,21 @@ namespace Modern.Vice.PdbMonitor.Views
             viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
             viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
             viewModel.CloseApp = Close;
-            var dispatcher = scope.ServiceProvider.GetService<Righthand.MessageBus.IDispatcher>()!;
+            viewModel.ShowModalDialog = ShowModalDialog;
         }
 
         void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
         }
-
+        internal void ShowModalDialog(ShowModalDialogMessageCore message)
+        {
+            var dialog = new ModalDialogWindow
+            {
+                DataContext = message,
+            };
+            dialog.ShowDialog(this);
+        }
         internal async Task<string?> ShowOpenProjectFileDialogAsync(string? initialDirectory, CancellationToken ct)
         {
             var dialog = new OpenFileDialog

@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:msg="clr-namespace:Modern.Vice.PdbMonitor.Engine.Messages;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             x:DataType="msg:ShowModalDialogMessageCore"
+             x:Class="Modern.Vice.PdbMonitor.Views.ModalDialog">
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:BreakpointDetailViewModel}">
+      <v:BreakpointDetail />
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <ContentControl Content="{Binding ViewModel, Mode=OneTime}" />
+</UserControl>

@@ -38,6 +38,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly Subscription closeOverlaySubscription;
         readonly Subscription prgFileChangedSubscription;
         readonly Subscription prgFilePathChangedSubscription;
+        readonly Subscription showModalDialogMessageSubscription;
         public bool IsProjectOpen => Globals.Project is not null;
         public ObservableCollection<string> RecentProjects => Globals.Settings.RecentProjects;
         public RelayCommand ShowSettingsCommand { get; }
@@ -57,6 +58,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public RelayCommandAsync UpdatePdbCommand { get; }
         public Func<string?, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
         public Func<string?, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
+        public Action<ShowModalDialogMessageCore>? ShowModalDialog { get; set; }
         public Action? CloseApp { get; set; }
         public bool IsShowingSettings => OverlayContent is SettingsViewModel;
         public bool IsShowingProject => OverlayContent is ProjectViewModel;
@@ -112,6 +114,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
             prgFileChangedSubscription = dispatcher.Subscribe<PrgFileChangedMessage>(PrgFileChanged);
             prgFilePathChangedSubscription = dispatcher.Subscribe<PrgFilePathChangedMessage>(PrgFilePathChanged);
+            showModalDialogMessageSubscription = dispatcher.Subscribe<ShowModalDialogMessageCore>(OnShowModalDialog);
             ErrorMessagesViewModel = errorMessagesViewModel;
             ShowSettingsCommand = commandsManager.CreateRelayCommand(ShowSettings, () => !IsShowingSettings);
             ShowProjectCommand = commandsManager.CreateRelayCommand(ShowProject, () => !IsShowingProject && IsProjectOpen);
@@ -214,6 +217,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         void PrgFilePathChanged(object sender, PrgFilePathChangedMessage message)
         {
             _ = UpdatePdbAsync();
+        }
+        void OnShowModalDialog(object sender, ShowModalDialogMessageCore message)
+        {
+            ShowModalDialog?.Invoke(message);
         }
         async Task UpdatePdbAsync()
         {
@@ -687,6 +694,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 closeOverlaySubscription.Dispose();
                 prgFileChangedSubscription.Dispose();
                 prgFilePathChangedSubscription.Dispose();
+                showModalDialogMessageSubscription.Dispose();
             }
             base.Dispose(disposing);
         }

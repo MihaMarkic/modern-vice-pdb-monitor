@@ -7,9 +7,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FuzzySharp;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
@@ -27,24 +29,28 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly ExecutionStatusViewModel executionStatusViewModel;
         readonly Globals globals;
         readonly IAcmePdbManager acmePdbManager;
+        readonly IServiceScopeFactory serviceScopeFactory;
         public ObservableCollection<BreakpointViewModel> Breakpoints { get; }
         readonly Dictionary<AcmeLine, BreakpointViewModel> breakpointsLinesMap;
         readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
         public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
+        public RelayCommandAsync<BreakpointViewModel> ShowBreakpointPropertiesCommand { get; }
         public bool IsWorking { get; private set; }
         public BreakpointsViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, IDispatcher dispatcher, Globals globals,
-            IAcmePdbManager acmePdbManager, ExecutionStatusViewModel executionStatusViewModel)
+            IAcmePdbManager acmePdbManager, ExecutionStatusViewModel executionStatusViewModel, IServiceScopeFactory serviceScopeFactory)
         {
             this.logger = logger;
             this.viceBridge = viceBridge;
             this.dispatcher = dispatcher;
             this.globals = globals;
             this.acmePdbManager = acmePdbManager;
+            this.serviceScopeFactory = serviceScopeFactory;
             this.executionStatusViewModel = executionStatusViewModel;
             Breakpoints = new ObservableCollection<BreakpointViewModel>();
             breakpointsLinesMap = new Dictionary<AcmeLine, BreakpointViewModel>();
             breakpointsMap = new Dictionary<uint, BreakpointViewModel>();
             ToggleBreakpointEnabledCommand = new RelayCommandAsync<BreakpointViewModel>(ToggleBreakpointEnabledAsync);
+            ShowBreakpointPropertiesCommand = new RelayCommandAsync<BreakpointViewModel>(ShowBreakpointPropertiesAsync);
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             globals.PropertyChanged += Globals_PropertyChanged;
             executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
@@ -57,6 +63,21 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case nameof(Globals.Project):
                     _ = RemoveAllBreakpointsAsync();
                     break;
+            }
+        }
+        internal async Task ShowBreakpointPropertiesAsync(BreakpointViewModel? breakpoint)
+        {
+            if (breakpoint is not null)
+            {
+                using (var scope = serviceScopeFactory.CreateScope())
+                {
+                    var model = breakpoint.Clone();
+                    var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(model);
+                    var message = 
+                        new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>("Breakpoint properties", DialogButton.OK | DialogButton.Cancel, detailViewModel);
+                    dispatcher.Dispatch(message);
+                    var result = await message.Result;
+                }
             }
         }
         /// <summary>
