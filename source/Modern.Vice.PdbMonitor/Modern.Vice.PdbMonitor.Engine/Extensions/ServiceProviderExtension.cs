@@ -23,18 +23,19 @@ namespace System
         /// <returns>An instance of <typeparamref name="T"/>.</returns>
         public static T CreateScopedContent<T>(this IServiceProvider serviceProvider)
             where T : ScopedViewModel
-{
+        {
             var contentScope = serviceProvider.CreateScope();
             T viewModel = contentScope.ServiceProvider.GetService<T>() ?? throw new Exception($"Failed creating {typeof(T).Name} ViewModel");
             viewModel.AssignScope(contentScope);
             return viewModel;
         }
-        public static BreakpointDetailViewModel CreateScopedBreakpointDetailViewModel(this IServiceScope serviceScope, BreakpointViewModel breakpointViewModel)
+        public static BreakpointDetailViewModel CreateScopedBreakpointDetailViewModel(this IServiceScope serviceScope,
+            BreakpointViewModel breakpointViewModel, BreakpointDetailDialogMode mode)
         {
-            var viewModel = ActivatorUtilities.CreateInstance<BreakpointDetailViewModel>(serviceScope.ServiceProvider, 
-                serviceScope.ServiceProvider.GetRequiredService<ILogger< BreakpointDetailViewModel>>(),
+            var viewModel = ActivatorUtilities.CreateInstance<BreakpointDetailViewModel>(serviceScope.ServiceProvider,
+                serviceScope.ServiceProvider.GetRequiredService<ILogger<BreakpointDetailViewModel>>(),
                 serviceScope.ServiceProvider.GetRequiredService<BreakpointsViewModel>(),
-                breakpointViewModel);
+                breakpointViewModel, mode);
             return viewModel;
         }
     }

@@ -22,7 +22,7 @@
         <StackPanel Orientation="Horizontal">
           <StackPanel.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="Add breakpoint" Command="{Binding #Tree.DataContext.AddBreakpointOnLabelCommand}" CommandParameter="{Binding #Tree.SelectedItem}" />
+              <MenuItem Header="Add breakpoint" Command="{Binding #Tree.DataContext.AddBreakpointOnLabelCommand}" CommandParameter="{Binding}" />
             </ContextMenu >
           </StackPanel.ContextMenu>
           <TextBlock Text="{Binding Address, StringFormat={}${0:x4}}" Foreground="Gray" FontFamily="{StaticResource CodeFont}" />

@@ -70,9 +70,10 @@
 
     <StackPanel  Grid.Column="1" Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right"
       VerticalAlignment="Bottom" Margin="0,0,8,0">
-      <Button Margin="0,0,8,0">Create</Button>
+      <Button Margin="0,0,8,0" IsVisible="{Binding HasSaveButton, Mode=OneTime}">Save</Button>
+      <Button Margin="0,0,8,0" IsVisible="{Binding HasCreateButton, Mode=OneTime}">Create</Button>
       <Button Margin="0,0,8,0" Command="{Binding CancelCommand, Mode=OneTime}">Cancel</Button>
-      <Button>Apply</Button>
+      <Button IsVisible="{Binding HasApplyButton, Mode=OneTime}">Apply</Button>
     </StackPanel>
   </Grid>
 </UserControl>
