@@ -36,33 +36,37 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-    <CheckBox Grid.Column="1">Is enabled</CheckBox>
+    <CheckBox Grid.Column="1" IsChecked="{Binding Breakpoint.IsEnabled, Mode=TwoWay}">Is enabled</CheckBox>
 
     <Label Grid.Column="0" Grid.Row="1">Address start</Label>
     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
-      <TextBox Text="{Binding Breakpoint.StartAddress}" Width="100" />
+      <TextBox Text="{Binding StartAddress}" Width="100" IsEnabled="{Binding !IsStartAddressReadOnly}" />
       <Label Margin="4,0">end</Label>
-      <TextBox Text="{Binding Breakpoint.EndAddress}" Width="100" />
+      <TextBox Text="{Binding EndAddress}" Width="100" IsEnabled="{Binding !IsEndAddressReadOnly}" />
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="2">Mode</Label>
-    <ComboBox Grid.Column="1" Grid.Row="2" Width="100" HorizontalAlignment="Left" />
+    <ComboBox Grid.Column="1" Grid.Row="2" SelectedIndex="{Binding Breakpoint.Mode, Mode=TwoWay}" Width="100" HorizontalAlignment="Left">
+      <ComboBoxItem>Exec</ComboBoxItem>
+      <ComboBoxItem>Load</ComboBoxItem>
+      <ComboBoxItem>Store</ComboBoxItem>
+    </ComboBox>
 
     <Label Grid.Column="0" Grid.Row="3">File</Label>
     <StackPanel  Grid.Column="1" Grid.Row="3" Orientation="Horizontal">
-      <TextBox Text="{Binding Breakpoint.FileName}" Width="100" />
-      <Label Margin="4,0">end</Label>
-      <TextBox Text="{Binding Breakpoint.LineNumber}" Width="100" HorizontalContentAlignment="Right" />
+      <TextBox Text="{Binding Breakpoint.FileName}" Width="100" IsEnabled="False" />
+      <Label Margin="4,0">line</Label>
+      <TextBox Text="{Binding Breakpoint.LineNumber}"  IsEnabled="False" Width="100" HorizontalContentAlignment="Right" />
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="4">Label</Label>
-    <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Breakpoint.Label}" Width="100" HorizontalAlignment="Left" />
+    <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding Breakpoint.Label}" Width="100" HorizontalAlignment="Left" IsReadOnly="True" />
 
     <!-- blank label just to keep vertical distance -->
     <Label Grid.Column="0" Grid.Row="3" />
     <StackPanel  Grid.Column="1" Grid.Row="5" Orientation="Horizontal">
-      <Button Margin="0,0,8,0">Unbind to File</Button>
-      <Button>Full Unbind</Button>
+      <Button Margin="0,0,8,0" Command="{Binding UnbindToFileCommand}">Unbind to File</Button>
+      <Button Command="{Binding FullUnbindCommand}">Full Unbind</Button>
     </StackPanel>
 
     <Label Grid.Column="0" Grid.Row="6">Condition</Label>

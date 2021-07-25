@@ -16,11 +16,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public AcmeLine? Line { get; set; }
         public AcmeFile? File { get; set; }
         public AcmeLabel? Label { get; set; }
-        public ushort StartAddress { get; }
-        public ushort EndAddress { get; }
+        public ushort StartAddress { get; set; }
+        public ushort EndAddress { get; set; }
         public string? Condition { get; set; }
         public string? FileName => File?.RelativePath;
-        public int? LineNumber { get; }
+        public int? LineNumber { get; set; }
         public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled, BreakpointMode mode,
             AcmeLine? line, int? lineNumber, AcmeFile? file, AcmeLabel? label, ushort startAddress, ushort endAddress, string? condition)
         {
