@@ -40,7 +40,12 @@ namespace Modern.Vice.PdbMonitor.Views
         {
             var dialog = new ModalDialogWindow
             {
+                // TODO make generic
                 DataContext = message,
+                MinWidth = 500,
+                Height = 350,
+                MinHeight = 350,
+                SizeToContent = SizeToContent.Width,
             };
             dialog.ShowDialog(this);
         }

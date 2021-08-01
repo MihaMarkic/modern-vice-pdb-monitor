@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly ILogger<BreakpointDetailViewModel> logger;
         readonly BreakpointsViewModel breakpoints;
         public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+        readonly BreakpointViewModel sourceBreakpoint;
         public BreakpointViewModel Breakpoint { get; }
         public Action<SimpleDialogResult>? Close { get; set; }
         public RelayCommand SaveCommand { get; }
@@ -58,12 +60,13 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             this.logger = logger;
             this.breakpoints = breakpoints;
-            Breakpoint = breakpoint;
+            sourceBreakpoint = breakpoint;
+            Breakpoint = breakpoint.Clone();
             Mode = mode;
-            SaveCommand = new RelayCommand(Save);
-            CreateCommand = new RelayCommandAsync(CreateAsync);
+            SaveCommand = new RelayCommand(Save, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
+            CreateCommand = new RelayCommandAsync(CreateAsync, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
             CancelCommand = new RelayCommand(Cancel);
-            ApplyCommand = new RelayCommand(Apply);
+            ApplyCommand = new RelayCommand(Apply, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
             breakpoint.PropertyChanged += Breakpoint_PropertyChanged;
             UnbindToFileCommand = new RelayCommand(UnbindToFile, () => Breakpoint.Label is not null);
             FullUnbindCommand = new RelayCommand(FullUnbind, () => IsBreakpointBound);
@@ -140,6 +143,19 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         void Apply()
         {
 
+        }
+
+        protected override void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            base.OnPropertyChanged(name);
+            switch (name)
+            {
+                case nameof(HasErrors):
+                    SaveCommand.RaiseCanExecuteChanged();
+                    ApplyCommand.RaiseCanExecuteChanged();
+                    CreateCommand.RaiseCanExecuteChanged();
+                    break;
+            }
         }
 
         protected override void Dispose(bool disposing)

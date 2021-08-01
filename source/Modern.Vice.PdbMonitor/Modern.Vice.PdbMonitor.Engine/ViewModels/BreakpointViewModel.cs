@@ -41,5 +41,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             return (BreakpointViewModel)MemberwiseClone();
         }
+        /// <summary>
+        /// Used to compare detail editing changes.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool IsChangedFrom(BreakpointViewModel other)
+        {
+            return CheckpointNumber == other.CheckpointNumber && StopWhenHit == other.StopWhenHit && IsEnabled == other.IsEnabled
+                && Mode == other.Mode && Line == other.Line && File == other.File && Label == other.Label && StartAddress == other.StartAddress
+                && EndAddress == other.EndAddress && string.Equals(Condition , other.Condition, StringComparison.Ordinal);
+        }
     }
 }

@@ -17,11 +17,13 @@
     <None Remove="Assets\Icons\sync-solid.svg" />
     <None Remove="Assets\Icons\sync.svg" />
     <None Remove="Assets\Icons\times.svg" />
+    <None Remove="Resources\breakpoint-condition.xshd" />
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Bold.ttf" />
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Regular.ttf" />
+    <EmbeddedResource Include="Resources\breakpoint-condition.xshd" />
     <AvaloniaResource Include="Assets\Icons\cog.svg" />
     <AvaloniaResource Include="Assets\Icons\disabled_link.svg" />
     <AvaloniaResource Include="Assets\Icons\link.svg" />
@@ -45,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.10.6" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="0.10.4" />
     <PackageReference Include="Avalonia.Desktop" Version="0.10.6" />
     <PackageReference Include="Avalonia.Diagnostics" Version="0.10.6" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="0.10.6.1" />

@@ -71,8 +71,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 using (var scope = serviceScopeFactory.CreateScope())
                 {
-                    var model = breakpoint.Clone();
-                    var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(model, BreakpointDetailDialogMode.Update);
+                    var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(breakpoint, BreakpointDetailDialogMode.Update);
                     var message = 
                         new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>("Breakpoint properties", DialogButton.OK | DialogButton.Cancel, detailViewModel);
                     dispatcher.Dispatch(message);

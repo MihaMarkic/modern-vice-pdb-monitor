@@ -1,0 +1,65 @@
+<SyntaxDefinition name="C#"
+        xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Register" foreground="Black" fontWeight="bold" />
+  <Color name="Compare" foreground="Gray" />
+  <Color name="Expression" foreground="Gray" />
+  <Color name="Parenthesis" foreground="Black" />
+  <Color name="MemSpace" foreground="#2B91aF" />
+  <Color name="Bank" foreground="#3465A4" />
+  <Color name="Label" foreground="DarkGreen" />
+  <Color name="Number" foreground="DarkBlue" />
+
+  <!-- This is the main ruleset. -->
+  <RuleSet>
+    <Keywords color="Register">
+      <Word>A</Word>
+      <Word>X</Word>
+      <Word>Y</Word>
+      <Word>PC</Word>
+      <Word>SP</Word>
+      <Word>FL</Word>
+      <Word>RL</Word>
+      <Word>CY</Word>
+    </Keywords>
+
+    <Keywords color="Compare">
+      <Word>==</Word>
+      <Word>!=</Word>
+      <Word>&lt;</Word>
+      <Word>&gt;</Word>
+      <Word>&lt;=</Word>
+      <Word>&gt;=</Word>
+    </Keywords>
+
+    <Rule color="Expression">
+      [\+,-,*,/]
+    </Rule>
+    <Keywords color="Expression">
+      <Word>&amp;&amp;</Word>
+      <Word>||</Word>
+    </Keywords>
+
+    <Rule color="MemSpace">
+      \d+:
+    </Rule>
+
+    <Rule color="Bank">
+      @\w+:
+    </Rule>
+
+    <Rule color="Label">
+      \.\w+
+    </Rule>
+
+    <Rule color="Parenthesis">
+      [\(\)]
+    </Rule>
+    <!-- Digits -->
+    <Rule color="Number">
+      \$[0-9a-fA-F]+  # hex number
+      |
+      \d+            # nohex digit
+    </Rule>
+
+  </RuleSet>
+</SyntaxDefinition>
