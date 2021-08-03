@@ -132,18 +132,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             StepIntoCommand = commandsManager.CreateRelayCommandAsync(StepIntoAsync, () => IsDebugging && IsDebuggingPaused);
             StepOverCommand = commandsManager.CreateRelayCommandAsync(StepOverAsync, () => IsDebugging && IsDebuggingPaused);
             UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
-            if (!Directory.Exists(globals.Settings.VicePath))
+            SwitchContent<DebuggerViewModel>();
+            // by default opens most recent project
+            if (globals.Settings.RecentProjects.Count > 0)
             {
-                SwitchContent<SettingsViewModel>();
-            }
-            else
-            {
-                SwitchContent<DebuggerViewModel>();
-                // by default opens most recent project
-                if (globals.Settings.RecentProjects.Count > 0)
-                {
-                    OpenProjectFromPath(globals.Settings.RecentProjects[0]);
-                }
+                OpenProjectFromPath(globals.Settings.RecentProjects[0]);
             }
             stoppedExecution = new TaskCompletionSource();
             resumedExecution = new TaskCompletionSource();
@@ -151,6 +144,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.Start();
             requiresBreakpointsRefresh = true;
+            if (!Directory.Exists(globals.Settings.VicePath))
+            {
+                SwitchOverlayContent<SettingsViewModel>();
+            }
         }
         /// <summary>
         /// Relays execution status
@@ -229,9 +226,6 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 if (Globals.Project!.PrgPath is not null)
                 {
-#if DEBUG
-                    await Task.Delay(5000);
-#endif
                     var debugFiles = GetDebugFilesPath(Globals.Project.PrgPath);
                     Globals.Pdb = await ParsePdbAsync(debugFiles);
                     IsUpdatedPdbAvailable = false;

@@ -39,7 +39,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
             var report = await reportTask;
 
             var context = new ThreadSafeContext();
-            var acmePdb = CreatePdb(projectDirectory, debugFiles.Report, report.ParsedData, labels.ParsedData, context);
+            var acmePdb = CreatePdb(projectDirectory, Path.GetDirectoryName(debugFiles.Report), report.ParsedData, labels.ParsedData, context);
             var errors = context.Errors;
             var allErrors = errors.Union(report.Errors).Union(labels.Errors).ToImmutableArray();
 
@@ -64,13 +64,13 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
                     case ReportSource reportSource:
                         if (!filesBuilder.TryGetValue(reportSource.RelativePath, out file))
                         {
-                            string reportFilePath = reportSource.RelativePath;
-                            // source file could be relative to report
-                            if (reportFilePath.StartsWith('.'))
+                            string sourceFilePath = reportSource.RelativePath;
+                            // source file could be relative to project
+                            if (sourceFilePath.StartsWith('.'))
                             {
-                                reportFilePath = Path.Combine(reportDirectory, reportFilePath);
+                                sourceFilePath = Path.Combine(projectDirectory, sourceFilePath);
                             }
-                            string relativePath = Path.GetRelativePath(projectDirectory, reportSource.RelativePath);
+                            string relativePath = Path.GetRelativePath(projectDirectory, sourceFilePath);
                             file = new AcmeFile(relativePath);
                             filesBuilder.Add(file.RelativePath, file);
                         }
