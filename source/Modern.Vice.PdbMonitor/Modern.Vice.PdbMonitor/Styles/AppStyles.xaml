@@ -32,4 +32,9 @@
     <Style Selector="TreeViewItem">
         <Setter Property="MinHeight" Value="0" />
     </Style>
+
+    <Style Selector="TextBlock.error">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Foreground" Value="Red" />
+    </Style>
 </Styles>

@@ -21,9 +21,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly BreakpointsViewModel breakpoints;
         public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
         readonly BreakpointViewModel sourceBreakpoint;
+        public string? SaveError { get; private set; }
         public BreakpointViewModel Breakpoint { get; }
         public Action<SimpleDialogResult>? Close { get; set; }
-        public RelayCommand SaveCommand { get; }
+        public RelayCommandAsync SaveCommand { get; }
         public RelayCommandAsync CreateCommand { get; }
         public RelayCommand CancelCommand { get; }
         public RelayCommand ApplyCommand { get; }
@@ -34,7 +35,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public bool HasErrors { get; private set; }
         public bool CanUpdate => HasChanges && !HasErrors;
         public bool HasCreateButton => Mode == BreakpointDetailDialogMode.Create;
-        public bool HasApplyButton => Mode == BreakpointDetailDialogMode.Update;
+        public bool HasApplyButton => false; // Mode == BreakpointDetailDialogMode.Update; // disabled for now, perhaps enabled in the future
         public bool HasSaveButton => Mode == BreakpointDetailDialogMode.Update;
         /// <summary>
         /// Proxy to <see cref="BreakpointViewModel.StartAddress"/> through <see cref="startAddressValidator"/>.
@@ -63,22 +64,23 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             sourceBreakpoint = breakpoint;
             Breakpoint = breakpoint.Clone();
             Mode = mode;
-            SaveCommand = new RelayCommand(Save, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
-            CreateCommand = new RelayCommandAsync(CreateAsync, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
+            SaveCommand = new RelayCommandAsync(SaveAsync, CanSave);
+            CreateCommand = new RelayCommandAsync(CreateAsync, CanSave);
             CancelCommand = new RelayCommand(Cancel);
-            ApplyCommand = new RelayCommand(Apply, () => !HasErrors && breakpoint.IsChangedFrom(sourceBreakpoint));
-            breakpoint.PropertyChanged += Breakpoint_PropertyChanged;
+            ApplyCommand = new RelayCommand(Apply, CanSave);
+            Breakpoint.PropertyChanged += Breakpoint_PropertyChanged;
             UnbindToFileCommand = new RelayCommand(UnbindToFile, () => Breakpoint.Label is not null);
             FullUnbindCommand = new RelayCommand(FullUnbind, () => IsBreakpointBound);
 
-            startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => breakpoint.StartAddress = a);
-            endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => breakpoint.EndAddress = a);
+            startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a);
+            endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a);
             validators = ImmutableArray<IBindingValidator>.Empty.Add(startAddressValidator).Add(endAddressValidator);
             foreach (var validator in validators)
             {
                 validator.HasErrorsChanged += ValidatorHasErrorsChanged;
             }
         }
+        internal bool CanSave() => !HasErrors && Breakpoint.IsChangedFrom(sourceBreakpoint);
         void UnbindToFile()
         {
             Breakpoint.Label = null;
@@ -99,6 +101,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         void Breakpoint_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             HasChanges = true;
+            SaveError = null;
             SaveCommand.RaiseCanExecuteChanged();
             CreateCommand.RaiseCanExecuteChanged();
             ApplyCommand.RaiseCanExecuteChanged();
@@ -123,9 +126,17 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             return errors.ToImmutableArray();
         }
-        void Save()
+        async Task SaveAsync()
         {
-            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+            try
+            {
+                await breakpoints.UpdateBreakpointAsync(Breakpoint);
+                Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+            }
+            catch (Exception ex)
+            {
+                SaveError = $"Failed saving: {ex.Message}";
+            }
         }
         async Task CreateAsync()
         {
@@ -145,7 +156,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 
         }
 
-        protected override void OnPropertyChanged([CallerMemberName] string name = null)
+        protected override void OnPropertyChanged(string name = null!)
         {
             base.OnPropertyChanged(name);
             switch (name)

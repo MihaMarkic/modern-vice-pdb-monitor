@@ -146,9 +146,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 foreach (var breakpoint in breakpoints)
                 {
-                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
-                        breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
-                        breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+                    await AddBreakpointAsync(breakpoint, ct);
                 }
             }
         }
@@ -203,9 +201,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
                 if (isBreakpointReapplied)
                 {
-                    await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
-                        breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
-                        breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+                    await AddBreakpointAsync(breakpoint, ct);
                 }
             }
             if (newBreakpoints.Count == breakpoints.Length)
@@ -309,12 +305,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             switch (e.Response)
             {
                 case CheckpointInfoResponse checkpointInfo:
-                    UpdateBreakpoint(checkpointInfo);
+                    UpdateBreakpointDataFromVice(checkpointInfo);
                     break;
             }
         }
 
-        void UpdateBreakpoint(CheckpointInfoResponse checkpointInfo)
+        void UpdateBreakpointDataFromVice(CheckpointInfoResponse checkpointInfo)
         {
             if (breakpointsMap.TryGetValue(checkpointInfo.CheckpointNumber, out var breakpoint))
             {
@@ -366,6 +362,18 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
         }
         /// <summary>
+        /// Wrapper around the other <see cref="AddBreakpointAsync(bool, bool, BreakpointMode, AcmeLine?, int?, AcmeFile?, AcmeLabel?, ushort, ushort, string?, CancellationToken)"/>
+        /// </summary>
+        /// <param name="breakpoint"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        internal async Task<BreakpointViewModel?> AddBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
+        {
+            return await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
+                        breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
+                        breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+        }
+        /// <summary>
         /// Adds breakpoint to VICE
         /// </summary>
         /// <param name="stopWhenHit"></param>
@@ -412,18 +420,29 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             return default;
         }
-        public async Task RemoveBreakpointAsync(BreakpointViewModel breakpoint, bool forceRemove, CancellationToken ct = default)
+        public async Task<bool> RemoveBreakpointAsync(BreakpointViewModel breakpoint, bool forceRemove, CancellationToken ct = default)
         {
             bool success = await DeleteCheckpointAsync(breakpoint.CheckpointNumber, ct);
             if (success || forceRemove)
             {
-                Breakpoints.Remove(breakpoint);
+                RemoveBreakpointFromListByCheckpointNumber(breakpoint.CheckpointNumber);
                 if (breakpoint.Line is not null)
                 {
                     breakpointsLinesMap.Remove(breakpoint.Line);
                 }
                 breakpointsMap.Remove(breakpoint.CheckpointNumber);
+                return true;
             }
+            return false;
+        }
+        bool RemoveBreakpointFromListByCheckpointNumber(uint checkpointNumber)
+        {
+            var target = Breakpoints.FirstOrDefault(b => b.CheckpointNumber == checkpointNumber);
+            if (target is not null)
+            {
+                return Breakpoints.Remove(target);
+            }
+            return false;
         }
         /// <summary>
         /// Deletes a checkpoint identified by its checkpoint number on VICE
@@ -436,6 +455,23 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             var command = viceBridge.EnqueueCommand(new CheckpointDeleteCommand(checkpointNumber));
             var result = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
             return result is not null;
+        }
+        /// <summary>
+        /// Updates an existing breakpoint. Will throw if problems with communication or condition fails.
+        /// </summary>
+        /// <param name="breakpoint"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        /// <remarks>Breakpoint might be a clone and thus equality on <see cref="BreakpointViewModel"/> can not be used.</remarks>
+        public async Task<BreakpointViewModel> UpdateBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
+        {
+            bool result = await RemoveBreakpointAsync(breakpoint, forceRemove: false, ct);
+            if (!result)
+            {
+                throw new Exception("Failed to remove breakpoint from the list");
+            }
+            var newBreakpoint = await AddBreakpointAsync(breakpoint) ?? throw new Exception("Failed to set condition");
+            return newBreakpoint;
         }
 
         protected override void Dispose(bool disposing)

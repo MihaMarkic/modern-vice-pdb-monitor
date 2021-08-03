@@ -39,6 +39,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <CheckBox Grid.Column="1" IsChecked="{Binding Breakpoint.IsEnabled, Mode=TwoWay}">Is enabled</CheckBox>
 
@@ -78,14 +79,17 @@
       Foreground="Gray" FontFamily="{StaticResource CodeFont}" MinHeight="60" ShowLineNumbers="true" Margin="0,5"
       FontSize="14">
       <i:Interaction.Behaviors>
-        <b:DocumentTextBindingBehavior Text="{Binding Code, Mode=TwoWay}"/>
+        <b:DocumentTextBindingBehavior Text="{Binding Breakpoint.Condition, Mode=TwoWay}"/>
       </i:Interaction.Behaviors>
     </ae:TextEditor>
 
-    <StackPanel  Grid.Column="1" Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right"
+    <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7" Classes="error" Text="{Binding SaveError}"
+      IsVisible="{Binding SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+    <StackPanel  Grid.Column="1" Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right"
       VerticalAlignment="Bottom" Margin="0,0,8,0">
-      <Button Margin="0,0,8,0" IsVisible="{Binding HasSaveButton, Mode=OneTime}">Save</Button>
-      <Button Margin="0,0,8,0" IsVisible="{Binding HasCreateButton, Mode=OneTime}">Create</Button>
+      <Button Margin="0,0,8,0" IsVisible="{Binding HasSaveButton, Mode=OneTime}" Command="{Binding SaveCommand}">Save</Button>
+      <Button Margin="0,0,8,0" IsVisible="{Binding HasCreateButton, Mode=OneTime}" Command="{Binding CreateCommand}">Create</Button>
       <Button Margin="0,0,8,0" Command="{Binding CancelCommand, Mode=OneTime}">Cancel</Button>
       <Button IsVisible="{Binding HasApplyButton, Mode=OneTime}">Apply</Button>
     </StackPanel>

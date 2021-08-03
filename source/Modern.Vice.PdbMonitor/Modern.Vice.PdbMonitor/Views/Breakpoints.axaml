@@ -42,7 +42,7 @@
       <DataGridTextColumn CellStyleClasses="colored" Header="Label" Binding="{Binding Label.Name}" IsReadOnly="True" />
       <DataGridTextColumn CellStyleClasses="colored" Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="True" />
       <DataGridTextColumn CellStyleClasses="colored" Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Condition" Binding="{Binding Condition, Mode=OneTime}" IsReadOnly="True" Width="*" />
+      <DataGridTextColumn CellStyleClasses="colored" Header="Condition" Binding="{Binding Condition}" IsReadOnly="True" Width="*" />
     </DataGrid.Columns>
   </DataGrid>
 </UserControl>

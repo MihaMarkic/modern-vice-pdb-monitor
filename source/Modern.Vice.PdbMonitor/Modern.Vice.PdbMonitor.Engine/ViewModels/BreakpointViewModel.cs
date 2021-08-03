@@ -48,9 +48,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         /// <returns></returns>
         public bool IsChangedFrom(BreakpointViewModel other)
         {
-            return CheckpointNumber == other.CheckpointNumber && StopWhenHit == other.StopWhenHit && IsEnabled == other.IsEnabled
+            return !(CheckpointNumber == other.CheckpointNumber && StopWhenHit == other.StopWhenHit && IsEnabled == other.IsEnabled
                 && Mode == other.Mode && Line == other.Line && File == other.File && Label == other.Label && StartAddress == other.StartAddress
-                && EndAddress == other.EndAddress && string.Equals(Condition , other.Condition, StringComparison.Ordinal);
+                && EndAddress == other.EndAddress && string.Equals(Condition , other.Condition, StringComparison.Ordinal));
         }
     }
 }

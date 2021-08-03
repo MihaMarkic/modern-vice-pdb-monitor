@@ -41,7 +41,7 @@ namespace Modern.Vice.PdbMonitor.Behaviors
 
         void TextPropertyChanged(string? text)
         {
-            if (AssociatedObject?.Document != null && text != null)
+            if (AssociatedObject?.Document != null && text != null && !string.Equals(text, AssociatedObject.Document.Text, StringComparison.Ordinal))
             {
                 var caretOffset = AssociatedObject.CaretOffset;
                 AssociatedObject.Document.Text = text;
