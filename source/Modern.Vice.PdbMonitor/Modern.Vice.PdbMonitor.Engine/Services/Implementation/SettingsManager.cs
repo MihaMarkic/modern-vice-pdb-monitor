@@ -15,7 +15,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
         public SettingsManager(ILogger<SettingsManager> logger)
         {
             this.logger = logger;
-            directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ModernVicePdbMonitor");
+            directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ModernVicePdbMonitor");
             settingsPath = Path.Combine(directory, "settings.json");
         }
         public Settings LoadSettings()
