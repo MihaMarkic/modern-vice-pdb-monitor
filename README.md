@@ -59,35 +59,35 @@ The actual app starts at *start* label while the code in front makes it accessib
 2. Run *Modern.Vice.PdbMonitor.exe* (or an equivalent when not on Windows).
 
 3. Upon start Settings dialog is open. Enter path to VICE. This information will be used to autostart VICE when required. Click Close. The Settings dialog will appear always at the start unless path to VICE is set.
-   ![global-settings](docs\global-settings.png)
+   ![global-settings](docs/global-settings.png)
 
 4. Next the application without a project set is displayed.
-   ![global-settings](docs\empty.png)
+   ![global-settings](docs/empty.png)
 
 5. Use *File/New...* to create a new project. Name it *tiny* (.mapd extension will be added) and place it into the *Sample* directory. Open *File/Project Settings...* and set path to *tiny.prg* file created when tiny.asm was compiled (path is relative to project).
    There are two ways to auto start the app. Using VICE which will start code from beginning (the first code block uses BASIC to start the app). Or use *Auto starts at 'start' label address* option which start the app at address defined by *start* label. Stop at label gives you the option to stop execution at certain label after auto start. This is mostly useful in combination with VICE auto start since we want app to stop at user code, not at bootstrap as in this case.
    Set Auto Start to *Auto starts using VICE* and Stop at label to *start*.
-   Click *Close*.![project-settings](docs\project-settings.png)
+   Click *Close*.![project-settings](docs/project-settings.png)
 
 6. Explorer is now populated with files and labels, both can be double clicked and open the code in the code viewer. Registers panel shows the current registers values.
 
-   ![explorer](docs\explorer.png)
+   ![explorer](docs/explorer.png)
 
 7. Click the *Run* button to start the application. It will stop at *start* label.
-   ![autostart](docs\autostart.png)
+   ![autostart](docs/autostart.png)
 
 8. Click *Run* again and app will complete. Since app has no real stop, app will still be showing as running. VICE will show this result.
    ![output](docs\output.png)
 
 9. A breakpoint can be also set. Click on left of the line numbers to automatically create a breakpoint. All breakpoints are listed in *Breakpoints* panel (breakpoint might be using arbitrary address, not a source line one). If you run the app now, it will stop at given breakpoint after second click on *Run*.
-   ![line-breakpoint](docs\line-breakpoint.png)
+   ![line-breakpoint](docs/line-breakpoint.png)
 
 10. Breakpoints can be modified (right click on breakpoint in the list and *Properties* or double click on it) or created manually (*Create* button). When breakpoints are created like in previous step, they are linked to file and its line. To unbind it, click *Full Unbind*. When breakpoints are linked to label, they can be first unbound to file using *Unbind to file*. Once the breakpoint is fully unbound, its address start and end can be modified.
     Condition window lets you add a condition upon which the breakpoint is triggered. See [Checkpoint commands](https://vice-emu.sourceforge.io/vice_12.html) for condition syntax (enter only <cond_expr> in the input). Sample condition would be
     `X == $3` which trigger the breakpoint only when register X has value of $3. 
     Breakpoints can be also disabled through *Is enabled* flag.
 
-    ![breakpoint-details](docs\breakpoint-details.png)
+    ![breakpoint-details](docs/breakpoint-details.png)
 
 ## Features
 
