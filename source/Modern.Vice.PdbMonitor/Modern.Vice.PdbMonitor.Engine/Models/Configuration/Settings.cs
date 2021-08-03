@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using Modern.Vice.PdbMonitor.Core;
+using Newtonsoft.Json;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration
 {
@@ -8,6 +9,7 @@ namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration
         public const int MaxRecentProjects = 10;
         public string? VicePath { get; set; }
         public ObservableCollection<string> RecentProjects { get; } = new ObservableCollection<string>();
+        [JsonIgnore]
         public string? LastAccessedDirectory => RecentProjects.Count > 0 ? RecentProjects[0] : null;
         public void AddRecentProject(string path)
         {

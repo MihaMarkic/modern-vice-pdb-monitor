@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Modern.Vice.PdbMonitor.Core
 {
@@ -13,7 +14,7 @@ namespace Modern.Vice.PdbMonitor.Core
         {
             disposed = true;
         }
-
+        [JsonIgnore]
         public bool IsDisposed
         {
             get { return disposed; }
