@@ -5,44 +5,52 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              x:DataType="vm:BreakpointsViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.Breakpoints">
   <UserControl.Resources>
-      <c:BoolToColorConverter x:Key="IsHitToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
+    <c:BoolToColorConverter x:Key="IsHitToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="DataGridCell.colored">
       <Setter Property="Background" Value="{Binding IsCurrentlyHit, Mode=OneWay, Converter={StaticResource IsHitToBackgroundConverter}}"/>
     </Style>
   </UserControl.Styles>
-  <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False">
-    <DataGrid.Styles>
-      <Style Selector="DataGridRow">
-        <Setter Property="ContextMenu">
-          <Setter.Value>
+  <DockPanel>
+    <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right">
+      <Button Margin="4" Command="{Binding CreateBreakpointCommand}">Create</Button>
+    </StackPanel>
+    <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False" b:DoubleTappedBehavior.Command="{Binding ShowBreakpointPropertiesCommand}"
+          b:DoubleTappedBehavior.CommandParameter="{Binding #Grid.SelectedItem}">
+      <DataGrid.Styles>
+        <Style Selector="DataGridRow">
+          <Setter Property="ContextMenu">
+            <Setter.Value>
               <ContextMenu>
                 <MenuItem Header="Properties..." Command="{Binding #Grid.DataContext.ShowBreakpointPropertiesCommand}" CommandParameter="{Binding}" />
+                <MenuItem Header="Remove" Command="{Binding #Grid.DataContext.RemoveBreakpointCommand}" CommandParameter="{Binding}" />
               </ContextMenu >
-          </Setter.Value>
-        </Setter>
-      </Style>
-    </DataGrid.Styles>
-    <DataGrid.Resources>
-      <c:HexAddressConverter x:Key="HexAddressConverter" />
-    </DataGrid.Resources>
-    <DataGrid.Columns>
-      <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" CellStyleClasses="colored" />
-      <DataGridCheckBoxColumn CellStyleClasses="colored" Header="Enabled" Binding="{Binding IsEnabled}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Mode" Binding="{Binding Mode}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Line" Binding="{Binding LineNumber}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="File" Binding="{Binding FileName}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Label" Binding="{Binding Label.Name}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="True" />
-      <DataGridTextColumn CellStyleClasses="colored" Header="Condition" Binding="{Binding Condition}" IsReadOnly="True" Width="*" />
-    </DataGrid.Columns>
-  </DataGrid>
+            </Setter.Value>
+          </Setter>
+        </Style>
+      </DataGrid.Styles>
+      <DataGrid.Resources>
+        <c:HexAddressConverter x:Key="HexAddressConverter" />
+      </DataGrid.Resources>
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" CellStyleClasses="colored" />
+        <DataGridCheckBoxColumn CellStyleClasses="colored" Header="Enabled" Binding="{Binding IsEnabled}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Mode" Binding="{Binding Mode}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Line" Binding="{Binding LineNumber}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="File" Binding="{Binding FileName}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Label" Binding="{Binding Label.Name}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Hit Count" Binding="{Binding HitCount}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Ignore Count" Binding="{Binding IgnoreCount}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Condition" Binding="{Binding Condition}" IsReadOnly="True" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
 </UserControl>

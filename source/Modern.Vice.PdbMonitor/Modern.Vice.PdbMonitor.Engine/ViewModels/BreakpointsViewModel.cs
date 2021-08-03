@@ -35,6 +35,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
         public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
         public RelayCommandAsync<BreakpointViewModel> ShowBreakpointPropertiesCommand { get; }
+        public RelayCommandAsync<BreakpointViewModel> RemoveBreakpointCommand { get; }
+        public RelayCommandAsync CreateBreakpointCommand { get; }
         public bool IsWorking { get; private set; }
         public BreakpointsViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, IDispatcher dispatcher, Globals globals,
             IAcmePdbManager acmePdbManager, ExecutionStatusViewModel executionStatusViewModel, IServiceScopeFactory serviceScopeFactory)
@@ -50,7 +52,9 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             breakpointsLinesMap = new Dictionary<AcmeLine, BreakpointViewModel>();
             breakpointsMap = new Dictionary<uint, BreakpointViewModel>();
             ToggleBreakpointEnabledCommand = new RelayCommandAsync<BreakpointViewModel>(ToggleBreakpointEnabledAsync);
-            ShowBreakpointPropertiesCommand = new RelayCommandAsync<BreakpointViewModel>(ShowBreakpointPropertiesAsync);
+            ShowBreakpointPropertiesCommand = new RelayCommandAsync<BreakpointViewModel>(ShowBreakpointPropertiesAsync, b => b is not null);
+            RemoveBreakpointCommand = new RelayCommandAsync<BreakpointViewModel>(RemoveBreakpointAsync, b => b is not null);
+            CreateBreakpointCommand = new RelayCommandAsync(CreateBreakpoint);
             viceBridge.ViceResponse += ViceBridge_ViceResponse;
             globals.PropertyChanged += Globals_PropertyChanged;
             executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
@@ -63,6 +67,32 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 case nameof(Globals.Project):
                     _ = RemoveAllBreakpointsAsync();
                     break;
+            }
+        }
+
+        internal async Task CreateBreakpoint()
+        {
+            using (var scope = serviceScopeFactory.CreateScope())
+            {
+                var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(new BreakpointViewModel(), BreakpointDetailDialogMode.Create);
+                var message =
+                    new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>("Breakpoint properties", DialogButton.OK | DialogButton.Cancel, detailViewModel);
+                dispatcher.Dispatch(message);
+                var result = await message.Result;
+            }
+        }
+        internal async Task RemoveBreakpointAsync(BreakpointViewModel? breakpoint)
+        {
+            if (breakpoint is not null)
+            {
+                try
+                {
+                    await RemoveBreakpointAsync(breakpoint, forceRemove: false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to remove breakpoint");
+                }
             }
         }
         internal async Task ShowBreakpointPropertiesAsync(BreakpointViewModel? breakpoint)
@@ -339,6 +369,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                 }
             }
         }
+        /// <summary>
+        /// Adds breakpoint linked to line in the file.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="line"></param>
+        /// <param name="lineNumber"></param>
+        /// <param name="label"></param>
+        /// <param name="condition"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task AddBreakpointAsync(AcmeFile file, AcmeLine line, int lineNumber, AcmeLabel? label, string? condition, CancellationToken ct = default)
         {
             if (line.StartAddress is not null)

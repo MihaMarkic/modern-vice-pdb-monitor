@@ -13,7 +13,7 @@ namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
     {
         readonly Action<TSource> assignToSource;
         public string SourcePropertyName { get; }
-        public string? TextValue { get; private set; }
+        public string? TextValue { get; protected set; }
         public event EventHandler? HasErrorsChanged;
         public ImmutableArray<string> Errors { get; private set; } = ImmutableArray<String>.Empty;
         public bool HasErrors => !Errors.IsDefaultOrEmpty;
@@ -22,7 +22,6 @@ namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
         public StringValidator(string sourcePropertyName, TSource initialValue, Action<TSource> assignToSource)
         {
             SourcePropertyName = sourcePropertyName;
-            TextValue = ConvertTo(initialValue);
             this.assignToSource = assignToSource;
         }
         protected virtual void OnHasErrorsChanged(EventArgs e) => HasErrorsChanged?.Invoke(this, e);

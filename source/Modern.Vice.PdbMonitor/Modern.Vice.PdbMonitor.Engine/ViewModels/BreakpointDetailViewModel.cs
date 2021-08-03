@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,6 +116,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     OnPropertyChanged(nameof(IsStartAddressReadOnly));
                     OnPropertyChanged(nameof(IsEndAddressReadOnly));
                     break;
+                case nameof(StartAddress):
+                case nameof(EndAddress):
+                    // validates start and end address, not very efficient since it does it on every change
+                    // TODO improve
+                    OnErrorsChanged(new DataErrorsChangedEventArgs(nameof(EndAddress)));
+                    break;
             }
         }
         public IEnumerable GetErrors(string? propertyName)
@@ -124,6 +131,14 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             {
                 errors.AddRange(validator.Errors);
             }
+            if (!startAddressValidator.HasErrors && !endAddressValidator.HasErrors)
+            {
+                if (Breakpoint.EndAddress <= Breakpoint.StartAddress)
+                {
+                    errors.Add("End Address should be higher than Start Address");
+                }
+            }
+            HasErrors = errors.Count > 0;
             return errors.ToImmutableArray();
         }
         async Task SaveAsync()
@@ -135,25 +150,29 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             catch (Exception ex)
             {
-                SaveError = $"Failed saving: {ex.Message}";
+                SaveError = $"Failed saving breakpoint: {ex.Message}";
             }
         }
         async Task CreateAsync()
         {
-            await breakpoints.DeleteCheckpointAsync(Breakpoint.CheckpointNumber, CancellationToken.None);
-            if (Breakpoint.File is not null && Breakpoint.Line is not null)
+            try
             {
-                await breakpoints.AddBreakpointAsync(Breakpoint.File, Breakpoint.Line, Breakpoint.LineNumber!.Value, Breakpoint.Label, Breakpoint.Condition);
+                await breakpoints.AddBreakpointAsync(Breakpoint);
+                Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
             }
-            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+            catch (Exception ex)
+            {
+                SaveError = $"Failed creating breakpoint: {ex.Message}";
+            }
         }
         void Cancel()
         {
             Close?.Invoke(new SimpleDialogResult(DialogResultCode.Cancel));
         }
+
         void Apply()
         {
-
+            // not implemented at this time
         }
 
         protected override void OnPropertyChanged(string name = null!)

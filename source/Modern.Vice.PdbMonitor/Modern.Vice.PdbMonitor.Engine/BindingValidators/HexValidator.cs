@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
 {
@@ -14,6 +15,7 @@ namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
         {
             this.digits = digits;
             hexFormat = $"X{digits}";
+            TextValue = ConvertTo(initialValue);
         }
 
         public override (bool IsValid, ushort Value, string? error) ConvertFrom(string? text)
@@ -22,7 +24,7 @@ namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
             {
                 return (false, default, "Input can not be empty");
             }
-            if (!ushort.TryParse(text, out ushort value))
+            if (!ushort.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort value))
             {
                 return (false, default, "Input is not a valid hex value");
             }

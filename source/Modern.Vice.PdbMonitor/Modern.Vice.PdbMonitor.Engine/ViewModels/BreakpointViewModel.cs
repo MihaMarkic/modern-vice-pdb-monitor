@@ -21,6 +21,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public string? Condition { get; set; }
         public string? FileName => File?.RelativePath;
         public int? LineNumber { get; set; }
+        public BreakpointViewModel()
+        {
+            // checkpoint gets assigned upon save, mark it as unset
+            CheckpointNumber = uint.MaxValue;
+        }
         public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled, BreakpointMode mode,
             AcmeLine? line, int? lineNumber, AcmeFile? file, AcmeLabel? label, ushort startAddress, ushort endAddress, string? condition)
         {
