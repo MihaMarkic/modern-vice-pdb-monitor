@@ -1,161 +1,163 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Markup.Xaml;
-using Avalonia.VisualTree;
+using AvaloniaEdit;
+using AvaloniaEdit.Rendering;
+using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
-    // TODO make font settable
-    public class SourceFileViewer : UserControl
+    public partial class SourceFileViewer : UserControl
     {
-        int cursorRow;
-        int? executionRow;
-        double itemHeight;
-        /// <summary>
-        /// Prevents resetting cursor row when initializing and setting cursor row at the same time
-        /// </summary>
-        bool settingCursorRow;
-        readonly ItemsRepeater lines;
-        readonly ScrollViewer scroller;
-        public static readonly DirectProperty<SourceFileViewer, int> CursorRowProperty =
-            AvaloniaProperty.RegisterDirect<SourceFileViewer, int>(nameof(CursorRow),
-                o => o.CursorRow, 
-                (o, v) => o.CursorRow = v, 
-                defaultBindingMode: BindingMode.TwoWay);
-        public static readonly DirectProperty<SourceFileViewer, int?> ExecutionRowProperty =
-            AvaloniaProperty.RegisterDirect<SourceFileViewer, int?>(nameof(ExecutionRow),
-                o => o.ExecutionRow,
-                (o, v) => o.ExecutionRow = v,
-                defaultBindingMode: BindingMode.TwoWay);
+        readonly TextEditor editor;
+        static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
+        SourceFileViewModel? oldDataContext;
+        static SourceFileViewer()
+        {
+            TextEditorScrollViewerPropertyInfo = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        }
         public SourceFileViewer()
         {
             InitializeComponent();
-            lines = this.Find<ItemsRepeater>("lines");
-            scroller = this.Find<ScrollViewer>("scroller");
-            scroller.ScrollChanged += Scroller_ScrollChanged;
+            editor = this.FindControl<TextEditor>("Editor");
+            DataContextChanged += SourceFileViewer_DataContextChanged;
+        }
+        ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(editor);
+        public new SourceFileViewModel? DataContext => (SourceFileViewModel?)base.DataContext;
+        void SourceFileViewer_DataContextChanged(object? sender, System.EventArgs e)
+        {
+            if (oldDataContext is not null)
+            {
+                oldDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
+            }
+            editor.Text = "";
+            editor.CaretOffset = 0;
+            var viewModel = DataContext;
+            if (viewModel is not null)
+            {
+                string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
+                editor.Text = text;
+                viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+            }
+            oldDataContext = viewModel;
         }
 
-        void Scroller_ScrollChanged(object? sender, ScrollChangedEventArgs e)
+        void ViewModel_ShowCursorRow(object? sender, EventArgs e)
         {
-            var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
-            // TODO find a way to determine current top line
-            //if (firstVisibleChild is not null)
-            //{
-            //    cursorRow = lines.GetElementIndex((IControl)firstVisibleChild);
-            //}
-            //else
-            // don't clear it until it isn't set
-            if (!settingCursorRow)
-            {
-                cursorRow = -1;
-            }
+            _ = CursorRowChanged(DataContext!.CursorRow);
         }
 
-        public int? ExecutionRow
+        CancellationTokenSource? cts;
+        async Task CursorRowChanged(int cursorRow)
         {
-            get => executionRow;
-            set
+            cts?.Cancel();
+            if (double.IsNaN(editor.Height))
             {
-                if (ExecutionRow != value)
+                cts = new CancellationTokenSource();
+                var ct = cts.Token;
+                await WaitForLayoutUpdatedAsync();
+                if (ct.IsCancellationRequested)
                 {
-                    SetAndRaise(ExecutionRowProperty, ref executionRow, value);
-                    ExecutionRowChanged();
+                    return;
                 }
             }
-        }
-        void ExecutionRowChanged()
-        {
-            //bool success = ScrollToCursorRow();
-            //if (!success)
-            //{
-            //    lines.ElementPrepared += Lines_ElementPrepared;
-            //}
-        }
-        /// <summary>
-        /// Row to jump to.
-        /// </summary>
-        public int CursorRow
-        {
-            get => cursorRow;
-            set
-            {
-                if (CursorRow != value)
-                {
-                    SetAndRaise(CursorRowProperty, ref cursorRow, value);
-                    CursorRowChanged();
-                }
-            }
-        }
-        async Task CursorRowChanged()
-        {
-            if (CursorRow >= 0)
-            {
-                bool success = ScrollToCursorRow();
-                if (!success)
-                {
-                    settingCursorRow = true;
-                    try
-                    {
-                        while (!success)
-                        {
-                            await WaitForLayoutUpdatedAsync();
-                            success = ScrollToCursorRow();
-                        }
-                    }
-                    finally
-                    {
-                        settingCursorRow = false;
-                    }
-                }
-            }
+            ScrollToLine(cursorRow+1);
         }
         Task WaitForLayoutUpdatedAsync()
         {
             var tcs = new TaskCompletionSource();
-            EventHandler layoutUpdatedHandler = default!;
-            layoutUpdatedHandler = (s, e) =>
+            EventHandler<AvaloniaPropertyChangedEventArgs> propertyChangedHandler = default!;
+            propertyChangedHandler = (s, e) =>
             {
-                lines.LayoutUpdated -= layoutUpdatedHandler;
-                tcs.SetResult();
+                if (e.Property == BoundsProperty)
+                {
+                    editor.PropertyChanged -= propertyChangedHandler;
+                    tcs.SetResult();
+                }
             };
-            lines.LayoutUpdated += layoutUpdatedHandler;
+            editor.PropertyChanged += propertyChangedHandler;
             return tcs.Task;
         }
+        public void ScrollToLine(int line)
+        {
+            ScrollTo(line, -1);
+        }
+        public void ScrollTo(int line, int column)
+        {
+            const double MinimumScrollFraction = 0.3;
+            ScrollTo(line, column, VisualYPosition.LineMiddle, EditorScrollViewer is not null ? editor.ViewportHeight / 2 : 0.0, MinimumScrollFraction);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="column"></param>
+        /// <param name="yPositionMode"></param>
+        /// <param name="referencedVerticalViewPortOffset"></param>
+        /// <param name="minimumScrollFraction"></param>
+        /// <remarks>This code is commented out in AvaloniaEdit, similar reimplementation here.
+        /// It uses a bit of reflection since TextEditor.ScrollViewer is internal.</remarks>
+        public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
+            double referencedVerticalViewPortOffset, double minimumScrollFraction)
+        {
+            TextView textView = editor.TextArea.TextView;
+            var document = textView.Document!;
+            var scrollViewer = EditorScrollViewer;
+            if (scrollViewer is not null && document is not null)
+            {
+                if (line < 1)
+                    line = 1;
+                if (line > document.LineCount)
+                    line = document.LineCount;
 
-        void CalculateItemHeight()
-        {
-            if (itemHeight > 0)
-            {
-                return;
-            }
-            var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
-            if (firstVisibleChild is not null)
-            {
-                itemHeight = firstVisibleChild.Bounds.Height;
+                // Word wrap is enabled. Ensure that we have up-to-date info about line height so that we scroll
+                // to the correct position.
+                // This avoids that the user has to repeat the ScrollTo() call several times when there are very long lines.
+                VisualLine vl = textView.GetOrConstructVisualLine(document.GetLineByNumber(line));
+                double remainingHeight = referencedVerticalViewPortOffset;
+
+                while (remainingHeight > 0)
+                {
+                    var prevLine = vl.FirstDocumentLine.PreviousLine;
+                    if (prevLine == null)
+                        break;
+                    vl = textView.GetOrConstructVisualLine(prevLine);
+                    remainingHeight -= vl.Height;
+                }
+
+                Point p = editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(line, Math.Max(1, column)),
+                    yPositionMode);
+                double verticalPos = p.Y - referencedVerticalViewPortOffset;
+                if (Math.Abs(verticalPos - textView.VerticalOffset) >
+                    minimumScrollFraction * editor.ViewportHeight)
+                {
+                    scrollViewer.Offset = new Vector(0, Math.Max(0, verticalPos));
+                }
+
+                //if (column > 0)
+                //{
+                //    if (p.X > editor.ViewportWidth - Caret.MinimumDistanceToViewBorder * 2)
+                //    {
+                //        double horizontalPos = Math.Max(0, p.X - scrollViewer.ViewportWidth / 2);
+                //        if (Math.Abs(horizontalPos - scrollViewer.HorizontalOffset) >
+                //            minimumScrollFraction * scrollViewer.ViewportWidth)
+                //        {
+                //            scrollViewer.ScrollToHorizontalOffset(horizontalPos);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        scrollViewer.ScrollToHorizontalOffset(0);
+                //    }
+                //}
             }
         }
-        bool ScrollToCursorRow()
-        {
-            //if (CursorRow == actualCursorRow)
-            //{
-            //    return true;
-            //}
-            if (itemHeight == 0)
-            {
-                CalculateItemHeight();
-            }
-            if (itemHeight > 0)
-            {
-                scroller.Offset = scroller.Offset.WithY(itemHeight * (CursorRow-1));
-                return true;
-            }
-            return false;
-        }
-        void InitializeComponent()
+        private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
         }

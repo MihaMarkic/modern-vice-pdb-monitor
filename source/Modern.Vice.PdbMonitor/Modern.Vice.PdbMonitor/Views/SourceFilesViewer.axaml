@@ -34,7 +34,8 @@
     </TabControl.ItemTemplate>
     <TabControl.ContentTemplate>
       <DataTemplate DataType="vm:SourceFileViewModel">
-        <v:SourceFileViewer CursorRow="{Binding CursorRow}" />
+        <!--<v:SourceFileViewer CursorRow="{Binding CursorRow}" />-->
+        <v:SourceFileViewer />
       </DataTemplate>
     </TabControl.ContentTemplate>
   </TabControl>

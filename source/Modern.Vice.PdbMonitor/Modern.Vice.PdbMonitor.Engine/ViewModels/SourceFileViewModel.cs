@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,10 +17,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         readonly AcmeFile file;
         readonly IViceBridge viceBridge;
         readonly TaskFactory uiFactory;
+        public event EventHandler ShowCursorRow;
         public string Path => file.RelativePath;
         public ImmutableArray<LineViewModel> Lines { get; }
         public int CursorColumn { get; set; }
-        public int CursorRow { get; set; }
+        public int CursorRow { get; protected set; }
         public int? ExecutionRow { get; set; }
         public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
         /// <summary>
@@ -45,7 +47,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             AddBreakpointsToLine(fileBreakpoints);
             breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         }
-
+        void OnShowCursorRow(EventArgs e) => ShowCursorRow?.Invoke(this, e);
+        public void SetCursorRow(int value)
+        {
+            CursorRow = value;
+            OnShowCursorRow(EventArgs.Empty);
+        }
         void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
         {
             uiFactory.StartNew(() => AddOrRemoveBreakpointCommand.RaiseCanExecuteChanged());

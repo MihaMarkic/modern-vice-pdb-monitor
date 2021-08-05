@@ -79,9 +79,10 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             }
             if (item is not null)
             {
+                int? cursorRow = null;
                 if (message.Line.HasValue)
                 {
-                    item.CursorRow = message.Line.Value;
+                    cursorRow = message.Line.Value;
                 }
                 ClearExecutionRow();
                 if (message.ExecutingLine.HasValue && executionStatusViewModel.IsDebugging)
@@ -89,8 +90,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     item.SetExecutionRow(message.ExecutingLine.Value);
                     if (!message.Line.HasValue)
                     {
-                        item.CursorRow = message.ExecutingLine.Value;
+                        cursorRow = message.ExecutingLine.Value;
                     }
+                }
+                if (cursorRow.HasValue)
+                {
+                    item.SetCursorRow(cursorRow.Value);
                 }
                 Selected = item;
             }

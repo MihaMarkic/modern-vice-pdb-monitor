@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             x:DataType="vm:SourceFileViewModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Modern.Vice.PdbMonitor.Views.CustomSourceFileViewer">
+  <ScrollViewer x:Name="scroller">
+    <ScrollViewer.Resources>
+      <c:TabsToSpacesConverter x:Key="TabsToSpacesConverter" />
+      <c:HexAddressConverter x:Key="HexAddressConverter" />
+      <c:BoolToColorConverter x:Key="ExecutionRowToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
+      <c:BoolToColorConverter x:Key="BreakpointIconBackgroundConverter" OnTrue="Red" OnFalse="Transparent" />
+    </ScrollViewer.Resources>
+    <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
+      <ItemsRepeater.ItemTemplate>
+        <DataTemplate DataType="vm:LineViewModel">
+          <StackPanel Orientation="Horizontal" Height="18" Background="{Binding IsExecution, Converter={StaticResource ExecutionRowToBackgroundConverter}}">
+            <StackPanel.Styles>
+              <Style Selector="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+              </Style>
+            </StackPanel.Styles>
+            <Button Width="14" Height="14" Margin="4,0" Foreground="Gray" VerticalAlignment="Center"
+              Command="{Binding #lines.DataContext.AddOrRemoveBreakpointCommand}" CommandParameter="{Binding}"
+              >
+              <Button.Styles>
+                <!-- has no breakpoint -->
+                <Style Selector="Button /template/ Border">
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+                <Style Selector="Button:pointerover /template/ Border">
+                  <Setter Property="Background" Value="LightGray" />
+                </Style>
+                <Style Selector="Button:pressed /template/ Border">
+                  <Setter Property="Background" Value="{DynamicResource ThemeControlHighBrush}" />
+                </Style>
+                <!-- has breakpoint -->
+                <Style Selector="Button /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="Red" />
+                </Style>
+                <Style Selector="Button:pointerover /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="Orange" />
+                </Style>
+                <Style Selector="Button:pressed /template/ Border.breakpoint">
+                  <Setter Property="Background" Value="DarkOrange" />
+                </Style>
+              </Button.Styles>
+              <Button.Template>
+                <ControlTemplate TargetType="Button">
+                  <!--<Border Name="host" CornerRadius="10" ClipToBounds="True">-->
+                    <Border Name="host1" CornerRadius="7" ClipToBounds="True" 
+                      b:ToggleClassOnBoolChangeBehavior.Trigger="{Binding HasBreakpoint}" b:ToggleClassOnBoolChangeBehavior.Class="breakpoint" />
+                    <!-- Background="{Binding HasBreakpoint, Converter={StaticResource BreakpointIconBackgroundConverter}}" -->
+                  <!--</Border>-->
+                </ControlTemplate>
+              </Button.Template>
+            </Button>
+            <!--<TextBlock Text="B" IsVisible="{Binding Breakpoint, Converter={x:Static ObjectConverters.IsNotNull}}" />-->
+            <TextBlock Text="{Binding Row}" Width="50" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Address, Converter={StaticResource HexAddressConverter}}" Width="50" TextAlignment="Right" Foreground="Gray" Margin="8,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Content, Converter={StaticResource TabsToSpacesConverter}}" Margin="8,0,0,0" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsRepeater.ItemTemplate>
+    </ItemsRepeater>
+  </ScrollViewer>
+</UserControl>

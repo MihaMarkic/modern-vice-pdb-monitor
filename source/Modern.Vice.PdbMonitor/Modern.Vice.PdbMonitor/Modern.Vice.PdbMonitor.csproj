@@ -67,6 +67,9 @@
     <Compile Update="Views\SourceFilesViewer.axaml.cs">
       <DependentUpon>SourceFilesViewer.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\CustomSourceFileViewer.axaml.cs">
+      <DependentUpon>CustomSourceFileViewer.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Update="nlog.config">
