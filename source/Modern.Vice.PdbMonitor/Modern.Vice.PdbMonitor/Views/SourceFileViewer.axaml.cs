@@ -29,7 +29,7 @@ namespace Modern.Vice.PdbMonitor.Views
         }
         ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(editor);
         public new SourceFileViewModel? DataContext => (SourceFileViewModel?)base.DataContext;
-        void SourceFileViewer_DataContextChanged(object? sender, System.EventArgs e)
+        void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
         {
             if (oldDataContext is not null)
             {
@@ -43,6 +43,8 @@ namespace Modern.Vice.PdbMonitor.Views
                 string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
                 editor.Text = text;
                 viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+                var breakpointsMargin = new BreakpointsMargin(viewModel);
+                editor.TextArea.LeftMargins.Insert(0, breakpointsMargin);
             }
             oldDataContext = viewModel;
         }

@@ -13,11 +13,15 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
 {
     public class SourceFileViewModel : ScopedViewModel
     {
-        readonly BreakpointsViewModel breakpoints;
+        readonly BreakpointsViewModel breakpointsViewModel;
         readonly AcmeFile file;
         readonly IViceBridge viceBridge;
         readonly TaskFactory uiFactory;
-        public event EventHandler ShowCursorRow;
+        public event EventHandler? ShowCursorRow;
+        /// <summary>
+        /// Raised when any of lines in <see cref="Lines"/> has a breakpoint added or removed.
+        /// </summary>
+        public event EventHandler? BreakpointsChanged;
         public string Path => file.RelativePath;
         public ImmutableArray<LineViewModel> Lines { get; }
         public int CursorColumn { get; set; }
@@ -36,7 +40,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public SourceFileViewModel(IViceBridge viceBridge, AcmeFile file, ImmutableArray<LineViewModel> lines, BreakpointsViewModel breakpoints)
         {
             this.viceBridge = viceBridge;
-            this.breakpoints = breakpoints;
+            this.breakpointsViewModel = breakpoints;
             this.file = file;
             uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             Lines = lines;
@@ -48,6 +52,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         }
         void OnShowCursorRow(EventArgs e) => ShowCursorRow?.Invoke(this, e);
+        void OnBreakpointsChanged(EventArgs e) => BreakpointsChanged?.Invoke(this, e);
         public void SetCursorRow(int value)
         {
             CursorRow = value;
@@ -66,6 +71,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     {
                         var newBreakpoints = e.NewItems!.Cast<BreakpointViewModel>().ToImmutableArray();
                         AddBreakpointsToLine(newBreakpoints);
+                        OnBreakpointsChanged(EventArgs.Empty);
                     }
                     break;
                 case NotifyCollectionChangedAction.Remove:
@@ -79,6 +85,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                                 targetLine.Breakpoint = null;
                             }
                         }
+                        OnBreakpointsChanged(EventArgs.Empty);
                     }
                     break;
                 case NotifyCollectionChangedAction.Reset:
@@ -86,6 +93,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
                     {
                         line.Breakpoint = null;
                     }
+                    OnBreakpointsChanged(EventArgs.Empty);
                     break;
             }
         }
@@ -114,11 +122,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             if (line!.Breakpoint is null)
             {
                 int lineNumber = Lines.IndexOf(line);
-                await breakpoints.AddBreakpointAsync(file, line!.SourceLine, lineNumber, label: null, condition: null);
+                await breakpointsViewModel.AddBreakpointAsync(file, line!.SourceLine, lineNumber, label: null, condition: null);
             }
             else
             {
-                await breakpoints.RemoveBreakpointAsync(line!.Breakpoint, forceRemove: false);
+                await breakpointsViewModel.RemoveBreakpointAsync(line!.Breakpoint, forceRemove: false);
             }
         }
         public void SetExecutionRow(int rowIndex)
@@ -130,7 +138,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         {
             if (disposing)
             {
-                breakpoints.Breakpoints.CollectionChanged -= Breakpoints_CollectionChanged;
+                breakpointsViewModel.Breakpoints.CollectionChanged -= Breakpoints_CollectionChanged;
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
             }
             base.Dispose(disposing);
