@@ -1,13 +1,16 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
+using FuzzySharp.Edits;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views
@@ -15,8 +18,10 @@ namespace Modern.Vice.PdbMonitor.Views
     public partial class SourceFileViewer : UserControl
     {
         readonly TextEditor editor;
+        readonly LineColorizer lineColorizer;
         static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
         SourceFileViewModel? oldDataContext;
+        int? executionRow;
         static SourceFileViewer()
         {
             TextEditorScrollViewerPropertyInfo = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -25,6 +30,8 @@ namespace Modern.Vice.PdbMonitor.Views
         {
             InitializeComponent();
             editor = this.FindControl<TextEditor>("Editor");
+            lineColorizer = new();
+            editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             DataContextChanged += SourceFileViewer_DataContextChanged;
         }
         ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(editor);
@@ -34,6 +41,8 @@ namespace Modern.Vice.PdbMonitor.Views
             if (oldDataContext is not null)
             {
                 oldDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
+                oldDataContext.PropertyChanged -= ViewModel_PropertyChanged;
+                oldDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
             }
             editor.Text = "";
             editor.CaretOffset = 0;
@@ -42,11 +51,31 @@ namespace Modern.Vice.PdbMonitor.Views
             {
                 string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
                 editor.Text = text;
+                lineColorizer.LineNumber = viewModel.ExecutionRow;
                 viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+                viewModel.PropertyChanged += ViewModel_PropertyChanged;
+                viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
                 var breakpointsMargin = new BreakpointsMargin(viewModel);
                 editor.TextArea.LeftMargins.Insert(0, breakpointsMargin);
             }
             oldDataContext = viewModel;
+        }
+
+        private void ViewModel_ExecutionRowChanged(object? sender, EventArgs e)
+        {
+            editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
+            lineColorizer.LineNumber = DataContext!.ExecutionRow + 1;
+            editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
+            //editor.InvalidateVisual();
+        }
+
+        void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(DataContext.ExecutionRow):
+                    break;
+            }
         }
 
         void ViewModel_ShowCursorRow(object? sender, EventArgs e)

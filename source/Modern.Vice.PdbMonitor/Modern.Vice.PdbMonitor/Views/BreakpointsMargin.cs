@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Globalization;
 using Avalonia;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
@@ -13,8 +12,12 @@ using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views
 {
+    /// <summary>
+    /// Provides breakpoints display and toggle for <see cref="SourceFileViewer"/>.
+    /// </summary>
     public class BreakpointsMargin : AbstractMargin
     {
+        // diameter of breakpoint icon
         const double D = 14;
         static IBrush activeBrush = Brushes.Red;
         static IBrush hoverBrush = Brushes.LightGray;
@@ -25,6 +28,7 @@ namespace Modern.Vice.PdbMonitor.Views
             this.sourceFileViewModel = sourceFileViewModel;
             sourceFileViewModel.PropertyChanged += SourceFileViewModel_PropertyChanged;
             sourceFileViewModel.BreakpointsChanged += SourceFileViewModel_BreakpointsChanged;
+            Margin = new Thickness(4, 0);
         }
 
         void SourceFileViewModel_BreakpointsChanged(object? sender, EventArgs e)
