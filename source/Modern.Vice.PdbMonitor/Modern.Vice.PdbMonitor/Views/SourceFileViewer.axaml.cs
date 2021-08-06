@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using FuzzySharp.Edits;
@@ -57,6 +58,11 @@ namespace Modern.Vice.PdbMonitor.Views
                 viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
                 var breakpointsMargin = new BreakpointsMargin(viewModel);
                 editor.TextArea.LeftMargins.Insert(0, breakpointsMargin);
+                var addressMargin = new AddressMargin(editor.FontFamily, editor.FontSize, Brushes.DarkGray, viewModel.Lines)
+                {
+                    Margin = new Thickness(4, 0),
+                };
+                editor.TextArea.LeftMargins.Insert(1, addressMargin);
             }
             oldDataContext = viewModel;
         }

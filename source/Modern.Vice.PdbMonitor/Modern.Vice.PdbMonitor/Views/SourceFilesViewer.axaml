@@ -35,7 +35,7 @@
     <TabControl.ContentTemplate>
       <DataTemplate DataType="vm:SourceFileViewModel">
         <!--<v:SourceFileViewer CursorRow="{Binding CursorRow}" />-->
-        <v:SourceFileViewer />
+        <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
       </DataTemplate>
     </TabControl.ContentTemplate>
   </TabControl>
