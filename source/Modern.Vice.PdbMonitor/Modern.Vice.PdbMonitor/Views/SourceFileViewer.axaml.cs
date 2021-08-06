@@ -1,14 +1,18 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using AvaloniaEdit;
+using AvaloniaEdit.Highlighting.Xshd;
+using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -28,6 +32,7 @@ namespace Modern.Vice.PdbMonitor.Views
         {
             InitializeComponent();
             editor = this.FindControl<TextEditor>("Editor");
+            InitConditionsEditors();
             lineColorizer = new();
             editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             DataContextChanged += SourceFileViewer_DataContextChanged;
@@ -189,6 +194,17 @@ namespace Modern.Vice.PdbMonitor.Views
                 //        scrollViewer.ScrollToHorizontalOffset(0);
                 //    }
                 //}
+            }
+        }
+        void InitConditionsEditors()
+        {
+            var assembly = typeof(BreakpointDetail).Assembly;
+            using (Stream s = assembly.GetManifestResourceStream("Modern.Vice.PdbMonitor.Resources.acme.xshd")!)
+            {
+                using (XmlTextReader reader = new XmlTextReader(s))
+                {
+                    editor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                }
             }
         }
         private void InitializeComponent()

@@ -12,6 +12,7 @@
         FontFamily="{StaticResource CodeFont}"
         Background="Transparent"
         ShowLineNumbers="True"
+        IsReadOnly="True"
         Margin="12,4,4,4"
         Foreground="Black"
         HorizontalScrollBarVisibility="Auto"

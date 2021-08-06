@@ -17,12 +17,14 @@
     <None Remove="Assets\Icons\sync-solid.svg" />
     <None Remove="Assets\Icons\sync.svg" />
     <None Remove="Assets\Icons\times.svg" />
+    <None Remove="Resources\acme.xshd" />
     <None Remove="Resources\breakpoint-condition.xshd" />
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Bold.ttf" />
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Regular.ttf" />
+    <EmbeddedResource Include="Resources\acme.xshd" />
     <EmbeddedResource Include="Resources\breakpoint-condition.xshd" />
     <AvaloniaResource Include="Assets\Icons\cog.svg" />
     <AvaloniaResource Include="Assets\Icons\disabled_link.svg" />
