@@ -6,12 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
-using FuzzySharp.Edits;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views
@@ -22,7 +20,6 @@ namespace Modern.Vice.PdbMonitor.Views
         readonly LineColorizer lineColorizer;
         static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
         SourceFileViewModel? oldDataContext;
-        int? executionRow;
         static SourceFileViewer()
         {
             TextEditorScrollViewerPropertyInfo = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)!;
