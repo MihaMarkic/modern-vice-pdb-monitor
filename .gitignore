@@ -246,6 +246,10 @@ _Pvt_Extensions
 .paket/paket.exe
 paket-files/
 
+# ANTLR
+*.interp
+*.tokens
+
 # FAKE - F# Make
 .fake/
 
