@@ -249,6 +249,8 @@ paket-files/
 # ANTLR
 *.interp
 *.tokens
+*.class
+*.java
 
 # FAKE - F# Make
 .fake/
