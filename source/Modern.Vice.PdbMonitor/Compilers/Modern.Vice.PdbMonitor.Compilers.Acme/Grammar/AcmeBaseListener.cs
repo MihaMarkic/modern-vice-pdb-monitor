@@ -19,6 +19,7 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
+namespace Modern.Vice.PdbMonitor.Engine.Compilers.Acme.Grammar {
 
 using Antlr4.Runtime.Misc;
 using IErrorNode = Antlr4.Runtime.Tree.IErrorNode;
@@ -252,6 +253,162 @@ public partial class AcmeBaseListener : IAcmeListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitForFlow([NotNull] AcmeParser.ForFlowContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.set"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterSet([NotNull] AcmeParser.SetContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.set"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitSet([NotNull] AcmeParser.SetContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.doFlow"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterDoFlow([NotNull] AcmeParser.DoFlowContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.doFlow"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitDoFlow([NotNull] AcmeParser.DoFlowContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.whileFlow"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterWhileFlow([NotNull] AcmeParser.WhileFlowContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.whileFlow"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitWhileFlow([NotNull] AcmeParser.WhileFlowContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.endOfFile"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterEndOfFile([NotNull] AcmeParser.EndOfFileContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.endOfFile"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitEndOfFile([NotNull] AcmeParser.EndOfFileContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.reportError"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterReportError([NotNull] AcmeParser.ReportErrorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.reportError"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitReportError([NotNull] AcmeParser.ReportErrorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.errorLevel"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterErrorLevel([NotNull] AcmeParser.ErrorLevelContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.errorLevel"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitErrorLevel([NotNull] AcmeParser.ErrorLevelContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.macro"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMacro([NotNull] AcmeParser.MacroContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.macro"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMacro([NotNull] AcmeParser.MacroContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.callMarco"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterCallMarco([NotNull] AcmeParser.CallMarcoContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.callMarco"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitCallMarco([NotNull] AcmeParser.CallMarcoContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.callMacroArgument"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterCallMacroArgument([NotNull] AcmeParser.CallMacroArgumentContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.callMacroArgument"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitCallMacroArgument([NotNull] AcmeParser.CallMacroArgumentContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.setProgramCounter"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterSetProgramCounter([NotNull] AcmeParser.SetProgramCounterContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.setProgramCounter"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitSetProgramCounter([NotNull] AcmeParser.SetProgramCounterContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.initMem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterInitMem([NotNull] AcmeParser.InitMemContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.initMem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitInitMem([NotNull] AcmeParser.InitMemContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.xor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterXor([NotNull] AcmeParser.XorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.xor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitXor([NotNull] AcmeParser.XorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.pseudoPc"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterPseudoPc([NotNull] AcmeParser.PseudoPcContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.pseudoPc"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitPseudoPc([NotNull] AcmeParser.PseudoPcContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.expressionPseudoCodes"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -288,6 +445,18 @@ public partial class AcmeBaseListener : IAcmeListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitStatement([NotNull] AcmeParser.StatementContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.statements"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStatements([NotNull] AcmeParser.StatementsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.statements"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStatements([NotNull] AcmeParser.StatementsContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.filename"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -311,6 +480,18 @@ public partial class AcmeBaseListener : IAcmeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitCondition([NotNull] AcmeParser.ConditionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.comment"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterComment([NotNull] AcmeParser.CommentContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.comment"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitComment([NotNull] AcmeParser.CommentContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.expression"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -433,3 +614,4 @@ public partial class AcmeBaseListener : IAcmeListener {
 	/// <remarks>The default implementation does nothing.</remarks>
 	public virtual void VisitErrorNode([NotNull] IErrorNode node) { }
 }
+} // namespace Modern.Vice.PdbMonitor.Engine.Compilers.Acme.Grammar

@@ -1,6 +1,6 @@
 grammar Acme;
 pseudoOps: (expressionPseudoOps | hexByteValues | fillValues | skipValues | alignValues | convtab | stringValues | scrxor | to | source | binary | zone | symbollist
-	| ifFlow | ifDefFlow);
+	| ifFlow | ifDefFlow | set | doFlow | whileFlow | endOfFile | reportError | callMarco | setProgramCounter | initMem | xor | pseudoPc | cpu | assume | address);
 expressionPseudoOps: expressionPseudoCodes expression (',' expression)* ;
 hexByteValues: HEX decNumber+;
 fillValues: FILL expression (',' expression)? ;
@@ -19,9 +19,27 @@ flowOps: '!' (ifFlow | ifDefFlow | forFlow) ;
 ifFlow: 'if' condition block ('else' (block | ifFlow))? ;
 ifDefFlow: ('ifdef' | 'ifndef' ) SYMBOL block ('else' (block | ifDefFlow))? ;
 forFlow: 'for' symbol ((',' number ',' number) | ('in' symbol)) block ;
+set: '!set' symbol '=' expression ;
+doFlow: '!do' (UNTIL | WHILE) condition block ((UNTIL | WHILE) condition)? ;
+whileFlow: '!' WHILE condition? block ;
+endOfFile: '!endoffile' | '!eof';
+reportError: errorLevel (expression | STRING) (',' (expression | STRING))* ;
+errorLevel: '!warn' | '!error' | '!serious' ;
+macro: '!macro' symbol ('~'? symbol (',' ('~'? symbol))*)? block ;
+callMarco: '+' symbol (callMacroArgument (',' callMacroArgument)*)? ;
+callMacroArgument: expression | '~' symbol;
+setProgramCounter: '*' '=' expression (',' ('overlay' | 'invisible'))*;
+initMem: '!initmem' expression ;
+xor: '!xor' expression block? ;
+pseudoPc: '!pseudopc' expression block ;
+cpu: '!cpu' ('6502' | 'nmos6502' | '6510' | '65c02' | 'r65c02' | 'w65c02' | '65816' | '65ce02' | '4502' | 'm65' | 'c64dtv2') block? ;
+assume: ('!al' | '!as' | '!rl' | '!rs') block? ;
+address: ('!address' | '!addr') block? ;
 
 expressionPseudoCodes: BYTE_VALUES_OP | WORD_VALUES_OP | BE_WORD_VALUES_OP | THREE_BYTES_VALUES_OP | BE_THREE_BYTES_VALUES_OP | QUAD_VALUES_OP | BE_QUAD_VALUES_OP ;
 
+UNTIL: 'until' ;
+WHILE: 'while' ;
 BYTE_VALUES_OP: '!' ('8' | '08' | 'by' | 'byte') ;
 WORD_VALUES_OP: '!' ('16' | 'wo' | 'word' | 'le16') ;
 BE_WORD_VALUES_OP: '!be16' ;
@@ -42,10 +60,12 @@ BINARY: '!' ('binary' | 'bin') ;
 ZONE: '!' ('zone' | 'zn') ;
 SYMBOLLIST: '!' ('symbollist' | 'sl') ;
 
-block: '{' statement '}' ;
+block: '{' statement? '}' | '{' LINEEND+ statements? LINEEND* '}';
 statement: expression ;
+statements: (expression (LINEEND | comment) | comment)+ ;
 filename: STRING | LIB_FILENAME ;
 condition: expression ;
+comment: COMMENT ;
 
  expression:  
  	'(' expression ')'
@@ -87,9 +107,9 @@ XOR: X O R ;
 OR: O R ;
 binaryop: '&' | '|' | '^' | '<<' | '>>' ;
 SYMBOL: '.'? [a-zA-Z0-9_]+ ;
-COMMENT: ';' .*? '\r'? '\n' -> skip ; // Match ";" stuff '\n'
-EQUALITY: '==' ;
-WS : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+COMMENT: ';' .*? LINEEND ; // Match ";" stuff '\n'
+LINEEND: '\r\n' | '\r' | '\n' ;
+WS : [ \t]+ -> skip ; // skip spaces, tabs, newlines
 opcode
    : ADC
    | AND

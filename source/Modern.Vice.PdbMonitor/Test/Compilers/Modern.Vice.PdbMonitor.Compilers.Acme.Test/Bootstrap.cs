@@ -2,6 +2,7 @@
 using System.IO;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using Modern.Vice.PdbMonitor.Engine.Compilers.Acme.Grammar;
 
 namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
 {
