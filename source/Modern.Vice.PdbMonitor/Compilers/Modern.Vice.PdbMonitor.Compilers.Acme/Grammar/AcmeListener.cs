@@ -32,6 +32,26 @@ using IToken = Antlr4.Runtime.IToken;
 [System.CLSCompliant(false)]
 public interface IAcmeListener : IParseTreeListener {
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.prog"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterProg([NotNull] AcmeParser.ProgContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.prog"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitProg([NotNull] AcmeParser.ProgContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.line"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterLine([NotNull] AcmeParser.LineContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.line"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitLine([NotNull] AcmeParser.LineContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.pseudoOps"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -272,6 +292,16 @@ public interface IAcmeListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitErrorLevel([NotNull] AcmeParser.ErrorLevelContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.macroTitle"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterMacroTitle([NotNull] AcmeParser.MacroTitleContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.macroTitle"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitMacroTitle([NotNull] AcmeParser.MacroTitleContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.macro"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -342,6 +372,36 @@ public interface IAcmeListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitPseudoPc([NotNull] AcmeParser.PseudoPcContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.cpu"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterCpu([NotNull] AcmeParser.CpuContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.cpu"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitCpu([NotNull] AcmeParser.CpuContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.assume"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterAssume([NotNull] AcmeParser.AssumeContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.assume"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitAssume([NotNull] AcmeParser.AssumeContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.address"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterAddress([NotNull] AcmeParser.AddressContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.address"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitAddress([NotNull] AcmeParser.AddressContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.expressionPseudoCodes"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -411,6 +471,46 @@ public interface IAcmeListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitComment([NotNull] AcmeParser.CommentContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.label"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterLabel([NotNull] AcmeParser.LabelContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.label"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitLabel([NotNull] AcmeParser.LabelContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.instruction"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterInstruction([NotNull] AcmeParser.InstructionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.instruction"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitInstruction([NotNull] AcmeParser.InstructionContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.argumentList"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterArgumentList([NotNull] AcmeParser.ArgumentListContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.argumentList"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitArgumentList([NotNull] AcmeParser.ArgumentListContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="AcmeParser.argument"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterArgument([NotNull] AcmeParser.ArgumentContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="AcmeParser.argument"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitArgument([NotNull] AcmeParser.ArgumentContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="AcmeParser.expression"/>.
 	/// </summary>

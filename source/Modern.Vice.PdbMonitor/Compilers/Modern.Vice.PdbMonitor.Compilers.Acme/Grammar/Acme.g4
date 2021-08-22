@@ -1,4 +1,12 @@
 grammar Acme;
+
+prog
+	: line+
+	;
+line
+	: (expressionPseudoOps | instruction | label | comment) EOL 
+	;
+
 pseudoOps: (expressionPseudoOps | hexByteValues | fillValues | skipValues | alignValues | convtab | stringValues | scrxor | to | source | binary | zone | symbollist
 	| ifFlow | ifDefFlow | set | doFlow | whileFlow | endOfFile | reportError | callMarco | setProgramCounter | initMem | xor | pseudoPc | cpu | assume | address);
 expressionPseudoOps: expressionPseudoCodes expression (',' expression)* ;
@@ -25,8 +33,9 @@ whileFlow: '!' WHILE condition? block ;
 endOfFile: '!endoffile' | '!eof';
 reportError: errorLevel (expression | STRING) (',' (expression | STRING))* ;
 errorLevel: '!warn' | '!error' | '!serious' ;
-macro: '!macro' symbol ('~'? symbol (',' ('~'? symbol))*)? block ;
-callMarco: '+' symbol (callMacroArgument (',' callMacroArgument)*)? ;
+macroTitle: (symbol | opcode) ;
+macro: '!macro' macroTitle ('~'? symbol (',' ('~'? symbol))*)? block ;
+callMarco: '+' macroTitle (callMacroArgument (',' callMacroArgument)*)? ;
 callMacroArgument: expression | '~' symbol;
 setProgramCounter: '*' '=' expression (',' ('overlay' | 'invisible'))*;
 initMem: '!initmem' expression ;
@@ -60,12 +69,31 @@ BINARY: '!' ('binary' | 'bin') ;
 ZONE: '!' ('zone' | 'zn') ;
 SYMBOLLIST: '!' ('symbollist' | 'sl') ;
 
-block: '{' statement? '}' | '{' LINEEND+ statements? LINEEND* '}';
-statement: expression ;
-statements: (expression (LINEEND | comment) | comment)+ ;
+block: '{' statement? '}' | '{' EOL+ statements? EOL* '}';
+statement: (expression | instruction ) ;
+statements: (statement (EOL | comment) | comment)+ ;
 filename: STRING | LIB_FILENAME ;
 condition: expression ;
 comment: COMMENT ;
+
+label
+	: '+'+
+	| '-'+
+	| symbol
+	;
+
+instruction
+	: label? opcode argumentList?
+	;
+argumentList
+	: argument (',' argumentList)?
+	; 
+argument
+	: ('+' | '-')+
+	| '#' number
+	| '(' argumentList ')'
+	| expression
+	;
 
  expression:  
  	'(' expression ')'
@@ -80,7 +108,7 @@ comment: COMMENT ;
  	| pseudoOps
  	| number
  	| CHAR 
- 	| symbol ;
+ 	| label ;
 
 number: decNumber | hexNumber | binNumber ; //| nonPrefixedHexNumber;
 
@@ -106,10 +134,6 @@ LIB_FILENAME: '<' [a-zA-Z0-9/.]+ '>';
 XOR: X O R ;
 OR: O R ;
 binaryop: '&' | '|' | '^' | '<<' | '>>' ;
-SYMBOL: '.'? [a-zA-Z0-9_]+ ;
-COMMENT: ';' .*? LINEEND ; // Match ";" stuff '\n'
-LINEEND: '\r\n' | '\r' | '\n' ;
-WS : [ \t]+ -> skip ; // skip spaces, tabs, newlines
 opcode
    : ADC
    | AND
@@ -543,3 +567,8 @@ fragment Y
 fragment Z
    : ('z' | 'Z')
    ;
+
+SYMBOL: '.'? [a-zA-Z0-9_]+ ;
+COMMENT: ';' .*? EOL ; // Match ";" stuff '\n'
+EOL: '\r\n' | '\r' | '\n' ;
+WS : [ \t]+ -> skip ; // skip spaces, tabs, newlines

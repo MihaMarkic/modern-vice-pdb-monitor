@@ -171,11 +171,10 @@ namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
     public class WhileFlow : Bootstrap
     {
         [TestCase("!while * < $c000 { nop }")]
-        // TODO enable code below
         [TestCase(
 @"!while a < 6 {
-			; lda #a
-			; sta label + a
+			lda #00
+			sta label + a
 			!set a = a + 1
 		}")]
         public void TestValid(string input)
@@ -199,8 +198,8 @@ namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
     {
         [TestCase(
 @"!macro bne .target {
-			; beq * + 5
-			; jmp .target
+			beq * + 5
+			jmp .target
 		}")]
         public void TestValid(string input)
         {
@@ -255,12 +254,25 @@ namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
 
     public class Statements: Bootstrap
     {
-        //[TestCase(".symbol\n")]
-        //[TestCase(".symbol ; comment\n")]
+        [TestCase(".symbol\n")]
+        [TestCase(".symbol ; comment\n")]
         [TestCase("; comment\n")]
         public void TestValid(string input)
         {
             Assert.DoesNotThrow(() => Run(input, p => p.statements()));
+        }
+    }
+
+    public class Instruction: Bootstrap
+    {
+        [TestCase("ldx #0")]
+        [TestCase("beq +	")]
+        [TestCase("- jsr basout")]
+        [TestCase("inx")]
+        [TestCase("+	 lda .string, x")]
+        public void TestValid(string input)
+        {
+            Assert.DoesNotThrow(() => Run(input, p => p.instruction()));
         }
     }
 }
