@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models
 {
@@ -15,6 +17,8 @@ namespace Modern.Vice.PdbMonitor.Engine.Models
     {
         public AcmeFile(string relativePath) : this(relativePath, ImmutableArray<AcmeLine>.Empty)
         { }
+        // TODO improve string creation each time this line is called
+        public string Content => string.Join(Environment.NewLine, Lines.Select(l => l.Text));
     }
     /// <summary>
     /// DataLength might be longer than data where there are more than 8 bytes (ACME report omits next bytes)

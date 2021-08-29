@@ -1,18 +1,14 @@
 using System;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using AvaloniaEdit;
-using AvaloniaEdit.Highlighting.Xshd;
-using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -32,7 +28,7 @@ namespace Modern.Vice.PdbMonitor.Views
         {
             InitializeComponent();
             editor = this.FindControl<TextEditor>("Editor");
-            InitConditionsEditors();
+            //InitConditionsEditors();
             lineColorizer = new();
             editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             DataContextChanged += SourceFileViewer_DataContextChanged;
@@ -65,6 +61,10 @@ namespace Modern.Vice.PdbMonitor.Views
                     Margin = new Thickness(4, 0),
                 };
                 editor.TextArea.LeftMargins.Insert(1, addressMargin);
+                if (!viewModel.Elements.IsEmpty)
+                {
+                    lineColorizer.Elements = viewModel.Elements;
+                }
             }
             oldDataContext = viewModel;
         }
@@ -82,6 +82,10 @@ namespace Modern.Vice.PdbMonitor.Views
             switch (e.PropertyName)
             {
                 case nameof(DataContext.ExecutionRow):
+                    break;
+                case nameof(DataContext.Elements):
+                    lineColorizer.Elements = DataContext!.Elements;
+                    editor.TextArea.TextView.Redraw();
                     break;
             }
         }
@@ -196,18 +200,18 @@ namespace Modern.Vice.PdbMonitor.Views
                 //}
             }
         }
-        void InitConditionsEditors()
-        {
-            var assembly = typeof(BreakpointDetail).Assembly;
-            using (Stream s = assembly.GetManifestResourceStream("Modern.Vice.PdbMonitor.Resources.acme.xshd")!)
-            {
-                using (XmlTextReader reader = new XmlTextReader(s))
-                {
-                    editor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
-                }
-            }
-        }
-        private void InitializeComponent()
+        //void InitConditionsEditors()
+        //{
+        //    var assembly = typeof(BreakpointDetail).Assembly;
+        //    using (Stream s = assembly.GetManifestResourceStream("Modern.Vice.PdbMonitor.Resources.acme.xshd")!)
+        //    {
+        //        using (XmlTextReader reader = new XmlTextReader(s))
+        //        {
+        //            editor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+        //        }
+        //    }
+        //}
+        void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
         }

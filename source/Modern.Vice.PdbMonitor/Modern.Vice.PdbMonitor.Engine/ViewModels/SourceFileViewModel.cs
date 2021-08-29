@@ -3,8 +3,10 @@ using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
+using Modern.Vice.PdbMonitor.Compilers.Acme;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
@@ -28,6 +30,8 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
         public int CursorColumn { get; set; }
         public int CursorRow { get; protected set; }
         public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
+        public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
+
         /// <summary>
         /// 
         /// </summary>
@@ -42,6 +46,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             this.viceBridge = viceBridge;
             this.breakpointsViewModel = breakpoints;
             this.file = file;
+            Elements = ImmutableDictionary<int, ImmutableArray<SyntaxElement>>.Empty;
             uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
             Lines = lines;
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
@@ -50,6 +55,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels
             var fileBreakpoints = breakpoints.Breakpoints.Where(b => b.File == file).ToImmutableArray();
             AddBreakpointsToLine(fileBreakpoints);
             breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
+            _ = ParseFileAsync();
+        }
+        async Task ParseFileAsync()
+        {
+            var compiler = new AcmeCompiler();
+            Elements = await Task.Run(() => compiler.GetSyntaxElements(file.Content));
         }
         void OnShowCursorRow(EventArgs e) => ShowCursorRow?.Invoke(this, e);
         void OnExecutionRowChanged(EventArgs e) => ExecutionRowChanged?.Invoke(this, e);

@@ -52,7 +52,8 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation
         /// <param name="labels"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        internal AcmePdb CreatePdb(string projectDirectory, string reportDirectory, ImmutableArray<ReportLine> report, ImmutableDictionary<string, AcmeLabel> labels, IContext context)
+        internal AcmePdb CreatePdb(string projectDirectory, string reportDirectory, ImmutableArray<ReportLine> report, 
+            ImmutableDictionary<string, AcmeLabel> labels, IContext context)
         {
             var linesBuilder = ImmutableArray.CreateBuilder<AcmeLine>();
             var filesBuilder = ImmutableDictionary.CreateBuilder<string, AcmeFile>();
