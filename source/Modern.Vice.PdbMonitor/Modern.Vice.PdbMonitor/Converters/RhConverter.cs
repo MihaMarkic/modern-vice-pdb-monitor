@@ -3,51 +3,50 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 
-namespace Modern.Vice.PdbMonitor.Converters
-{
-    public static class RhConverter
-    {
-        static readonly Dictionary<Type, TypeConverter> converters = new Dictionary<Type, TypeConverter>();
+namespace Modern.Vice.PdbMonitor.Converters;
 
-        public static T? ConvertFrom<T>(object source)
+public static class RhConverter
+{
+    static readonly Dictionary<Type, TypeConverter> converters = new Dictionary<Type, TypeConverter>();
+
+    public static T? ConvertFrom<T>(object source)
+    {
+        T? result;
+        if (source is T)
         {
-            T? result;
-            if (source is T)
+            result = (T)source;
+        }
+        else
+        {
+            if (source is null)
             {
-                result = (T)source;
+                result = default;
             }
             else
             {
-                if (source is null)
+                TypeConverter? converter;
+                if (!converters.TryGetValue(typeof(T), out converter))
                 {
-                    result = default;
+                    converter = TypeDescriptor.GetConverter(typeof(T));
+                    converters.Add(typeof(T), converter);
                 }
-                else
+                if (converter.CanConvertFrom(source.GetType()))
                 {
-                    TypeConverter? converter;
-                    if (!converters.TryGetValue(typeof(T), out converter))
+                    try
                     {
-                        converter = TypeDescriptor.GetConverter(typeof(T));
-                        converters.Add(typeof(T), converter);
+                        result = (T)converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
                     }
-                    if (converter.CanConvertFrom(source.GetType()))
-                    {
-                        try
-                        {
-                            result = (T)converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
-                        }
-                        catch
-                        {
-                            result = default;
-                        }
-                    }
-                    else
+                    catch
                     {
                         result = default;
                     }
                 }
+                else
+                {
+                    result = default;
+                }
             }
-            return result;
         }
+        return result;
     }
 }

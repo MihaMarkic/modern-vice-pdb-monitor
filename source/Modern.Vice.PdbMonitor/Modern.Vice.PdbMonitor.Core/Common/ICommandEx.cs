@@ -1,9 +1,8 @@
 ﻿using System.Windows.Input;
 
-namespace Modern.Vice.PdbMonitor.Core.Common
+namespace Modern.Vice.PdbMonitor.Core.Common;
+
+public interface ICommandEx: ICommand
 {
-    public interface ICommandEx: ICommand
-    {
-        void RaiseCanExecuteChanged();
-    }
+    void RaiseCanExecuteChanged();
 }

@@ -25,7 +25,7 @@
       </Style>
     </ae:TextEditor.Styles>
     <ae:TextEditor.Options>
-      <ae:TextEditorOptions ShowTabs="True" />
+      <ae:TextEditorOptions ShowTabs="False" />
     </ae:TextEditor.Options>
   </ae:TextEditor>
 </UserControl>

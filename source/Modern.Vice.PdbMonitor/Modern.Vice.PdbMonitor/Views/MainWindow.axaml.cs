@@ -8,95 +8,104 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
+using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-namespace Modern.Vice.PdbMonitor.Views
+namespace Modern.Vice.PdbMonitor.Views;
+
+public class MainWindow : Window
 {
-    public class MainWindow : Window
+    readonly IServiceScope scope;
+    public MainWindow()
     {
-        readonly IServiceScope scope;
-        public MainWindow()
-        {
-            InitializeComponent();
+        InitializeComponent();
 #if DEBUG
-            this.AttachDevTools();
+        this.AttachDevTools();
 #endif
-            scope = IoC.Host.Services.CreateScope();
-            Bootstrap.Init(scope);
-            var viewModel = scope.ServiceProvider.GetService<MainViewModel>()!;
-            DataContext = viewModel;
-            viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
-            viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
-            viewModel.CloseApp = Close;
-            viewModel.ShowModalDialog = ShowModalDialog;
-        }
+        scope = IoC.Host.Services.CreateScope();
+        Bootstrap.Init(scope);
+        var viewModel = scope.ServiceProvider.GetService<MainViewModel>()!;
+        DataContext = viewModel;
+        viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
+        viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
+        viewModel.CloseApp = Close;
+        viewModel.ShowModalDialog = ShowModalDialog;
+    }
 
-        void InitializeComponent()
+    void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+    internal void ShowModalDialog(ShowModalDialogMessageCore message)
+    {
+        var dialog = new ModalDialogWindow
         {
-            AvaloniaXamlLoader.Load(this);
-        }
-        internal void ShowModalDialog(ShowModalDialogMessageCore message)
+            // TODO make generic
+            DataContext = message,
+            MinWidth = 500,
+            Height = 350,
+            MinHeight = 350,
+            SizeToContent = SizeToContent.Width,
+        };
+        dialog.ShowDialog(this);
+    }
+    internal async Task<string?> ShowOpenProjectFileDialogAsync(OpenFileDialogModel model,
+        CancellationToken ct)
+    {
+        var dialog = new OpenFileDialog
         {
-            var dialog = new ModalDialogWindow
-            {
-                // TODO make generic
-                DataContext = message,
-                MinWidth = 500,
-                Height = 350,
-                MinHeight = 350,
-                SizeToContent = SizeToContent.Width,
-            };
-            dialog.ShowDialog(this);
-        }
-        internal async Task<string?> ShowOpenProjectFileDialogAsync(string? initialDirectory, CancellationToken ct)
+            Title = "Open project",
+            AllowMultiple = false,
+        };
+        if (model.InitialDirectory is not null)
         {
-            var dialog = new OpenFileDialog
-            {
-                Title = "Open project",
-                AllowMultiple = false,
-            };
-            if (initialDirectory is not null)
-            {
-                dialog.Directory = initialDirectory;
-            }
-            dialog.Filters.Add(new FileDialogFilter { Name = "Modern ACME PDB Debugger .mapd", Extensions = { "mapd" } });
-            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var result = await dialog.ShowAsync(desktop.MainWindow);
-                if (result.Length == 1)
-                {
-                    return result[0];
-                }
-            }
-            return null;
+            dialog.Directory = model.InitialDirectory;
         }
-        internal async Task<string?> ShowCreateProjectFileDialogAsync(string? initialDirectory, CancellationToken ct)
+        if (dialog.Filters is null)
         {
-            var dialog = new SaveFileDialog
-            {
-                Title = "Create project",
-            };
-            if (initialDirectory is not null)
-            {
-                dialog.Directory = initialDirectory;
-            }
-            dialog.Filters.Add(new FileDialogFilter { Name = "Modern ACME PDB Debugger .mapd", Extensions = { "mapd" } });
-            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var result = await dialog.ShowAsync(desktop.MainWindow);
-                return result;
-            }
-            return null;
+            dialog.Filters = new();
         }
+        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
+        if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var result = await dialog.ShowAsync(desktop.MainWindow);
+            if (result?.Length == 1)
+            {
+                return result[0];
+            }
+        }
+        return null;
+    }
+    internal async Task<string?> ShowCreateProjectFileDialogAsync(OpenFileDialogModel model, CancellationToken ct)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Create project",
+        };
+        if (model.InitialDirectory is not null)
+        {
+            dialog.Directory = model.InitialDirectory;
+        }
+        if (dialog.Filters is null)
+        {
+            dialog.Filters = new();
+        }
+        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
+        if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var result = await dialog.ShowAsync(desktop.MainWindow);
+            return result;
+        }
+        return null;
+    }
 
-        public MainViewModel ViewModel => (MainViewModel)DataContext!;
+    public MainViewModel ViewModel => (MainViewModel)DataContext!;
 
-        protected override void OnClosed(EventArgs e)
-        {
-            Bootstrap.Close();
-            scope.Dispose();
-            base.OnClosed(e);
-        }
+    protected override void OnClosed(EventArgs e)
+    {
+        Bootstrap.Close();
+        scope.Dispose();
+        base.OnClosed(e);
     }
 }

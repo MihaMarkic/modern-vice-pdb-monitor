@@ -1,12 +1,12 @@
 ﻿using NUnit.Framework;
 
-namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
+namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test;
+
+class ProgramTest
 {
-    class ProgramTest
+    public class SimpleSample: Bootstrap
     {
-        public class SimpleSample: Bootstrap
-        {
-            const string code =
+        const string code =
 @";--- Example code fragment, start ---
 
 		!to ""tiny.o"", cbm	; set output file and format
@@ -27,9 +27,8 @@ namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test
 .string     !pet ""Dumb example"", 13, 0";
 			[Test]
 			public void Parse()
-            {
+        {
 				Assert.DoesNotThrow(() => Run(code, p => p.prog()));
 			}
 		}
-    }
 }

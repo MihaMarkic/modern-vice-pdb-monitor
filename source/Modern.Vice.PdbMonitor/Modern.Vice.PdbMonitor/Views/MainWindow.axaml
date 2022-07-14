@@ -6,6 +6,7 @@
         xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
         xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
         xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+        xmlns:cmn="clr-namespace:Modern.Vice.PdbMonitor.Engine.Common;assembly=Modern.Vice.PdbMonitor.Engine"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         MinWidth="400" Width="800"
         MinHeight="200" Height="600"
@@ -47,7 +48,13 @@
   <DockPanel LastChildFill="True" Margin="4">
     <Menu x:Name="Menu" DockPanel.Dock="Top">
       <MenuItem Header="_File">
-        <MenuItem Header="_New..." Command="{Binding CreateProjectCommand}"/>
+        <MenuItem Header="_New...">
+          <MenuItem Header="New ACME project" Command="{Binding CreateProjectCommand}">
+            <MenuItem.CommandParameter>
+              <cmn:CompilerType>Acme</cmn:CompilerType>
+            </MenuItem.CommandParameter>
+          </MenuItem>
+        </MenuItem>
         <MenuItem Header="_Open..." Command="{Binding OpenProjectCommand}" />
         <Separator/>
         <MenuItem Header="_Close" Command="{Binding CloseProjectCommand}" />

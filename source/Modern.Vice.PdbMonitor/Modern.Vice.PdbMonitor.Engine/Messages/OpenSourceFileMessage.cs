@@ -1,6 +1,5 @@
-﻿using Modern.Vice.PdbMonitor.Engine.Models;
+﻿using Modern.Vice.PdbMonitor.Core.Common;
 
-namespace Modern.Vice.PdbMonitor.Engine.Messages
-{
-    public record OpenSourceFileMessage(AcmeFile File, int? Line = default, int? ExecutingLine = default);
-}
+namespace Modern.Vice.PdbMonitor.Engine.Messages;
+
+public record OpenSourceFileMessage(PdbFile File, int? Line = default, int? ExecutingLine = default);

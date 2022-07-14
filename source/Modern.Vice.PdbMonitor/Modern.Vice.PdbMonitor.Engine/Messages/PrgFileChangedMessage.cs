@@ -1,4 +1,3 @@
-﻿namespace Modern.Vice.PdbMonitor.Engine.Messages
-{
-    public record PrgFileChangedMessage();
-}
+﻿namespace Modern.Vice.PdbMonitor.Engine.Messages;
+
+public record PrgFileChangedMessage();

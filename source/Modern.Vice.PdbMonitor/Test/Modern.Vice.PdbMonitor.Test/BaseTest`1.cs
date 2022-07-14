@@ -3,36 +3,35 @@ using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using NUnit.Framework;
 
-namespace Modern.Vice.PdbMonitor.Test
-{
-    public abstract class BaseTest<T>
-        where T : class
-    {
-        protected Fixture fixture;
-        T target;
-        public T Target
-        {
-            [DebuggerStepThrough]
-            get
-            {
-                if (target is null)
-                {
-                    target = fixture.Build<T>().OmitAutoProperties().Create();
-                }
-                return target;
-            }
-        }
+namespace Modern.Vice.PdbMonitor.Test;
 
-        [SetUp]
-        public virtual void SetUp()
+public abstract class BaseTest<T>
+    where T : class
+{
+    protected Fixture fixture;
+    T target;
+    public T Target
+    {
+        [DebuggerStepThrough]
+        get
         {
-            fixture = new Fixture();
-            fixture.Customize(new AutoNSubstituteCustomization());
+            if (target is null)
+            {
+                target = fixture.Build<T>().OmitAutoProperties().Create();
+            }
+            return target;
         }
-        [TearDown]
-        public void TearDown()
-        {
-            target = null;
-        }
+    }
+
+    [SetUp]
+    public virtual void SetUp()
+    {
+        fixture = new Fixture();
+        fixture.Customize(new AutoNSubstituteCustomization());
+    }
+    [TearDown]
+    public void TearDown()
+    {
+        target = null;
     }
 }

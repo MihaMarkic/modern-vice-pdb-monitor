@@ -1,39 +1,38 @@
 ﻿using System;
 using System.Globalization;
 
-namespace Modern.Vice.PdbMonitor.Engine.BindingValidators
+namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;
+
+/// <summary>
+/// Converts string hex value to ushort source and the other way round.
+/// </summary>
+public class HexValidator : StringValidator<ushort>
 {
-    /// <summary>
-    /// Converts string hex value to ushort source and the other way round.
-    /// </summary>
-    public class HexValidator : StringValidator<ushort>
+    readonly int digits;
+    readonly string hexFormat;
+    public HexValidator(string sourcePropertyName, ushort initialValue, int digits, Action<ushort> assignToSource) 
+        : base(sourcePropertyName, initialValue, assignToSource)
     {
-        readonly int digits;
-        readonly string hexFormat;
-        public HexValidator(string sourcePropertyName, ushort initialValue, int digits, Action<ushort> assignToSource) 
-            : base(sourcePropertyName, initialValue, assignToSource)
-        {
-            this.digits = digits;
-            hexFormat = $"X{digits}";
-            TextValue = ConvertTo(initialValue);
-        }
+        this.digits = digits;
+        hexFormat = $"X{digits}";
+        TextValue = ConvertTo(initialValue);
+    }
 
-        public override (bool IsValid, ushort Value, string? error) ConvertFrom(string? text)
+    public override (bool IsValid, ushort Value, string? error) ConvertFrom(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
         {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return (false, default, "Input can not be empty");
-            }
-            if (!ushort.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort value))
-            {
-                return (false, default, "Input is not a valid hex value");
-            }
-            return (true, value, null);
+            return (false, default, "Input can not be empty");
         }
+        if (!ushort.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort value))
+        {
+            return (false, default, "Input is not a valid hex value");
+        }
+        return (true, value, null);
+    }
 
-        public override string ConvertTo(ushort source)
-        {
-            return source.ToString(hexFormat);
-        }
+    public override string ConvertTo(ushort source)
+    {
+        return source.ToString(hexFormat);
     }
 }

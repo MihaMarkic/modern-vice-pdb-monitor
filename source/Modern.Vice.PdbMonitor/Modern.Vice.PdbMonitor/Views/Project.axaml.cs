@@ -1,41 +1,66 @@
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-namespace Modern.Vice.PdbMonitor.Views
+namespace Modern.Vice.PdbMonitor.Views;
+
+public class Project : UserControl
 {
-    public class Project : UserControl
+    ProjectViewModel? viewModel;
+    public Project()
     {
-        public Project()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        void InitializeComponent()
+    void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is not null)
         {
-            AvaloniaXamlLoader.Load(this);
+            var viewModel = (ProjectViewModel)DataContext!;
+            viewModel.ShowOpenDebugDataFileDialogAsync = ShowOpenDebugDataFileDialogAsync;
         }
-
-        async void OpenPrgFile(object sender, RoutedEventArgs e)
+        else if (viewModel is not null)
         {
-            var dialog = new OpenFileDialog
+            viewModel.ShowOpenDebugDataFileDialogAsync = null;
+            viewModel = null;
+        }
+    }
+    async Task<string?> ShowOpenDebugDataFileDialogAsync(DebugFileOpenDialogModel model, CancellationToken ct)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = model.Title,
+            AllowMultiple = false,
+        };
+        if (model.InitialDirectory is not null)
+        {
+            dialog.Directory = model.InitialDirectory;
+        }
+        if (dialog.Filters is null)
+        {
+            dialog.Filters = new();
+        }
+        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
+        if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var result = await dialog.ShowAsync(desktop.MainWindow);
+            if (result?.Length > 0)
             {
-                Title = "Open output file",
-                AllowMultiple = false,
-            };
-            dialog.Filters.Add(new FileDialogFilter { Name = "ACME Compiled CBM file .prg", Extensions = { "prg" } });
-            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var result = await dialog.ShowAsync(desktop.MainWindow);
-                if (result?.Length > 0)
-                {
-                    var viewModel = (ProjectViewModel)DataContext!;
-                    viewModel.AssignPrgFullPath(result[0]);
-                }
+                var viewModel = (ProjectViewModel)DataContext!;
+                return result[0];
             }
         }
+        return null;
     }
 }

@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Modern.Vice.PdbMonitor.Engine.ViewModels
+namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
+
+public interface IDialogViewModel<TResult>
 {
-    public interface IDialogViewModel<TResult>
-    {
-        Action<TResult>? Close { get; set; }
-    }
+    Action<TResult>? Close { get; set; }
 }

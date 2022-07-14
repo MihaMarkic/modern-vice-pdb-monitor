@@ -1,35 +1,34 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Modern.Vice.PdbMonitor.Engine.Models
+namespace Modern.Vice.PdbMonitor.Engine.Models;
+
+public enum DebugAutoStartMode
 {
-    public enum DebugAutoStartMode
-    {
-        [Display(Description = "No auto start")]
-        None,
-        [Display(Description = "Auto starts using VICE")]
-        Vice,
-        [Display(Description = "Auto starts at 'start' label address")]
-        AtAddress,
-    }
+    [Display(Description = "No auto start")]
+    None,
+    [Display(Description = "Auto starts using VICE")]
+    Vice,
+    [Display(Description = "Auto starts at 'start' label address")]
+    AtAddress,
+}
 
-    public enum BreakpointMode
-    {
-        Exec,
-        Load,
-        Store
-    }
+public enum BreakpointMode
+{
+    Exec,
+    Load,
+    Store
+}
 
-    [Flags]
-    public enum DialogButton
-    {
-        OK,
-        Cancel
-    }
+[Flags]
+public enum DialogButton
+{
+    OK,
+    Cancel
+}
 
-    public enum DialogResultCode
-    {
-        OK,
-        Cancel
-    }
+public enum DialogResultCode
+{
+    OK,
+    Cancel
 }

@@ -2,34 +2,33 @@
 using Modern.Vice.PdbMonitor.Core;
 using Newtonsoft.Json;
 
-namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration
+namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration;
+
+public class Settings : NotifiableObject
 {
-    public class Settings : NotifiableObject
+    public const int MaxRecentProjects = 10;
+    public string? VicePath { get; set; }
+    public ObservableCollection<string> RecentProjects { get; } = new ObservableCollection<string>();
+    [JsonIgnore]
+    public string? LastAccessedDirectory => RecentProjects.Count > 0 ? RecentProjects[0] : null;
+    public void AddRecentProject(string path)
     {
-        public const int MaxRecentProjects = 10;
-        public string? VicePath { get; set; }
-        public ObservableCollection<string> RecentProjects { get; } = new ObservableCollection<string>();
-        [JsonIgnore]
-        public string? LastAccessedDirectory => RecentProjects.Count > 0 ? RecentProjects[0] : null;
-        public void AddRecentProject(string path)
+        if (!RecentProjects.Contains(path))
         {
-            if (!RecentProjects.Contains(path))
+            RecentProjects.Insert(0, path);
+            if (RecentProjects.Count > 10)
             {
-                RecentProjects.Insert(0, path);
-                if (RecentProjects.Count > 10)
-                {
-                    RecentProjects.RemoveAt(RecentProjects.Count - 1);
-                }
+                RecentProjects.RemoveAt(RecentProjects.Count - 1);
             }
-            else
+        }
+        else
+        {
+            int index = RecentProjects.IndexOf(path);
+            if (index > 0)
             {
-                int index = RecentProjects.IndexOf(path);
-                if (index > 0)
-                {
-                    string temp = RecentProjects[0];
-                    RecentProjects[0] = path;
-                    RecentProjects[index] = temp;
-                }
+                string temp = RecentProjects[0];
+                RecentProjects[0] = path;
+                RecentProjects[index] = temp;
             }
         }
     }

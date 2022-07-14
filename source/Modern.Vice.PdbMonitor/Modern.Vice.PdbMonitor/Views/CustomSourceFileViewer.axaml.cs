@@ -7,157 +7,156 @@ using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 
-namespace Modern.Vice.PdbMonitor.Views
+namespace Modern.Vice.PdbMonitor.Views;
+
+// TODO make font settable
+public class CustomSourceFileViewer : UserControl
 {
-    // TODO make font settable
-    public class CustomSourceFileViewer : UserControl
+    int cursorRow;
+    int? executionRow;
+    double itemHeight;
+    /// <summary>
+    /// Prevents resetting cursor row when initializing and setting cursor row at the same time
+    /// </summary>
+    bool settingCursorRow;
+    readonly ItemsRepeater lines;
+    readonly ScrollViewer scroller;
+    public static readonly DirectProperty<CustomSourceFileViewer, int> CursorRowProperty =
+        AvaloniaProperty.RegisterDirect<CustomSourceFileViewer, int>(nameof(CursorRow),
+            o => o.CursorRow, 
+            (o, v) => o.CursorRow = v, 
+            defaultBindingMode: BindingMode.TwoWay);
+    public static readonly DirectProperty<CustomSourceFileViewer, int?> ExecutionRowProperty =
+        AvaloniaProperty.RegisterDirect<CustomSourceFileViewer, int?>(nameof(ExecutionRow),
+            o => o.ExecutionRow,
+            (o, v) => o.ExecutionRow = v,
+            defaultBindingMode: BindingMode.TwoWay);
+    public CustomSourceFileViewer()
     {
-        int cursorRow;
-        int? executionRow;
-        double itemHeight;
-        /// <summary>
-        /// Prevents resetting cursor row when initializing and setting cursor row at the same time
-        /// </summary>
-        bool settingCursorRow;
-        readonly ItemsRepeater lines;
-        readonly ScrollViewer scroller;
-        public static readonly DirectProperty<CustomSourceFileViewer, int> CursorRowProperty =
-            AvaloniaProperty.RegisterDirect<CustomSourceFileViewer, int>(nameof(CursorRow),
-                o => o.CursorRow, 
-                (o, v) => o.CursorRow = v, 
-                defaultBindingMode: BindingMode.TwoWay);
-        public static readonly DirectProperty<CustomSourceFileViewer, int?> ExecutionRowProperty =
-            AvaloniaProperty.RegisterDirect<CustomSourceFileViewer, int?>(nameof(ExecutionRow),
-                o => o.ExecutionRow,
-                (o, v) => o.ExecutionRow = v,
-                defaultBindingMode: BindingMode.TwoWay);
-        public CustomSourceFileViewer()
-        {
-            InitializeComponent();
-            lines = this.Find<ItemsRepeater>("lines");
-            scroller = this.Find<ScrollViewer>("scroller");
-            scroller.ScrollChanged += Scroller_ScrollChanged;
-        }
+        InitializeComponent();
+        lines = this.Find<ItemsRepeater>("lines");
+        scroller = this.Find<ScrollViewer>("scroller");
+        scroller.ScrollChanged += Scroller_ScrollChanged;
+    }
 
-        void Scroller_ScrollChanged(object? sender, ScrollChangedEventArgs e)
+    void Scroller_ScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
+        // TODO find a way to determine current top line
+        //if (firstVisibleChild is not null)
+        //{
+        //    cursorRow = lines.GetElementIndex((IControl)firstVisibleChild);
+        //}
+        //else
+        // don't clear it until it isn't set
+        if (!settingCursorRow)
         {
-            var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
-            // TODO find a way to determine current top line
-            //if (firstVisibleChild is not null)
-            //{
-            //    cursorRow = lines.GetElementIndex((IControl)firstVisibleChild);
-            //}
-            //else
-            // don't clear it until it isn't set
-            if (!settingCursorRow)
-            {
-                cursorRow = -1;
-            }
+            cursorRow = -1;
         }
+    }
 
-        public int? ExecutionRow
+    public int? ExecutionRow
+    {
+        get => executionRow;
+        set
         {
-            get => executionRow;
-            set
+            if (ExecutionRow != value)
             {
-                if (ExecutionRow != value)
-                {
-                    SetAndRaise(ExecutionRowProperty, ref executionRow, value);
-                    ExecutionRowChanged();
-                }
+                SetAndRaise(ExecutionRowProperty, ref executionRow, value);
+                ExecutionRowChanged();
             }
         }
-        void ExecutionRowChanged()
+    }
+    void ExecutionRowChanged()
+    {
+        //bool success = ScrollToCursorRow();
+        //if (!success)
+        //{
+        //    lines.ElementPrepared += Lines_ElementPrepared;
+        //}
+    }
+    /// <summary>
+    /// Row to jump to.
+    /// </summary>
+    public int CursorRow
+    {
+        get => cursorRow;
+        set
         {
-            //bool success = ScrollToCursorRow();
-            //if (!success)
-            //{
-            //    lines.ElementPrepared += Lines_ElementPrepared;
-            //}
-        }
-        /// <summary>
-        /// Row to jump to.
-        /// </summary>
-        public int CursorRow
-        {
-            get => cursorRow;
-            set
+            if (CursorRow != value)
             {
-                if (CursorRow != value)
-                {
-                    SetAndRaise(CursorRowProperty, ref cursorRow, value);
-                    CursorRowChanged();
-                }
+                SetAndRaise(CursorRowProperty, ref cursorRow, value);
+                CursorRowChanged();
             }
         }
-        async Task CursorRowChanged()
+    }
+    async Task CursorRowChanged()
+    {
+        if (CursorRow >= 0)
         {
-            if (CursorRow >= 0)
+            bool success = ScrollToCursorRow();
+            if (!success)
             {
-                bool success = ScrollToCursorRow();
-                if (!success)
+                settingCursorRow = true;
+                try
                 {
-                    settingCursorRow = true;
-                    try
+                    while (!success)
                     {
-                        while (!success)
-                        {
-                            await WaitForLayoutUpdatedAsync();
-                            success = ScrollToCursorRow();
-                        }
-                    }
-                    finally
-                    {
-                        settingCursorRow = false;
+                        await WaitForLayoutUpdatedAsync();
+                        success = ScrollToCursorRow();
                     }
                 }
+                finally
+                {
+                    settingCursorRow = false;
+                }
             }
         }
-        Task WaitForLayoutUpdatedAsync()
+    }
+    Task WaitForLayoutUpdatedAsync()
+    {
+        var tcs = new TaskCompletionSource();
+        EventHandler layoutUpdatedHandler = default!;
+        layoutUpdatedHandler = (s, e) =>
         {
-            var tcs = new TaskCompletionSource();
-            EventHandler layoutUpdatedHandler = default!;
-            layoutUpdatedHandler = (s, e) =>
-            {
-                lines.LayoutUpdated -= layoutUpdatedHandler;
-                tcs.SetResult();
-            };
-            lines.LayoutUpdated += layoutUpdatedHandler;
-            return tcs.Task;
-        }
+            lines.LayoutUpdated -= layoutUpdatedHandler;
+            tcs.SetResult();
+        };
+        lines.LayoutUpdated += layoutUpdatedHandler;
+        return tcs.Task;
+    }
 
-        void CalculateItemHeight()
+    void CalculateItemHeight()
+    {
+        if (itemHeight > 0)
         {
-            if (itemHeight > 0)
-            {
-                return;
-            }
-            var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
-            if (firstVisibleChild is not null)
-            {
-                itemHeight = firstVisibleChild.Bounds.Height;
-            }
+            return;
         }
-        bool ScrollToCursorRow()
+        var firstVisibleChild = lines.GetVisualChildren().FirstOrDefault();
+        if (firstVisibleChild is not null)
         {
-            //if (CursorRow == actualCursorRow)
-            //{
-            //    return true;
-            //}
-            if (itemHeight == 0)
-            {
-                CalculateItemHeight();
-            }
-            if (itemHeight > 0)
-            {
-                scroller.Offset = scroller.Offset.WithY(itemHeight * (CursorRow-1));
-                return true;
-            }
-            return false;
+            itemHeight = firstVisibleChild.Bounds.Height;
         }
-        void InitializeComponent()
+    }
+    bool ScrollToCursorRow()
+    {
+        //if (CursorRow == actualCursorRow)
+        //{
+        //    return true;
+        //}
+        if (itemHeight == 0)
         {
-            AvaloniaXamlLoader.Load(this);
+            CalculateItemHeight();
         }
+        if (itemHeight > 0)
+        {
+            scroller.Offset = scroller.Offset.WithY(itemHeight * (CursorRow-1));
+            return true;
+        }
+        return false;
+    }
+    void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
     }
 }

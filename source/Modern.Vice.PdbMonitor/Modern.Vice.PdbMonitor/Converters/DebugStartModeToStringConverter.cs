@@ -1,8 +1,7 @@
 ﻿using Modern.Vice.PdbMonitor.Engine.Models;
 
-namespace Modern.Vice.PdbMonitor.Converters
+namespace Modern.Vice.PdbMonitor.Converters;
+
+public class DebugAutoStartModeToStringConverter: EnumToDescriptionConverter<DebugAutoStartMode>
 {
-    public class DebugAutoStartModeToStringConverter: EnumToDescriptionConverter<DebugAutoStartMode>
-    {
-    }
 }

@@ -1,6 +1,5 @@
-﻿namespace Modern.Vice.PdbMonitor.Engine.Messages
+﻿namespace Modern.Vice.PdbMonitor.Engine.Messages;
+
+public readonly struct CloseOverlayMessage
 {
-    public readonly struct CloseOverlayMessage
-    {
-    }
 }

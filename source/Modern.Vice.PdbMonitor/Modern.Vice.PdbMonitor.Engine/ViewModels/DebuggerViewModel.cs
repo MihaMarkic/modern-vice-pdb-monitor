@@ -1,98 +1,115 @@
-﻿using System.ComponentModel;
-using System.IO;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
+using System.ComponentModel;
+using System.IO;
 
-namespace Modern.Vice.PdbMonitor.Engine.ViewModels
+namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
+
+public class DebuggerViewModel : ScopedViewModel
 {
-    public class DebuggerViewModel : ScopedViewModel
+    readonly ILogger<DebuggerViewModel> logger;
+    readonly Globals globals;
+    readonly IDispatcher dispatcher;
+    readonly ExecutionStatusViewModel executionStatusViewModel;
+    readonly IProjectFactory projectFactory;
+    IPdbManager? pdbManager;
+    public RegistersViewModel Registers {get;}
+    public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
+    public Project? Project => globals.Project;
+    public bool IsOpenProject => Project is not null;
+    public ProjectExplorerViewModel ProjectExplorer { get; }
+    public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
+    public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
+        SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher,
+        ExecutionStatusViewModel executionStatusViewModel, IProjectFactory projectFactory)
     {
-        readonly ILogger<DebuggerViewModel> logger;
-        readonly Globals globals;
-        readonly IDispatcher dispatcher;
-        readonly IAcmePdbManager acmePdbManager;
-        readonly ExecutionStatusViewModel executionStatusViewModel;
-        public RegistersViewModel Registers {get;}
-        public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
-        public Project? Project => globals.Project;
-        public bool IsOpenProject => Project is not null;
-        public ProjectExplorerViewModel ProjectExplorer { get; }
-        public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
-        public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
-            SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher, IAcmePdbManager acmePdbManager,
-            ExecutionStatusViewModel executionStatusViewModel)
+        this.logger = logger;
+        this.globals = globals;
+        this.dispatcher = dispatcher;
+        this.executionStatusViewModel = executionStatusViewModel;
+        this.projectFactory = projectFactory;
+        executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        ProjectExplorer = projectExplorerViewModel;
+        SourceFileViewerViewModel = sourceFileViewerViewModel;
+        Registers = registers;
+        Registers.PropertyChanged += Registers_PropertyChanged;
+        globals.PropertyChanged += Globals_PropertyChanged;
+        UpdatePdbManager();
+    }
+    void UpdatePdbManager()
+    {
+        if (globals.Project?.CompilerType is not null)
         {
-            this.logger = logger;
-            this.globals = globals;
-            this.dispatcher = dispatcher;
-            this.acmePdbManager = acmePdbManager;
-            this.executionStatusViewModel = executionStatusViewModel;
-            executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
-            ProjectExplorer = projectExplorerViewModel;
-            SourceFileViewerViewModel = sourceFileViewerViewModel;
-            Registers = registers;
-            Registers.PropertyChanged += Registers_PropertyChanged;
-            globals.PropertyChanged += Globals_PropertyChanged;
+            pdbManager = projectFactory.GetPdbManager(globals.Project.CompilerType);
         }
-
-        void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        else
         {
-            switch (e.PropertyName)
-            {
-                case nameof(ExecutionStatusViewModel.IsDebugging):
-                    // clears execution rows
-                    if (!executionStatusViewModel.IsDebugging)
-                    {
-                        foreach (var fileViewer in SourceFileViewerViewModel.Files)
-                        {
-                            fileViewer.ClearExecutionRow();
-                        }
-                    }
-                    break;
-            }
+            pdbManager = null;
         }
+    }
 
-        void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
         {
-            ushort? address = Registers.Current.PC;
-            if (address.HasValue)
-            {
-                var matchingLine = acmePdbManager.FindLineUsingAddress(address.Value);
-                if (matchingLine is not null)
+            case nameof(ExecutionStatusViewModel.IsDebugging):
+                // clears execution rows
+                if (!executionStatusViewModel.IsDebugging)
                 {
-                    var file = acmePdbManager.FindFileOfLine(matchingLine)!;
-                    int matchingLineNumber = file.Lines.IndexOf(matchingLine);
-                    dispatcher.Dispatch(
-                        new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
-                    );
-                    return;
+                    foreach (var fileViewer in SourceFileViewerViewModel.Files)
+                    {
+                        fileViewer.ClearExecutionRow();
+                    }
                 }
-            }
-            SourceFileViewerViewModel.ClearExecutionRow();
+                break;
         }
-        
-        void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case nameof(Globals.Project):
-                    OnPropertyChanged(nameof(Project));
-                    break;
-            }
-        }
+    }
 
-        protected override void Dispose(bool disposing)
+    void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (pdbManager is null)
         {
-            if (disposing)
-            {
-                executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
-                Registers.PropertyChanged -= Registers_PropertyChanged;
-                globals.PropertyChanged -= Globals_PropertyChanged;
-            }
-            base.Dispose(disposing);
+            return;
         }
+        ushort? address = Registers.Current.PC;
+        if (address.HasValue)
+        {
+            var matchingLine = pdbManager.FindLineUsingAddress(address.Value);
+            if (matchingLine is not null)
+            {
+                var file = pdbManager.FindFileOfLine(matchingLine)!;
+                int matchingLineNumber = file.Lines.IndexOf(matchingLine);
+                dispatcher.Dispatch(
+                    new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
+                );
+                return;
+            }
+        }
+        SourceFileViewerViewModel.ClearExecutionRow();
+    }
+    
+    void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(Globals.Project):
+                OnPropertyChanged(nameof(Project));
+                UpdatePdbManager();
+                break;
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+            Registers.PropertyChanged -= Registers_PropertyChanged;
+            globals.PropertyChanged -= Globals_PropertyChanged;
+        }
+        base.Dispose(disposing);
     }
 }

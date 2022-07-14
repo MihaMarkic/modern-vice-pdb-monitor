@@ -6,6 +6,7 @@
              xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Core.Common;assembly=Modern.Vice.PdbMonitor.Core"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
@@ -15,10 +16,10 @@
       <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
         <TextBlock Text="{Binding Name}" />
       </TreeDataTemplate >
-      <TreeDataTemplate  DataType="m:AcmeFile">
+      <TreeDataTemplate  DataType="c:PdbFile">
         <TextBlock Text="{Binding RelativePath}"/>
       </TreeDataTemplate >
-      <TreeDataTemplate  DataType="m:AcmeLabel">
+      <TreeDataTemplate  DataType="c:PdbLabel">
         <StackPanel Orientation="Horizontal">
           <StackPanel.ContextMenu>
             <ContextMenu>
