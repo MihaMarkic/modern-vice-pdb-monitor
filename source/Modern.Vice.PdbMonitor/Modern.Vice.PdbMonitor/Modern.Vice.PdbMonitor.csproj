@@ -46,12 +46,12 @@
     </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.10.15" />
+    <PackageReference Include="Avalonia" Version="0.10.16" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="0.10.12.2" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.10.15" />
-    <PackageReference Include="Avalonia.Diagnostics" Version="0.10.15" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.10.16" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="0.10.16" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="0.10.14" />
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="0.10.15" />
+    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="0.10.16" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
