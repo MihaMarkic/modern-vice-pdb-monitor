@@ -17,6 +17,7 @@
       <c:ByteArrayToTextConverter x:Key="ByteArrayToTextConverter" />
       <c:LevelToMarginConverter x:Key="LevelToMarginConverter" />
       <c:BoolToStringConverter x:Key="ExpandedToStringConverter" OnTrue="-" OnFalse="+" />
+      <c:ByteToCharConverter x:Key="ByteToCharConverter" />
     </DataGrid.Resources>
     <DataGrid.Columns>
       <DataGridTemplateColumn Header="Name" Width="200">
@@ -34,10 +35,12 @@
       <DataGridTemplateColumn Header="Value" Width="200">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate DataType="vm:VariableSlot">
-            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="{Binding VariableValue}" IsVisible="{Binding IsDefaultRepresentation}" />
-              <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}" 
+              <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}"
                 IsVisible="{Binding IsHexRepresentation}" />
+              <TextBlock Text="{Binding VariableValue, StringFormat=\'{0}\', Converter={StaticResource ByteToCharConverter}, Mode=OneWay}"
+                IsVisible="{Binding CanBeChar}" Foreground="Gray" Margin="4,0" />
               <ProgressBar IsIndeterminate="True" IsVisible="{Binding !HasValue}" Margin="4,0" MinWidth="80" />
             </StackPanel>
           </DataTemplate>
@@ -45,7 +48,7 @@
       </DataGridTemplateColumn>
       <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneWay}"
           IsReadOnly="True" Width="80" />
-      <DataGridTextColumn Header="Base" Binding="{Binding Base, Converter={StaticResource HexAddressConverterWithTrim}, Mode=OneWay}" 
+      <DataGridTextColumn Header="Base" Binding="{Binding Base, Converter={StaticResource HexAddressConverterWithTrim}, Mode=OneWay}"
         IsReadOnly="True" Width="60" />
       <DataGridTextColumn Header="Size" Binding="{Binding Size}" IsReadOnly="True" Width="40" />
       <DataGridTextColumn Header="Type" Binding="{Binding ValueType}" IsReadOnly="True" Width="90" />

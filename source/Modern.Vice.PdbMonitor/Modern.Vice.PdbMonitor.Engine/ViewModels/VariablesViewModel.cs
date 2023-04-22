@@ -340,6 +340,7 @@ public class VariableSlot: NotifiableObject
     public bool HasValue => Value is not null;
     public bool IsDefaultRepresentation => HasValue && !IsHexRepresentation;
     public bool IsHexRepresentation => HasValue && Source.Type is PdbPtrType;
+    public bool CanBeChar => HasValue && Source.Type is PdbValueType valueType && valueType.VariableType == PdbVariableType.UByte;
     public bool IsGlobal { get; }
     public  int Level { get; }
     public VariableSlot(PdbVariable source, bool isGlobal, int level = 0)
