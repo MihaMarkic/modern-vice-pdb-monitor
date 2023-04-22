@@ -3,6 +3,7 @@
     <AdditionalFilesToIncludeForProject>
       <Value>Assets\**.*</Value>
       <Value>Styles\**.*</Value>
+      <Value>Views\**.*</Value>
     </AdditionalFilesToIncludeForProject>
   </Settings>
 </ProjectConfiguration>

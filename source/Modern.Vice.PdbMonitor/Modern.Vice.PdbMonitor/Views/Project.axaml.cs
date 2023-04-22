@@ -4,23 +4,17 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Xaml;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
-public class Project : UserControl
+partial class Project : UserControl
 {
     ProjectViewModel? viewModel;
     public Project()
     {
         InitializeComponent();
-    }
-
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
     protected override void OnDataContextChanged(EventArgs e)
     {

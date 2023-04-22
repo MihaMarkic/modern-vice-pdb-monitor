@@ -13,7 +13,6 @@
              x:Class="Modern.Vice.PdbMonitor.Views.SourceFilesViewer">
   <UserControl.Resources>
     <c:ArrayToTextConverter x:Key="ArrayToTextConverter" />
-    
   </UserControl.Resources>
 
   <TabControl x:Name="files" Items="{Binding Files}" SelectedItem="{Binding Selected}">
@@ -34,7 +33,6 @@
     </TabControl.ItemTemplate>
     <TabControl.ContentTemplate>
       <DataTemplate DataType="vm:SourceFileViewModel">
-        <!--<v:SourceFileViewer CursorRow="{Binding CursorRow}" />-->
         <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
       </DataTemplate>
     </TabControl.ContentTemplate>

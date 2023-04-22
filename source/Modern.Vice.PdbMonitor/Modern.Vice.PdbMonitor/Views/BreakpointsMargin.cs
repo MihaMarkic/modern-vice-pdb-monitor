@@ -101,11 +101,30 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
     {
         base.OnPointerEnter(e);
         UpdateHoverPosition(e);
-    }
+    }        
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
         UpdateHoverPosition(e);
+        bool cursorSet = false;
+        if (!e.Handled && TextView is not null && TextArea is not null)
+        {
+            var visualLine = GetTextLineSegment(e);
+            if (visualLine is not null)
+            {
+                var lineNumber = visualLine.FirstDocumentLine.LineNumber;
+                var line = sourceFileViewModel.Lines[lineNumber - 1];
+                if (sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(line))
+                {
+                    Cursor = new Cursor(StandardCursorType.Arrow);
+                    cursorSet = true;
+                }
+            }
+        }
+        if (!cursorSet)
+        {
+            Cursor = new Cursor(StandardCursorType.Ibeam);
+        }
     }
     void UpdateHoverPosition(PointerEventArgs e)
     {

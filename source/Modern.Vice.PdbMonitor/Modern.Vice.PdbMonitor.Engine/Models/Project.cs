@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -22,6 +23,18 @@ public class Project : NotifiableObject
     public DebugAutoStartMode AutoStartMode { get; set; }
     public string StopAtLabel { get; set; } = StopAtLabelNone;
     public CompilerType CompilerType { get; init; }
+    public SourceLanguage SourceLanguage { get; init; }
+    private Project()
+    { }
+    public static Project Create(string file, CompilerType compilerType, SourceLanguage sourceLanguage)
+    {
+        return new Project
+        {
+            File = file,
+            CompilerType = compilerType,
+            SourceLanguage = sourceLanguage,
+        };
+    }
     public ProjectConfiguration ToConfiguration() => new ProjectConfiguration
     {
         PrgPath = PrgPath,
@@ -29,12 +42,13 @@ public class Project : NotifiableObject
         StopAtLabel = StopAtLabel == StopAtLabelNone ? null: StopAtLabel,
         CompilerType = CompilerType,
     };
-    public static Project FromConfiguration(ProjectConfiguration configuration) => new Project
+    public static Project FromConfiguration(ProjectConfiguration configuration, SourceLanguage sourceLanguage) => new Project
     {
         PrgPath = configuration.PrgPath,
         AutoStartMode = configuration.AutoStartMode,
         StopAtLabel = configuration.StopAtLabel ?? StopAtLabelNone,
-        CompilerType = configuration.CompilerType
+        CompilerType = configuration.CompilerType,
+        SourceLanguage = sourceLanguage,
     };
 }
 

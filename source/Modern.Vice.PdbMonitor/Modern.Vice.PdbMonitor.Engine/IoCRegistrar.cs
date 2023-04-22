@@ -19,6 +19,7 @@ public static class IoCRegistrar
         services.AddScoped<ProjectViewModel>();
         services.AddScoped<SourceFileViewerViewModel>();
         services.AddSingleton<RegistersViewModel>();
+        services.AddSingleton<VariablesViewModel>();
         services.AddSingleton<RegistersMapping>();
         services.AddSingleton<ExecutionStatusViewModel>();
         services.AddSingleton<BreakpointsViewModel>();

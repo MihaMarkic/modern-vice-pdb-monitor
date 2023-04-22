@@ -54,6 +54,11 @@
               <cmn:CompilerType>Acme</cmn:CompilerType>
             </MenuItem.CommandParameter>
           </MenuItem>
+          <MenuItem Header="New Oscar64 project" Command="{Binding CreateProjectCommand}">
+            <MenuItem.CommandParameter>
+              <cmn:CompilerType>Oscar64</cmn:CompilerType>
+            </MenuItem.CommandParameter>
+          </MenuItem>
         </MenuItem>
         <MenuItem Header="_Open..." Command="{Binding OpenProjectCommand}" />
         <Separator/>
@@ -197,6 +202,9 @@
       </TabItem>
       <TabItem Header="Breakpoints">
         <v:Breakpoints DataContext="{Binding BreakpointsViewModel}" />
+      </TabItem>
+      <TabItem Header="Variables">
+        <v:Variables DataContext="{Binding VariablesViewModel}" />
       </TabItem>
     </TabControl>
     <ContentControl>

@@ -13,6 +13,7 @@ public class AcmeCompiler : ICompiler
     readonly ImmutableDictionary<int, SyntaxElementType> tokenTypeMap = ImmutableDictionary<int, SyntaxElementType>.Empty
         .Add(AcmeLexer.STRING, SyntaxElementType.String)
         .Add(AcmeLexer.COMMENT, SyntaxElementType.Comment);
+    public SourceLanguage Language => SourceLanguage.Custom;
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> GetSyntaxElements(string code)
     {
         var input = new AntlrInputStream(code);

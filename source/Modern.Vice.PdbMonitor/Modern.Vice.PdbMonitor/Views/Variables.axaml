@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             x:DataType="vm:VariablesViewModel"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="120"
+             x:Class="Modern.Vice.PdbMonitor.Views.Variables">
+  <DataGrid Name="Grid" Items="{Binding Items}" FontFamily="{StaticResource CodeFont}">
+    <DataGrid.Resources>
+      <c:HexAddressConverter x:Key="HexAddressConverter" />
+      <c:HexAddressConverter x:Key="HexAddressConverterWithTrim" TrimToByte="True" />
+      <c:HexValueConverter x:Key="HexValueConverter" />
+      <c:ByteArrayToTextConverter x:Key="ByteArrayToTextConverter" />
+      <c:LevelToMarginConverter x:Key="LevelToMarginConverter" />
+      <c:BoolToStringConverter x:Key="ExpandedToStringConverter" OnTrue="-" OnFalse="+" />
+    </DataGrid.Resources>
+    <DataGrid.Columns>
+      <DataGridTemplateColumn Header="Name" Width="200">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate DataType="vm:VariableSlot">
+            <StackPanel Orientation="Horizontal" Margin="{Binding Level, Converter={StaticResource LevelToMarginConverter}}">
+              <Button Margin="2, 0" IsVisible="{Binding IsExpandable}" FontSize="10"
+                Command="{Binding #Grid.DataContext.ToggleVariableExpansionCommand}" CommandParameter="{Binding}"
+                Content="{Binding IsExpanded, Converter={StaticResource ExpandedToStringConverter}}" />
+              <TextBlock Text="{Binding Name, Mode=OneTime}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+      <DataGridTemplateColumn Header="Value" Width="200">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate DataType="vm:VariableSlot">
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+              <TextBlock Text="{Binding VariableValue}" IsVisible="{Binding IsDefaultRepresentation}" />
+              <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}" 
+                IsVisible="{Binding IsHexRepresentation}" />
+              <ProgressBar IsIndeterminate="True" IsVisible="{Binding !HasValue}" Margin="4,0" MinWidth="80" />
+            </StackPanel>
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+      <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneWay}"
+          IsReadOnly="True" Width="80" />
+      <DataGridTextColumn Header="Base" Binding="{Binding Base, Converter={StaticResource HexAddressConverterWithTrim}, Mode=OneWay}" 
+        IsReadOnly="True" Width="60" />
+      <DataGridTextColumn Header="Size" Binding="{Binding Size}" IsReadOnly="True" Width="40" />
+      <DataGridTextColumn Header="Type" Binding="{Binding ValueType}" IsReadOnly="True" Width="90" />
+      <DataGridCheckBoxColumn Header="Global" Binding="{Binding IsGlobal}" IsReadOnly="True" />
+      <DataGridTextColumn Header="Bytes" Binding="{Binding Data, Converter={StaticResource ByteArrayToTextConverter}, Mode=OneWay}"
+          IsReadOnly="True" Width="200" />
+    </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

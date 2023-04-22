@@ -1,0 +1,28 @@
+
+; ******** Source: .\tiny.asm
+     1                          		!to "tiny.prg", cbm	; set output file and format
+     2                          * = $0801
+     3                          
+     4  0801 0b08                       !wo boot
+     5  0803 0100                       !wo 1 ; line number
+     6  0805 9e                         !by $9e ; SYS
+     7  0806 3230363100                 !TEXT "2061",0
+     8  080b 0000               boot   !wo 0
+     9                           
+    10                                  * = 2061
+    11                          
+    12                          		;* = $c000		; set program counter
+    13                          
+    14                          	CLEAR = 147		; a global symbol definition
+    15                          !addr	basout = $ffd2		; another one, marked as an address
+    16                          
+    17                          		; a string output loop:
+    18  080d a200               start	ldx #0
+    19  080f ad1e08             		lda .string
+    20  0812 f004               		beq +			; enter loop
+    21                          
+    22  0814 20d2ff             -			jsr basout	; output character
+    23  0817 e8                 			inx		; advance pointer
+    24  0818 bd1e08             +			lda .string, x	; get character
+    25  081b d0f7               			bne -		; check whether last
+    26  081d 60                 		rts

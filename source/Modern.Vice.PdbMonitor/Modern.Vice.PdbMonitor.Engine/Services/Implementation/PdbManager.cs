@@ -42,7 +42,7 @@ public class PdbManager : IPdbManager
     }
     public PdbFile? FindFileOfLine(PdbLine line)
     {
-        var file = globals.Project!.DebugSymbols!.Files[line.FileRelativePath];
+        var file = globals.Project!.DebugSymbols!.GetFileOfLine(line);
         return file;
     }
     /// <summary>

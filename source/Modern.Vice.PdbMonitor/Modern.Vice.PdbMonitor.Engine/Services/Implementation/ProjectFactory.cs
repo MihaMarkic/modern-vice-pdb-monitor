@@ -1,4 +1,5 @@
 ﻿using System;
+using Compiler.Oscar64;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Compilers.Acme;
 using Modern.Vice.PdbMonitor.Core.Services.Abstract;
@@ -22,6 +23,7 @@ public class ProjectFactory : IProjectFactory
         return compilerType switch
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<AcmeCompilerServices>(),
+            CompilerType.Oscar64 => serviceProvider.GetRequiredService<Oscar64CompilerServices>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -30,6 +32,7 @@ public class ProjectFactory : IProjectFactory
         return compilerType switch
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<AcmeCompiler>(),
+            CompilerType.Oscar64 => serviceProvider.GetRequiredService<Oscar64Compiler>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -38,6 +41,7 @@ public class ProjectFactory : IProjectFactory
         return compilerType switch
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<IPdbManager>(),
+            CompilerType.Oscar64 => serviceProvider.GetRequiredService<IPdbManager>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -49,6 +53,11 @@ public class ProjectFactory : IProjectFactory
                 initialDirectory,
                 "Open output file",
                 "ACME Compiled CBM file .prg",
+                "prg"),
+            CompilerType.Oscar64 => new DebugFileOpenDialogModel(
+                initialDirectory,
+                "Open output file",
+                "Oscar64 Compiled file .prg",
                 "prg"),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };

@@ -69,7 +69,7 @@ public class SourceFileViewerViewModel : NotifiableObject
     internal void OpenSourceFile(object sender, OpenSourceFileMessage? message)
     {
         var pdbFile = message!.File;
-        var item = Files.FirstOrDefault(f => string.Equals(f.Path, pdbFile.RelativePath, StringComparison.Ordinal));
+        var item = Files.FirstOrDefault(f => f.Path == pdbFile.Path);
         if (item is null)
         {
             var content = pdbFile.Lines

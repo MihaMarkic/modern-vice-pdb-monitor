@@ -1,0 +1,47 @@
+sections
+0880 - 0d1a : DATA, code
+0d1a - 0d94 : DATA, data
+0d94 - 0d9c : BSS, bss
+0d9c - 9000 : HEAP, heap
+9000 - a000 : STACK, stack
+10000 - 10000 : ZEROPAGE, zeropage
+0801 - 0856 : DATA, startup
+a000 - a000 : SSTACK, sstack
+a000 - a000 : SSTACK, spr_init@stack
+a000 - a000 : SSTACK, memset@stack
+a000 - a000 : SSTACK, display_init@stack
+a000 - a000 : SSTACK, spr_set@stack
+a000 - a000 : SSTACK, char_put@stack
+a000 - a000 : SSTACK, rand@stack
+a000 - a000 : SSTACK, joy_poll@stack
+a000 - a000 : SSTACK, char_get_pix@stack
+a000 - a000 : SSTACK, main@stack
+
+regions
+0080 - 00ff : 0000, 0000, zeropage
+0801 - 0880 : 0856, 0055, startup
+0880 - 9000 : 0d94, 051c, main
+
+objects
+0801 - 0856 : startup, NATIVE_CODE:startup
+0d1a - 0d1b : spentry, DATA:data
+0d94 - 0d94 : BSSStart, START:bss
+0d9c - 0d9c : BSSEnd, END:bss
+a000 - a000 : StackEnd, END:stack
+0880 - 0a82 : main, NATIVE_CODE:code
+0a82 - 0ac4 : display_init, NATIVE_CODE:code
+0d1b - 0d5a : spimage, DATA:data
+0ac4 - 0ad4 : spr_init, NATIVE_CODE:code
+0d94 - 0d96 : vspriteScreen, DATA:bss
+0ad4 - 0af8 : memset, NATIVE_CODE:code
+0af8 - 0b95 : spr_set, NATIVE_CODE:code
+0b95 - 0bd2 : char_put, NATIVE_CODE:code
+0bd2 - 0bf9 : rand, NATIVE_CODE:code
+0d5a - 0d5c : seed, DATA:data
+0bf9 - 0c39 : joy_poll, NATIVE_CODE:code
+0d96 - 0d98 : joyy, DATA:bss
+0d98 - 0d9a : joyx, DATA:bss
+0d9a - 0d9c : joyb, DATA:bss
+0c39 - 0c95 : char_get_pix, NATIVE_CODE:code
+0c95 - 0d1a : divmod, NATIVE_CODE:code
+0d5c - 0d94 : bitshift, DATA:data

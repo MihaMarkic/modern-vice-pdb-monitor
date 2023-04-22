@@ -28,12 +28,13 @@ public class SourceFileViewModel : ScopedViewModel
     /// </summary>
     public event EventHandler? BreakpointsChanged;
     public event EventHandler? ExecutionRowChanged;
-    public string Path => file.RelativePath;
+    public PdbPath Path => file.Path;
     public ImmutableArray<LineViewModel> Lines { get; }
     public int CursorColumn { get; set; }
     public int CursorRow { get; protected set; }
     public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
+    public SourceLanguage? SourceLanguage => globals.Project?.SourceLanguage;
 
     /// <summary>
     /// 

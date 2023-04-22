@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -11,16 +11,17 @@
     </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.12.0" />
     <PackageReference Include="FuzzySharp" Version="2.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="PropertyChanged.Fody" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageReference Include="Righthand.MessageBus" Version="1.1.2" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.9" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.10" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Compilers\Compiler.Oscar64\Compiler.Oscar64.csproj" />
     <ProjectReference Include="..\Compilers\Modern.Vice.PdbMonitor.Compilers.Acme\Modern.Vice.PdbMonitor.Compilers.Acme.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
   </ItemGroup>

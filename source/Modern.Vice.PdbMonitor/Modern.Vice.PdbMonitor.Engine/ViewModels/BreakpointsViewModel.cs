@@ -240,7 +240,7 @@ public class BreakpointsViewModel: NotifiableObject
                 else
                 {
                     logger.Log(LogLevel.Information, "Breakpoint on file  {file} and line {line_number} {line} not reapplied", 
-                        breakpoint.File.RelativePath, breakpoint.Line.LineNumber, breakpoint.Line.Text);
+                        breakpoint.File.Path, breakpoint.Line.LineNumber, breakpoint.Line.Text);
                 }
             }
             // for now set all non-line breakpoints as well
@@ -272,7 +272,7 @@ public class BreakpointsViewModel: NotifiableObject
         {
             return null;
         }
-        if (!pdb.Files.TryGetValue(originalFile.RelativePath, out var newFile))
+        if (!pdb.Files.TryGetValue(originalFile.Path, out var newFile))
         {
             return null;
         }

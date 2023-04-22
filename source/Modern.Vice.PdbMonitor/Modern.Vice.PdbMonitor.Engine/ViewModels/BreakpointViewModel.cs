@@ -20,7 +20,7 @@ public class BreakpointViewModel : NotifiableObject, ICloneable
     public ushort StartAddress { get; set; }
     public ushort EndAddress { get; set; }
     public string? Condition { get; set; }
-    public string? FileName => File?.RelativePath;
+    public PdbPath? FileName => File?.Path;
     public int? LineNumber { get; set; }
     public BreakpointViewModel()
     {

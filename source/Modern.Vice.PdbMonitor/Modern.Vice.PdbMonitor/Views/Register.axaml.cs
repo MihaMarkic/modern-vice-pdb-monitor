@@ -1,6 +1,5 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
@@ -15,10 +14,6 @@ public partial class Register : UserControl
     public Register()
     {
         InitializeComponent();
-    }
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
     public object? Value
     {

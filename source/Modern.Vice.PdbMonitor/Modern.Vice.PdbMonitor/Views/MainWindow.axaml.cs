@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -14,7 +14,7 @@ using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
-public class MainWindow : Window
+partial class MainWindow : Window
 {
     readonly IServiceScope scope;
     public MainWindow()
@@ -31,11 +31,6 @@ public class MainWindow : Window
         viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
         viewModel.CloseApp = Close;
         viewModel.ShowModalDialog = ShowModalDialog;
-    }
-
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
     internal void ShowModalDialog(ShowModalDialogMessageCore message)
     {

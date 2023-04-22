@@ -1,0 +1,7 @@
+<Project>
+  <!-- Visual Studio -->
+  <PropertyGroup>
+    <!-- https://davecallan.com/build-acceleration-available-visual-studio-2022-17-5/ -->
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+  </PropertyGroup>
+</Project>

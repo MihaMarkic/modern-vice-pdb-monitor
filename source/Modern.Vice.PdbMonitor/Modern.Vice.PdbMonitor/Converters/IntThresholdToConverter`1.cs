@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using Avalonia.Data.Converters;
-using System.Linq;
 
 namespace Modern.Vice.PdbMonitor.Converters;
 

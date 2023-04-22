@@ -6,10 +6,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
@@ -82,6 +84,7 @@ public class MainViewModel : NotifiableObject
     public ScopedViewModel Content { get; private set; } = default!;
     public RegistersViewModel RegistersViewModel { get; private set; } = default!;
     public BreakpointsViewModel BreakpointsViewModel { get; private set; } = default!;
+    public VariablesViewModel VariablesViewModel { get; private set; } = default!;
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -95,7 +98,8 @@ public class MainViewModel : NotifiableObject
     public MainViewModel(ILogger<MainViewModel> logger, Globals globals, IDispatcher dispatcher,
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
-        ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel)
+        ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
+        VariablesViewModel variablesViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -108,6 +112,7 @@ public class MainViewModel : NotifiableObject
         this.serviceProvider = serviceProvider;
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
+        VariablesViewModel = variablesViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -579,7 +584,8 @@ public class MainViewModel : NotifiableObject
             {
                 return false;
             }
-            var project = Project.FromConfiguration(projectConfiguration);
+            var sourceLanguage = GetCompilerLanguage(projectConfiguration.CompilerType);
+            var project = Project.FromConfiguration(projectConfiguration, sourceLanguage);
             project.File = path;
             Globals.Project = project;
             if (project!.PrgPath is not null)
@@ -618,9 +624,9 @@ public class MainViewModel : NotifiableObject
         if (ShowCreateProjectFileDialogAsync is not null)
         {
             var model = new OpenFileDialogModel(
-                Globals.Settings.LastAccessedDirectory,
-                "Modern PDB Debugger .mapd",
-                "mapd");
+                                        Globals.Settings.LastAccessedDirectory,
+                                        "Modern PDB Debugger .mapd",
+                                        "mapd");
             string? projectPath = await ShowCreateProjectFileDialogAsync(model, CancellationToken.None);
             if (!string.IsNullOrWhiteSpace(projectPath))
             {
@@ -630,6 +636,16 @@ public class MainViewModel : NotifiableObject
                     Globals.Settings.AddRecentProject(projectPath);
                 }
             }
+        }
+    }
+    internal SourceLanguage GetCompilerLanguage(CompilerType compilerType)
+    {
+        // custom scope is used for compiler creation to figure out language
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var projectFactory = scope.ServiceProvider.GetRequiredService<IProjectFactory>();
+            var compiler = projectFactory.GetCompiler(compilerType);
+            return compiler.Language;
         }
     }
     internal bool CreateProject(CompilerType compilerType, string projectPath)
@@ -643,7 +659,8 @@ public class MainViewModel : NotifiableObject
         {
             try
             {
-                var project = new Project { File = projectPath, CompilerType = compilerType };
+                var sourceLanguage = GetCompilerLanguage(compilerType);
+                var project = Project.Create(projectPath, compilerType, sourceLanguage);
                 settingsManager.Save(project.ToConfiguration(), projectPath, false);
                 Globals.Project = project;
                 ShowProject();

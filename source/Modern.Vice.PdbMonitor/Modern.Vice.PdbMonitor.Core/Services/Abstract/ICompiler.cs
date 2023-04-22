@@ -5,5 +5,6 @@ namespace Modern.Vice.PdbMonitor.Core.Services.Abstract;
 
 public interface ICompiler
 {
+    SourceLanguage Language { get; }
     ImmutableDictionary<int, ImmutableArray<SyntaxElement>> GetSyntaxElements(string code);
 }

@@ -17,7 +17,7 @@
         <TextBlock Text="{Binding Name}" />
       </TreeDataTemplate >
       <TreeDataTemplate  DataType="c:PdbFile">
-        <TextBlock Text="{Binding RelativePath}"/>
+        <TextBlock Text="{Binding Path}"/>
       </TreeDataTemplate >
       <TreeDataTemplate  DataType="c:PdbLabel">
         <StackPanel Orientation="Horizontal">

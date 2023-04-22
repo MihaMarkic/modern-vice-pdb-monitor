@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Compiler.Oscar64.Models;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
@@ -22,9 +23,12 @@ public class DebuggerViewModel : ScopedViewModel
     public bool IsOpenProject => Project is not null;
     public ProjectExplorerViewModel ProjectExplorer { get; }
     public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
+    public VariablesViewModel Variables { get; }
     public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
         SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher,
-        ExecutionStatusViewModel executionStatusViewModel, IProjectFactory projectFactory)
+        ExecutionStatusViewModel executionStatusViewModel, 
+        VariablesViewModel variablesViewModel,
+        IProjectFactory projectFactory)
     {
         this.logger = logger;
         this.globals = globals;
@@ -34,6 +38,7 @@ public class DebuggerViewModel : ScopedViewModel
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         ProjectExplorer = projectExplorerViewModel;
         SourceFileViewerViewModel = sourceFileViewerViewModel;
+        Variables = variablesViewModel;
         Registers = registers;
         Registers.PropertyChanged += Registers_PropertyChanged;
         globals.PropertyChanged += Globals_PropertyChanged;
@@ -64,6 +69,16 @@ public class DebuggerViewModel : ScopedViewModel
                         fileViewer.ClearExecutionRow();
                     }
                 }
+                else
+                {
+                    Variables.CancelUpdateForLine();
+                }    
+                break;
+            case nameof(ExecutionStatusViewModel.IsDebuggingPaused):
+                if (!executionStatusViewModel.IsDebuggingPaused)
+                {
+                    Variables.CancelUpdateForLine();
+                }
                 break;
         }
     }
@@ -85,9 +100,11 @@ public class DebuggerViewModel : ScopedViewModel
                 dispatcher.Dispatch(
                     new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
                 );
+                _ = Variables.StartUpdateForLineAsync(matchingLine);
                 return;
             }
         }
+        Variables.CancelUpdateForLine();
         SourceFileViewerViewModel.ClearExecutionRow();
     }
     

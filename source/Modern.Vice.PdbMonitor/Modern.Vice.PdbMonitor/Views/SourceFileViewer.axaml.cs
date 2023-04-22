@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -6,75 +9,116 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
+using AvaloniaEdit.TextMate;
+using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using TextMateSharp.Grammars;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
 public partial class SourceFileViewer : UserControl
 {
-    readonly TextEditor editor;
     readonly LineColorizer lineColorizer;
+    static readonly RegistryOptions registryOptions;
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
     SourceFileViewModel? oldDataContext;
+    bool useLineColorizerForElements;
+    TextMate.Installation textMateInstallation;
     static SourceFileViewer()
     {
         TextEditorScrollViewerPropertyInfo = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        registryOptions = new RegistryOptions(ThemeName.SolarizedLight);
     }
     public SourceFileViewer()
     {
         InitializeComponent();
-        editor = this.FindControl<TextEditor>("Editor");
-        //InitConditionsEditors();
         lineColorizer = new();
-        editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
+        textMateInstallation = Editor.InstallTextMate(registryOptions);
         DataContextChanged += SourceFileViewer_DataContextChanged;
     }
-    ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(editor);
+    ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(Editor);
     public new SourceFileViewModel? DataContext => (SourceFileViewModel?)base.DataContext;
     void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
+    {
+        var leftMargins = Editor.TextArea.LeftMargins;
+        var lineTransformers = Editor.TextArea.TextView.LineTransformers;
+        DisconnectOldViewModel(leftMargins, lineTransformers);
+        Editor.Text = "";
+        Editor.CaretOffset = 0;
+        var viewModel = DataContext;
+        if (viewModel is not null)
+        {
+            string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
+            Editor.Text = text;
+            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
+            var breakpointsMargin = new BreakpointsMargin(viewModel);
+            leftMargins.Insert(0, breakpointsMargin);
+            var addressMargin = new AddressMargin(Editor.FontFamily, Editor.FontSize, Brushes.DarkGray, viewModel.Lines)
+            {
+                Margin = new Thickness(4, 0),
+            };
+            leftMargins.Insert(1, addressMargin);
+            lineColorizer.LineNumber = viewModel.ExecutionRow;
+            Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
+            if (viewModel.SourceLanguage == SourceLanguage.Custom)
+            {
+                useLineColorizerForElements = true;
+                if (!viewModel.Elements.IsEmpty)
+                {
+                    lineColorizer.Elements = viewModel.Elements;
+                }
+            }
+            else
+            {
+                switch (viewModel.SourceLanguage)
+                {
+                    case SourceLanguage.C:
+                        string languageId = registryOptions.GetLanguageByExtension(".cs").Id;
+                        string scopeName = registryOptions.GetScopeByLanguageId(languageId);
+                        textMateInstallation.SetGrammar(scopeName);
+                        break;
+                }
+            }
+        }
+        oldDataContext = viewModel;
+    }
+
+    void DisconnectOldViewModel(ObservableCollection<IControl> leftMargins, IList<IVisualLineTransformer> lineTransformers)
     {
         if (oldDataContext is not null)
         {
             oldDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
             oldDataContext.PropertyChanged -= ViewModel_PropertyChanged;
             oldDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
-        }
-        editor.Text = "";
-        editor.CaretOffset = 0;
-        var viewModel = DataContext;
-        if (viewModel is not null)
-        {
-            string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
-            editor.Text = text;
-            lineColorizer.LineNumber = viewModel.ExecutionRow;
-            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
-            viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
-            var breakpointsMargin = new BreakpointsMargin(viewModel);
-            editor.TextArea.LeftMargins.Insert(0, breakpointsMargin);
-            var addressMargin = new AddressMargin(editor.FontFamily, editor.FontSize, Brushes.DarkGray, viewModel.Lines)
+
+            foreach (var lm in leftMargins.ToImmutableArray())
             {
-                Margin = new Thickness(4, 0),
-            };
-            editor.TextArea.LeftMargins.Insert(1, addressMargin);
-            if (!viewModel.Elements.IsEmpty)
-            {
-                lineColorizer.Elements = viewModel.Elements;
+                if (lm is BreakpointsMargin || lm is AddressMargin)
+                {
+                    leftMargins.Remove(lm);
+                }
             }
+            foreach (var lc in lineTransformers.ToImmutableArray())
+            {
+                if (ReferenceEquals(lc, lineColorizer))
+                {
+                    lineTransformers.Remove(lc);
+                }
+            }
+            useLineColorizerForElements = false;
         }
-        oldDataContext = viewModel;
     }
 
     private void ViewModel_ExecutionRowChanged(object? sender, EventArgs e)
     {
-        editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
+        Editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
         lineColorizer.LineNumber = DataContext!.ExecutionRow + 1;
-        editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
-        //editor.InvalidateVisual();
+        Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
     }
 
     void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -84,8 +128,11 @@ public partial class SourceFileViewer : UserControl
             case nameof(DataContext.ExecutionRow):
                 break;
             case nameof(DataContext.Elements):
-                lineColorizer.Elements = DataContext!.Elements;
-                editor.TextArea.TextView.Redraw();
+                if (useLineColorizerForElements)
+                {
+                    lineColorizer.Elements = DataContext!.Elements;
+                    Editor.TextArea.TextView.Redraw();
+                }
                 break;
         }
     }
@@ -99,7 +146,7 @@ public partial class SourceFileViewer : UserControl
     async Task CursorRowChanged(int cursorRow)
     {
         cts?.Cancel();
-        if (double.IsNaN(editor.Height))
+        if (double.IsNaN(Editor.Height))
         {
             cts = new CancellationTokenSource();
             var ct = cts.Token;
@@ -119,11 +166,11 @@ public partial class SourceFileViewer : UserControl
         {
             if (e.Property == BoundsProperty)
             {
-                editor.PropertyChanged -= propertyChangedHandler;
+                Editor.PropertyChanged -= propertyChangedHandler;
                 tcs.SetResult();
             }
         };
-        editor.PropertyChanged += propertyChangedHandler;
+        Editor.PropertyChanged += propertyChangedHandler;
         return tcs.Task;
     }
     public void ScrollToLine(int line)
@@ -133,7 +180,7 @@ public partial class SourceFileViewer : UserControl
     public void ScrollTo(int line, int column)
     {
         const double MinimumScrollFraction = 0.3;
-        ScrollTo(line, column, VisualYPosition.LineMiddle, EditorScrollViewer is not null ? editor.ViewportHeight / 2 : 0.0, MinimumScrollFraction);
+        ScrollTo(line, column, VisualYPosition.LineMiddle, EditorScrollViewer is not null ? Editor.ViewportHeight / 2 : 0.0, MinimumScrollFraction);
     }
     /// <summary>
     /// 
@@ -148,7 +195,7 @@ public partial class SourceFileViewer : UserControl
     public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
         double referencedVerticalViewPortOffset, double minimumScrollFraction)
     {
-        TextView textView = editor.TextArea.TextView;
+        TextView textView = Editor.TextArea.TextView;
         var document = textView.Document!;
         var scrollViewer = EditorScrollViewer;
         if (scrollViewer is not null && document is not null)
@@ -173,11 +220,11 @@ public partial class SourceFileViewer : UserControl
                 remainingHeight -= vl.Height;
             }
 
-            Point p = editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(line, Math.Max(1, column)),
+            Point p = Editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(line, Math.Max(1, column)),
                 yPositionMode);
             double verticalPos = p.Y - referencedVerticalViewPortOffset;
             if (Math.Abs(verticalPos - textView.VerticalOffset) >
-                minimumScrollFraction * editor.ViewportHeight)
+                minimumScrollFraction * Editor.ViewportHeight)
             {
                 scrollViewer.Offset = new Vector(0, Math.Max(0, verticalPos));
             }
@@ -200,8 +247,10 @@ public partial class SourceFileViewer : UserControl
             //}
         }
     }
-    void InitializeComponent()
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        AvaloniaXamlLoader.Load(this);
+        textMateInstallation.Dispose();
+        base.OnDetachedFromVisualTree(e);
     }
 }

@@ -57,14 +57,16 @@ public class AcmePdbParser : IAcmePdbParser
         ImmutableDictionary<string, PdbLabel> labels, IContext context)
     {
         var linesBuilder = ImmutableArray.CreateBuilder<PdbLine>();
-        var filesBuilder = ImmutableDictionary.CreateBuilder<string, PdbFile>();
+        var filesBuilder = ImmutableDictionary.CreateBuilder<PdbPath, PdbFile>();
         PdbFile? file = null;
+        var lineToFileMapBuilder = PdbFile.CreateLineToFileMapBuilder();
         foreach (var reportLine in report)
         {
             switch (reportLine)
             {
                 case ReportSource reportSource:
-                    if (!filesBuilder.TryGetValue(reportSource.RelativePath, out file))
+                    var path = new PdbPath(reportSource.RelativePath, IsRelative: true);
+                    if (!filesBuilder.TryGetValue(path, out file))
                     {
                         string sourceFilePath = reportSource.RelativePath;
                         // source file could be relative to project
@@ -73,8 +75,8 @@ public class AcmePdbParser : IAcmePdbParser
                             sourceFilePath = Path.Combine(projectDirectory, sourceFilePath);
                         }
                         string relativePath = Path.GetRelativePath(projectDirectory, sourceFilePath);
-                        file = new PdbFile(relativePath);
-                        filesBuilder.Add(file.RelativePath, file);
+                        file = PdbFile.CreateFromRelativePath(relativePath);
+                        filesBuilder.Add(file.Path, file);
                     }
                     break;
                 case ReportCodeLine reportCodeLine:
@@ -89,8 +91,9 @@ public class AcmePdbParser : IAcmePdbParser
                         {
                             dataLength = 0;
                         }
-                        var line = new PdbLine(file.RelativePath, reportCodeLine.LineNumber, reportCodeLine.StartAddress, 
+                        var line = new PdbLine(reportCodeLine.LineNumber, reportCodeLine.StartAddress, 
                             reportCodeLine.Data, dataLength, reportCodeLine.IsMoreData, reportCodeLine.Text);
+                        lineToFileMapBuilder.Add(line, file);
                         linesBuilder.Add(line);
                     }
                     else
@@ -102,28 +105,41 @@ public class AcmePdbParser : IAcmePdbParser
         }
         var files = filesBuilder.Values.ToImmutableArray();
         var rawLines = linesBuilder.ToArray();
-        var lines = FixLinesDataLength(rawLines);
+        var lines = FixLinesDataLength(rawLines, lineToFileMapBuilder);
+        var lineToFileMap = lineToFileMapBuilder.ToImmutableDictionary();
         PdbFile[] acmeFiles = new PdbFile[files.Length];
         if (acmeFiles.Length > 1)
         {
             Parallel.For(0, files.Length, (index, loopState) =>
             {
-                acmeFiles[index] = CreateAcmeFile(files[index], lines);
+                acmeFiles[index] = CreateAcmeFile(files[index], lines, lineToFileMap);
             });
         }
         else
         {
             acmeFiles[0] = files[0] with { Lines = lines };
         }
-        return new Pdb(lines, acmeFiles.ToImmutableDictionary(f => f.RelativePath, f => f), labels,
+        var finalLineToFileMap = (from f in acmeFiles
+                                  from l in f.Lines
+                                  select new { File = f, Line = l })
+                                  .ToImmutableDictionary(p => p.Line, p => p.File, RhReferenceEqualityComparer<PdbLine>.Instance);
+        var linesWithEmptyFile = lineToFileMap.Values.Where(f => f.Lines.IsEmpty);
+        return new Pdb(
+            acmeFiles.ToImmutableDictionary(f => f.Path, f => f), 
+            labels,
+            finalLineToFileMap,
+            ImmutableDictionary<string, PdbVariable>.Empty,
+            ImmutableDictionary<int, PdbType>.Empty,
             lines.Where(l => l.StartAddress.HasValue).ToImmutableArray());
     }
     /// <summary>
     /// Adds DataLength to those lines with more data than reported by ACME
     /// </summary>
     /// <param name="source"></param>
+    /// <param name="linesToFileBuilder">Maps that should be updated</param>
     /// <returns>An immutable array of lines with set DataLength</returns>
-    internal ImmutableArray<PdbLine> FixLinesDataLength(PdbLine[] source)
+    internal ImmutableArray<PdbLine> FixLinesDataLength(PdbLine[] source, 
+        ImmutableDictionary<PdbLine, PdbFile>.Builder linesToFileBuilder)
     {
         if (source.Length == 0)
         {
@@ -148,8 +164,10 @@ public class AcmePdbParser : IAcmePdbParser
             {
                 if (line.StartAddress.HasValue)
                 {
+                    var existingLine = incomplete;
                     incomplete = incomplete with { DataLength = (ushort)(line.StartAddress!.Value - incomplete.StartAddress!.Value) };
                     source[incompleteIndex!.Value] = incomplete;
+                    UpdateLineToFileMap(linesToFileBuilder, existingLine, incomplete);
                     incomplete = null;
                     incompleteIndex = null;
                     proceedWithNext = !(line.HasMoreData ?? false);
@@ -165,14 +183,26 @@ public class AcmePdbParser : IAcmePdbParser
         PdbLine lastLine = source[^1];
         if (lastLine.HasMoreData ?? false)
         {
+            var existingLine = lastLine;
             lastLine = lastLine with { DataLength = (ushort)lastLine.Data!.Value.Length };
             source[^1] = lastLine;
+            UpdateLineToFileMap(linesToFileBuilder, existingLine, lastLine);
         }
         return source.ToImmutableArray();
     }
-    internal PdbFile CreateAcmeFile(PdbFile source, ImmutableArray<PdbLine> lines)
+    internal static void UpdateLineToFileMap(ImmutableDictionary<PdbLine, PdbFile>.Builder linesToFileBuilder, 
+        PdbLine oldLine, PdbLine newLine)
     {
-        var fileLines = lines.Where(l => l.FileRelativePath == source.RelativePath).ToImmutableArray();
+        // update mappings
+        var file = linesToFileBuilder[oldLine];
+        linesToFileBuilder.Remove(oldLine);
+        linesToFileBuilder.Add(newLine, file);
+    }
+    internal PdbFile CreateAcmeFile(PdbFile source, ImmutableArray<PdbLine> lines, ImmutableDictionary<PdbLine, PdbFile> map)
+    {
+        var fileLines = lines
+            .Where(l => PdbFileByPathEqualityComparer.Instance.Equals(map[l], source))
+            .ToImmutableArray();
         return source with { Lines = fileLines };
     }
     internal string BeautifyRelativePath(string path)
