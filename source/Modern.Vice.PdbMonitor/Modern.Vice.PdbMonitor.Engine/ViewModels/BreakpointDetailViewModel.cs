@@ -3,9 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -13,6 +10,7 @@ using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.BindingValidators;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using PropertyChanged;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -93,6 +91,7 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         Breakpoint.Line = null;
         Breakpoint.LineNumber = null;
     }
+    [SuppressPropertyChangedWarnings]
     void OnErrorsChanged(DataErrorsChangedEventArgs e) => ErrorsChanged?.Invoke(this, e);
     void ValidatorHasErrorsChanged(object? sender, EventArgs e)
     {

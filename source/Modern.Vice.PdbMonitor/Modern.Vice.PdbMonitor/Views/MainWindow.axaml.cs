@@ -5,7 +5,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using Modern.Vice.PdbMonitor.Engine.Common;
@@ -48,49 +50,56 @@ partial class MainWindow : Window
     internal async Task<string?> ShowOpenProjectFileDialogAsync(OpenFileDialogModel model,
         CancellationToken ct)
     {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Open project",
-            AllowMultiple = false,
-        };
-        if (model.InitialDirectory is not null)
-        {
-            dialog.Directory = model.InitialDirectory;
-        }
-        if (dialog.Filters is null)
-        {
-            dialog.Filters = new();
-        }
-        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
         if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var result = await dialog.ShowAsync(desktop.MainWindow);
-            if (result?.Length == 1)
+            var storageProvider = desktop.MainWindow!.StorageProvider;
+            var options = new FilePickerOpenOptions
             {
-                return result[0];
+                Title = "Open project",
+                AllowMultiple = false,
+                FileTypeFilter = new FilePickerFileType[]
+                {
+                    new (model.Name)
+                    {
+                        Patterns = new []{ model.Extension }
+                    }
+                },
+            };
+            if (model.InitialDirectory is not null)
+            {
+                options.SuggestedStartLocation = await storageProvider.TryGetFolderFromPathAsync(model.InitialDirectory);
+            }
+            var result = await storageProvider.OpenFilePickerAsync(options);
+            if (result?.Count == 1)
+            {
+                return result[0].Path.LocalPath;
             }
         }
         return null;
     }
     internal async Task<string?> ShowCreateProjectFileDialogAsync(OpenFileDialogModel model, CancellationToken ct)
     {
-        var dialog = new SaveFileDialog
-        {
-            Title = "Create project",
-        };
-        if (model.InitialDirectory is not null)
-        {
-            dialog.Directory = model.InitialDirectory;
-        }
-        if (dialog.Filters is null)
-        {
-            dialog.Filters = new();
-        }
-        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
         if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var result = await dialog.ShowAsync(desktop.MainWindow);
-            return result;
+            var storageProvider = desktop.MainWindow!.StorageProvider;
+            var options = new FilePickerSaveOptions
+            {
+                Title = "Create project",
+                DefaultExtension = model.Extension,
+                FileTypeChoices = new FilePickerFileType[]
+                {
+                    new (model.Name)
+                    {
+                        Patterns = new []{ model.Extension }
+                    }
+                },
+            };
+            if (model.InitialDirectory is not null)
+            {
+                options.SuggestedStartLocation = await storageProvider.TryGetFolderFromPathAsync(model.InitialDirectory);
+            }
+            var result = await storageProvider.SaveFilePickerAsync(options);
+            return result?.Path.LocalPath;
         }
         return null;
     }

@@ -2,6 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+             xmlns:iac="clr-namespace:Avalonia.Xaml.Interactions.Custom;assembly=Avalonia.Xaml.Interactions.Custom"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
@@ -21,8 +24,12 @@
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right">
       <Button Margin="4" Command="{Binding CreateBreakpointCommand}">Create</Button>
     </StackPanel>
-    <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False" b:DoubleTappedBehavior.Command="{Binding ShowBreakpointPropertiesCommand}"
-          b:DoubleTappedBehavior.CommandParameter="{Binding #Grid.SelectedItem}">
+      <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False">
+        <i:Interaction.Behaviors>
+          <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
+            <ia:InvokeCommandAction Command="{Binding ShowBreakpointPropertiesCommand}" CommandParameter="{Binding #Grid.SelectedItem}"/>
+          </ia:EventTriggerBehavior>
+        </i:Interaction.Behaviors>
       <DataGrid.Styles>
         <Style Selector="DataGridRow">
           <Setter Property="ContextMenu">

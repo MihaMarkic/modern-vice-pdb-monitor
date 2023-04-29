@@ -21,7 +21,7 @@ public class PopulateEnumBehavior : ClassicBehavior<ComboBox>
         if (Type != null)
         {
             var items = mapper.GetMapEnum(Type);
-            AssociatedObject!.Items = items
+            AssociatedObject!.ItemsSource = items
                 .OrderBy(i => i.Key)
                 .Select(i => new ComboBoxKeyValueItem (i.Key, i.Value)).ToImmutableArray();
         }

@@ -2,6 +2,8 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Microsoft.Extensions.Options;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views;
@@ -15,17 +17,24 @@ partial class Settings : UserControl
 
     async void OpenViceDirectory(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog
-        {
-            Title = "VICE directory selection"
-        };
         if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var result = await dialog.ShowAsync(desktop.MainWindow);
-            if (result is not null)
+            var storageProvider = desktop.MainWindow!.StorageProvider;
+            var options = new FolderPickerOpenOptions
             {
-                var viewModel = (SettingsViewModel)DataContext!;
-                viewModel.Settings.VicePath = result;
+                Title = "VICE directory selection",
+                AllowMultiple = false,
+            };
+            var viewModel = (SettingsViewModel)DataContext!;
+            if (viewModel.Settings.VicePath is not null)
+            {
+                options.SuggestedStartLocation = await storageProvider.TryGetFolderFromPathAsync(viewModel.Settings.VicePath);
+            }
+            var result = await storageProvider.OpenFolderPickerAsync(options);
+            var path = result?[0].Path;
+            if (path is not null)
+            {
+                viewModel.Settings.VicePath = path.LocalPath;
             }
         }
     }

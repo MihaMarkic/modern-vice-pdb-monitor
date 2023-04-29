@@ -16,7 +16,7 @@ public class FirstNonNullConverter : IMultiValueConverter
     /// <param name="parameter"></param>
     /// <param name="culture"></param>
     /// <returns>Returns first non null value</returns>
-    public object? Convert(IList<object> values, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
         if (values?.Count > 0)
         {

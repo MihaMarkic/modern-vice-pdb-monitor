@@ -97,9 +97,9 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
         }
         e.Handled = true;
     }
-    protected override void OnPointerEnter(PointerEventArgs e)
+    protected override void OnPointerEntered(PointerEventArgs e)
     {
-        base.OnPointerEnter(e);
+        base.OnPointerEntered(e);
         UpdateHoverPosition(e);
     }        
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -142,10 +142,10 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
             }
         }
     }
-    protected override void OnPointerLeave(PointerEventArgs e)
+    protected override void OnPointerExited(PointerEventArgs e)
     {
         hoverLine = null;
-        base.OnPointerLeave(e);
+        base.OnPointerExited(e);
         InvalidateVisual();
     }
     private VisualLine? GetTextLineSegment(PointerEventArgs e)

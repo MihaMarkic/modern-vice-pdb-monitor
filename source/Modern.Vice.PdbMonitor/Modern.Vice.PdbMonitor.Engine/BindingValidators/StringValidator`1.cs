@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 using Modern.Vice.PdbMonitor.Core;
+using PropertyChanged;
 
 namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;
 
@@ -24,6 +25,7 @@ public abstract class StringValidator<TSource> : NotifiableObject, IBindingValid
         SourcePropertyName = sourcePropertyName;
         this.assignToSource = assignToSource;
     }
+    [SuppressPropertyChangedWarnings]
     protected virtual void OnHasErrorsChanged(EventArgs e) => HasErrorsChanged?.Invoke(this, e);
     public void UpdateText(string? text)
     {

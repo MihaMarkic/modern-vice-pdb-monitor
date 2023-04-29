@@ -178,6 +178,7 @@ public sealed record PdbPath(string Path, bool IsRelative)
     public static PdbPath CreateRelative(string relativePath) => new PdbPath(relativePath, true);
     public static PdbPath CreateAbsolute(string absolutePath) => new PdbPath(absolutePath, false);
     public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public string FileName => System.IO.Path.GetFileName(Path);
     public static PdbPath Create(string directory, string path)
     {
         StringComparison comparison = IsWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;

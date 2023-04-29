@@ -9,6 +9,7 @@ using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
+using PropertyChanged;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
@@ -73,8 +74,11 @@ public class SourceFileViewModel : ScopedViewModel
             Elements = await Task.Run(() => compiler.GetSyntaxElements(file.Content));
         }
     }
+    [SuppressPropertyChangedWarnings]
     void OnShowCursorRow(EventArgs e) => ShowCursorRow?.Invoke(this, e);
+    [SuppressPropertyChangedWarnings]
     void OnExecutionRowChanged(EventArgs e) => ExecutionRowChanged?.Invoke(this, e);
+    [SuppressPropertyChangedWarnings]
     void OnBreakpointsChanged(EventArgs e) => BreakpointsChanged?.Invoke(this, e);
     public void SetCursorRow(int value)
     {

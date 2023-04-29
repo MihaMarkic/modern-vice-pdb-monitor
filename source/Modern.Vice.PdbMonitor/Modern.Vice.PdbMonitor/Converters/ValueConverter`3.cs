@@ -6,7 +6,7 @@ namespace Modern.Vice.PdbMonitor.Converters;
 
 public abstract class ValueConverter<TSource, TDest, TParam> : IValueConverter
 {
-    public object? Convert(object? value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is TSource)
         {
@@ -17,7 +17,7 @@ public abstract class ValueConverter<TSource, TDest, TParam> : IValueConverter
             return default(TDest);
     }
 
-    public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is TDest)
         {

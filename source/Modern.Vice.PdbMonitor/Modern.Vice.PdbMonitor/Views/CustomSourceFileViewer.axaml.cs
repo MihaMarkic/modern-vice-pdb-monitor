@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -70,6 +71,7 @@ partial class CustomSourceFileViewer : UserControl
         //    lines.ElementPrepared += Lines_ElementPrepared;
         //}
     }
+    CancellationTokenSource? cursorRowChangedCts;
     /// <summary>
     /// Row to jump to.
     /// </summary>
@@ -81,11 +83,13 @@ partial class CustomSourceFileViewer : UserControl
             if (CursorRow != value)
             {
                 SetAndRaise(CursorRowProperty, ref cursorRow, value);
-                CursorRowChanged();
+                cursorRowChangedCts?.Cancel();
+                cursorRowChangedCts = new CancellationTokenSource();
+                _ = CursorRowChangedAsync(cursorRowChangedCts.Token);
             }
         }
     }
-    async Task CursorRowChanged()
+    async Task CursorRowChangedAsync(CancellationToken ct)
     {
         if (CursorRow >= 0)
         {
@@ -97,7 +101,7 @@ partial class CustomSourceFileViewer : UserControl
                 {
                     while (!success)
                     {
-                        await WaitForLayoutUpdatedAsync();
+                        await WaitForLayoutUpdatedAsync(ct);
                         success = ScrollToCursorRow();
                     }
                 }
@@ -108,9 +112,10 @@ partial class CustomSourceFileViewer : UserControl
             }
         }
     }
-    Task WaitForLayoutUpdatedAsync()
+    Task WaitForLayoutUpdatedAsync(CancellationToken ct)
     {
         var tcs = new TaskCompletionSource();
+        ct.Register(tcs.SetCanceled);
         EventHandler layoutUpdatedHandler = default!;
         layoutUpdatedHandler = (s, e) =>
         {

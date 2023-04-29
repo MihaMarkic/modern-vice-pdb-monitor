@@ -52,13 +52,13 @@ public class ProjectFactory : IProjectFactory
             CompilerType.Acme => new DebugFileOpenDialogModel(
                 initialDirectory,
                 "Open output file",
-                "ACME Compiled CBM file .prg",
-                "prg"),
+                "ACME Compiled CBM files",
+                "*.prg"),
             CompilerType.Oscar64 => new DebugFileOpenDialogModel(
                 initialDirectory,
                 "Open output file",
-                "Oscar64 Compiled file .prg",
-                "prg"),
+                "Oscar64 Compiled files",
+                "*.prg"),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }

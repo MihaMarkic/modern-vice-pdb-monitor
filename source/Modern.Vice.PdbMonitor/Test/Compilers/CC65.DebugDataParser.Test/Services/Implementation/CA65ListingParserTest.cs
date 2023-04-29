@@ -86,16 +86,16 @@ public class CA65ListingParserTest: BaseTest<CA65ListingParser>
         [Test]
         public void GivenStringArrayOption_ParsesCorrectly()
         {
-            var actual = (StringArrayOptionListingLine)Target.ParseOption(info, "	.importzp	sp, sreg, regsave, regbank");
+            var actual = (StringArrayOptionListingLine?)Target.ParseOption(info, "	.importzp	sp, sreg, regsave, regbank");
 
-            Assert.That(actual.Value, Is.EquivalentTo(new[] { "sp", "sreg", "regsave", "regbank" }));
+            Assert.That(actual!.Value, Is.EquivalentTo(new[] { "sp", "sreg", "regsave", "regbank" }));
         }
         [Test]
         public void GivenDataArrayOption_ParsesCorrectly()
         {
-            var actual = (StringArrayOptionListingLine)Target.ParseOption(info, "	.byte	$25,$73,$0A,$00");
+            var actual = (StringArrayOptionListingLine?)Target.ParseOption(info, "	.byte	$25,$73,$0A,$00");
 
-            Assert.That(actual.Value, Is.EquivalentTo(new string[] { "$25", "$73", "$0A", "$00" }));
+            Assert.That(actual!.Value, Is.EquivalentTo(new string[] { "$25", "$73", "$0A", "$00" }));
         }
     }
     [TestFixture]

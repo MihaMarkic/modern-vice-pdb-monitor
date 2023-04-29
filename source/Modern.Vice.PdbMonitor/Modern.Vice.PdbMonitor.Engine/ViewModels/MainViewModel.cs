@@ -73,7 +73,6 @@ public class MainViewModel : NotifiableObject
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
     public bool IsOverlayVisible => OverlayContent is not null;
     public bool IsViceConnected { get; private set; }
-    
     public string RunCommandTitle => executionStatusViewModel.IsDebugging ? "Continue" : "Run";
     public string RunMenuCommandTitle => executionStatusViewModel.IsDebugging ? "_Continue" : "_Run";
     /// <summary>
@@ -81,10 +80,11 @@ public class MainViewModel : NotifiableObject
     /// </summary>
     public bool IsUpdatedPdbAvailable { get; private set; }
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
-    public ScopedViewModel Content { get; private set; } = default!;
-    public RegistersViewModel RegistersViewModel { get; private set; } = default!;
-    public BreakpointsViewModel BreakpointsViewModel { get; private set; } = default!;
-    public VariablesViewModel VariablesViewModel { get; private set; } = default!;
+    //public ScopedViewModel Content { get; private set; } = default!;
+    public RegistersViewModel RegistersViewModel { get; } = default!;
+    public BreakpointsViewModel BreakpointsViewModel { get; } = default!;
+    public VariablesViewModel VariablesViewModel { get; } = default!;
+    public DebuggerViewModel DebuggerViewModel { get; } = default!;
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -99,7 +99,7 @@ public class MainViewModel : NotifiableObject
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
-        VariablesViewModel variablesViewModel)
+        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -113,6 +113,7 @@ public class MainViewModel : NotifiableObject
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
         VariablesViewModel = variablesViewModel;
+        DebuggerViewModel = debuggerViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -137,7 +138,6 @@ public class MainViewModel : NotifiableObject
         StepIntoCommand = commandsManager.CreateRelayCommandAsync(StepIntoAsync, () => IsDebugging && IsDebuggingPaused);
         StepOverCommand = commandsManager.CreateRelayCommandAsync(StepOverAsync, () => IsDebugging && IsDebuggingPaused);
         UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
-        SwitchContent<DebuggerViewModel>();
         // by default opens most recent project
         if (globals.Settings.RecentProjects.Count > 0)
         {
@@ -486,12 +486,6 @@ public class MainViewModel : NotifiableObject
         var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: true, instructionsNumber));
         await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
     }
-    internal void SwitchContent<T>()
-        where T : ScopedViewModel
-    {
-        Content?.Dispose();
-        Content = scope.ServiceProvider.CreateScopedContent<T>();
-    }
     internal void SwitchOverlayContent<T>()
         where T : ScopedViewModel
     {
@@ -610,8 +604,8 @@ public class MainViewModel : NotifiableObject
         {
             var model = new OpenFileDialogModel(
                 Globals.Settings.LastAccessedDirectory,
-                "Modern PDB Debugger .mapd",
-                "mapd");
+                "Modern PDB Debugger files",
+                "*.mapd");
             string? projectPath = await ShowOpenProjectFileDialogAsync(model, CancellationToken.None);
             if (!string.IsNullOrWhiteSpace(projectPath))
             {
@@ -625,8 +619,8 @@ public class MainViewModel : NotifiableObject
         {
             var model = new OpenFileDialogModel(
                                         Globals.Settings.LastAccessedDirectory,
-                                        "Modern PDB Debugger .mapd",
-                                        "mapd");
+                                        "Modern PDB Debugger files",
+                                        "*.mapd");
             string? projectPath = await ShowCreateProjectFileDialogAsync(model, CancellationToken.None);
             if (!string.IsNullOrWhiteSpace(projectPath))
             {

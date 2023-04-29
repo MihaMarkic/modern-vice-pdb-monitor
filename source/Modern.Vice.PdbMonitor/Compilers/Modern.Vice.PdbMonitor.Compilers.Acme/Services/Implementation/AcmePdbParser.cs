@@ -40,7 +40,9 @@ public class AcmePdbParser : IAcmePdbParser
         var report = await reportTask;
 
         var context = new ThreadSafeContext();
-        var acmePdb = CreatePdb(projectDirectory, Path.GetDirectoryName(debugFiles.Report), report.ParsedData, labels.ParsedData, context);
+        var acmePdb = CreatePdb(projectDirectory, 
+            Path.GetDirectoryName(debugFiles.Report) ?? throw new Exception("Couldn't create ACME paths"), 
+            report.ParsedData, labels.ParsedData, context);
         var errors = context.Errors;
         var allErrors = errors.Union(report.Errors).Union(labels.Errors).ToImmutableArray();
 

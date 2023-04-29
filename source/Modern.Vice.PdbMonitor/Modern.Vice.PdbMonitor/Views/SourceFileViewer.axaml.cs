@@ -13,6 +13,7 @@ using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
+using Modern.Vice.PdbMonitor.Controls;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using TextMateSharp.Grammars;
@@ -21,7 +22,7 @@ namespace Modern.Vice.PdbMonitor.Views;
 
 public partial class SourceFileViewer : UserControl
 {
-    readonly LineColorizer lineColorizer;
+    LineColorizer lineColorizer = default!;
     static readonly RegistryOptions registryOptions;
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
     SourceFileViewModel? oldDataContext;
@@ -35,12 +36,11 @@ public partial class SourceFileViewer : UserControl
     public SourceFileViewer()
     {
         InitializeComponent();
-        lineColorizer = new();
         textMateInstallation = Editor.InstallTextMate(registryOptions);
         DataContextChanged += SourceFileViewer_DataContextChanged;
     }
     ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(Editor);
-    public new SourceFileViewModel? DataContext => (SourceFileViewModel?)base.DataContext;
+    public new SourceFileViewModel? DataContext => (SourceFileViewModel?)((DockDocumentViewModel?)base.DataContext)?.Data;
     void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
     {
         var leftMargins = Editor.TextArea.LeftMargins;
@@ -51,11 +51,13 @@ public partial class SourceFileViewer : UserControl
         var viewModel = DataContext;
         if (viewModel is not null)
         {
+            lineColorizer = new(viewModel);
             string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
             Editor.Text = text;
             viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
+            viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
             var breakpointsMargin = new BreakpointsMargin(viewModel);
             leftMargins.Insert(0, breakpointsMargin);
             var addressMargin = new AddressMargin(Editor.FontFamily, Editor.FontSize, Brushes.DarkGray, viewModel.Lines)
@@ -88,7 +90,12 @@ public partial class SourceFileViewer : UserControl
         oldDataContext = viewModel;
     }
 
-    void DisconnectOldViewModel(ObservableCollection<IControl> leftMargins, IList<IVisualLineTransformer> lineTransformers)
+    void ViewModel_BreakpointsChanged(object? sender, EventArgs e)
+    {
+        Editor.TextArea.TextView.Redraw();
+    }
+
+    void DisconnectOldViewModel(ObservableCollection<Control> leftMargins, IList<IVisualLineTransformer> lineTransformers)
     {
         if (oldDataContext is not null)
         {
