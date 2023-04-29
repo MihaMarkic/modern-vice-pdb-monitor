@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\..\.gitignore = ..\..\.gitignore
 		3rd_party_libraries.md = 3rd_party_libraries.md
 		Directory.Build.props = Directory.Build.props
+		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Core.Test", "Test\Modern.Vice.PdbMonitor.Core.Test\Modern.Vice.PdbMonitor.Core.Test.csproj", "{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}"
@@ -37,9 +38,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CC65.DebugDataParser", "Com
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CC65.DebugDataParser.Test", "Test\Compilers\CC65.DebugDataParser.Test\CC65.DebugDataParser.Test.csproj", "{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler.Oscar64", "Compilers\Compiler.Oscar64\Compiler.Oscar64.csproj", "{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compiler.Oscar64", "Compilers\Compiler.Oscar64\Compiler.Oscar64.csproj", "{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler.Oscar64.Test", "Test\Compilers\Compiler.Oscar64.Test\Compiler.Oscar64.Test.csproj", "{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compiler.Oscar64.Test", "Test\Compilers\Compiler.Oscar64.Test\Compiler.Oscar64.Test.csproj", "{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

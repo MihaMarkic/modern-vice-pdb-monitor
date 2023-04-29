@@ -1,8 +1,8 @@
 # Modern VICE PDB monitor
 
-This is a project that provides a cross platform debugging environment for [VICE emulator](https://vice-emu.sourceforge.io/). It's build with .NET 5 and using [Avalonia](https://docs.avaloniaui.net/) as UI. The goal is to create a nice environment for debugging VICE apps built with [ACME Cross-Assembler](https://sourceforge.net/projects/acme-crossass/) while learning Avalonia, VICE and C64 machine language at the same time. Currently I'm testing only on Windows 10, but it might just work on Linux and MacOS as well. For communication with VICE it is using my other project [VICE Binary Monitor Bridge for .NET](https://github.com/MihaMarkic/vice-bridge-net).
+This is a project that provides a cross platform debugging environment for [VICE emulator](https://vice-emu.sourceforge.io/). It's build with .NET 7 and using [Avalonia](https://docs.avaloniaui.net/) as UI. The goal is to create a nice environment for debugging VICE apps built with [ACME Cross-Assembler](https://sourceforge.net/projects/acme-crossass/) while learning Avalonia, VICE and C64 machine language at the same time. Currently I'm testing only on Windows 10, but it might just work on Linux and MacOS as well. For communication with VICE it is using my other project [VICE Binary Monitor Bridge for .NET](https://github.com/MihaMarkic/vice-bridge-net).
 
-App is currently in *alpha* state. Feel free to open issues, if you are in a mood for contributing a PR, ask first. Find binaries in the Release section, for now just win-x86. If you want to run it on another OS, compile it your self: just clone repo, open solution and compile it. Or just use *dotnet* command line.
+App is currently in *alpha* state. Feel free to open issues, if you are in a mood for contributing a PR, ask first. Find binaries in the Release section, for now just win-x64. If you want to run it on another OS, compile it your self: just clone repo, open solution and compile it. Or just use *dotnet* command line.
 
 ## Getting started
 
