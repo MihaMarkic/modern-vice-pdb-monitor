@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <Version>0.9.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\Fonts\FiraCode-Bold.ttf" />
