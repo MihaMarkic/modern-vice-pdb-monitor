@@ -15,9 +15,28 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
         ExecutionStatusViewModel executionStatusViewModel) : base(viceBridge, logger, dispatcher, executionStatusViewModel)
     {
     }
-    public Task StepIntoAsync(PdbLine? line, CancellationToken ct = default)
+    public async Task StepIntoAsync(PdbLine? line, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        StartLine = line;
+        executionStatusViewModel.IsSteppingOver = false;
+        executionStatusViewModel.IsSteppingInto = true;
+        IsActive = true;
+        try
+        {
+            while (IsActive)
+            {
+                ct.ThrowIfCancellationRequested();
+                PrepareForContinue();
+                await AtomicStepOverAsync(ct);
+                await ContinueTask!;
+            }
+        }
+        finally
+        {
+            executionStatusViewModel.IsSteppingInto = false;
+            IsActive = false;
+            StartLine = null;
+        }
     }
     public async Task StepOverAsync(PdbLine? line, CancellationToken ct = default)
     {

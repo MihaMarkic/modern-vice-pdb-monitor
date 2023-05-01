@@ -25,19 +25,17 @@
       <Button Margin="4" Command="{Binding CreateBreakpointCommand}">Create</Button>
     </StackPanel>
       <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False">
-        <!-- Details needs reworking because of address range and other changes -->
-        <!--<i:Interaction.Behaviors>
+        <i:Interaction.Behaviors>
           <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
             <ia:InvokeCommandAction Command="{Binding ShowBreakpointPropertiesCommand}" CommandParameter="{Binding #Grid.SelectedItem}"/>
           </ia:EventTriggerBehavior>
-        </i:Interaction.Behaviors>-->
+        </i:Interaction.Behaviors>
       <DataGrid.Styles>
         <Style Selector="DataGridRow">
           <Setter Property="ContextMenu">
             <Setter.Value>
               <ContextMenu>
-                <!-- Details needs reworking because of address range and other changes -->
-                <!--<MenuItem Header="Properties..." Command="{Binding #Grid.DataContext.ShowBreakpointPropertiesCommand}" CommandParameter="{Binding}" />-->
+                <MenuItem Header="Properties..." Command="{Binding #Grid.DataContext.ShowBreakpointPropertiesCommand}" CommandParameter="{Binding}" />
                 <MenuItem Header="Remove" Command="{Binding #Grid.DataContext.RemoveBreakpointCommand}" CommandParameter="{Binding}" />
               </ContextMenu >
             </Setter.Value>
