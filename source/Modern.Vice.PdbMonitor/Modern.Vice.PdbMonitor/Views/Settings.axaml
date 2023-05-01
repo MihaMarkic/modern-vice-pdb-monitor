@@ -19,6 +19,8 @@
         <TextBox Text="{Binding Settings.VicePath}" Margin="0,0,4,0" />
       </DockPanel>
       <CheckBox IsChecked="{Binding IsVicePathGood}" IsEnabled="false">Valid directory</CheckBox>
+      <CheckBox IsChecked="{Binding Settings.ResetOnStop}">Reset On Stop</CheckBox>
+      <TextBlock Classes="info" Margin="28,0,0,0">Resets VICE when upon Stop button click. Otherwise application is left running.</TextBlock>
     </StackPanel>
   </DockPanel>
 </UserControl>

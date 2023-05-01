@@ -12,7 +12,11 @@
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
-
+    <Style Selector="TextBlock.info">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="Foreground" Value="Gray" />
+    </Style>
     <Style Selector="TabItem">
         <Setter Property="FontSize" Value="15"/>
         <Setter Property="Padding" Value="4,0" />

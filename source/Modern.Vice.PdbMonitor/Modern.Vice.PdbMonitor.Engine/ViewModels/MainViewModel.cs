@@ -420,48 +420,51 @@ public class MainViewModel : NotifiableObject
         executionStatusViewModel.IsDebugging = false;
         if (viceBridge?.IsConnected ?? false)
         {
-            var command = viceBridge.EnqueueCommand(new ExitCommand());
-            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            if (Globals.Settings.ResetOnStop)
+            {
+                await ResetViceAsync(CancellationToken.None);
+            }
+            else
+            {
+                var command = viceBridge.EnqueueCommand(new ExitCommand());
+                await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            }
         }
-            //if (viceProcess is not null)
-            //{
-            //    if (viceBridge.IsConnected)
-            //    {
-            //        logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
-            //        var quitCommand = new ViceBridgeCommand.QuitCommand();
-            //        viceBridge.EnqueueCommand(quitCommand);
-            //        (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
-            //        bool isQuitSuccess = true;
-            //        if (!success)
-            //        {
-            //            logger.LogDebug("Timeout while waiting for VICE response to Quit command");
-            //            isQuitSuccess = false;
-            //        }
-            //        else
-            //        {
-            //            if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
-            //            {
-            //                logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
-            //                isQuitSuccess = false;
-            //            }
-            //        }
-            //        if (!isQuitSuccess)
-            //        {
-            //            viceProcess.Kill();
-            //        }
-            //        bool waitForKillSuccess = viceProcess.WaitForExit(5000);
-            //        if (!waitForKillSuccess)
-            //        {
-            //            logger.LogWarning("Couldn't kill VICE process");
-            //        }
-            //        viceProcess.Dispose();
-            //    }
-            //}
     }
+
+    /// <summary>
+    /// Kills VICE process if any associated.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>Not tested.</remarks>
+    internal async Task KillViceAsync()
+    {
+        if (viceProcess is not null && viceBridge?.IsConnected == true)
+        {
+            logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
+            var quitCommand = viceBridge.EnqueueCommand(new QuitCommand());
+            var result = await quitCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, quitCommand, TimeSpan.FromSeconds(10));
+            if (result is not null)
+            {
+                logger.LogDebug("Timeout while waiting for VICE response to Quit command");
+                viceProcess.Kill();
+                bool waitForKillSuccess = viceProcess.WaitForExit(5000);
+                if (!waitForKillSuccess)
+                {
+                    logger.LogWarning("Couldn't kill VICE process");
+                }
+                viceProcess.Dispose();
+            }
+        }
+    }
+
     internal void CloseOverlay(object sender, CloseOverlayMessage message)
     {
-        OverlayContent?.Dispose();
-        OverlayContent = null;
+        if (OverlayContent is not null)
+        {
+            OverlayContent.Dispose();
+            OverlayContent = null;
+        }
     }
     internal void ShowSettings()
     {
