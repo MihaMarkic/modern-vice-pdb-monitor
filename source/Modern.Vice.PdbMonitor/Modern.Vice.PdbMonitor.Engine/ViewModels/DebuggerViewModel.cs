@@ -15,6 +15,7 @@ public class DebuggerViewModel : ScopedViewModel
     readonly Globals globals;
     readonly IDispatcher dispatcher;
     readonly ExecutionStatusViewModel executionStatusViewModel;
+    readonly BreakpointsViewModel breakpointsViewModel;
     readonly IProjectFactory projectFactory;
     IPdbManager? pdbManager;
     public RegistersViewModel Registers {get;}
@@ -28,12 +29,14 @@ public class DebuggerViewModel : ScopedViewModel
         SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher,
         ExecutionStatusViewModel executionStatusViewModel, 
         VariablesViewModel variablesViewModel,
+        BreakpointsViewModel breakpointsViewModel,
         IProjectFactory projectFactory)
     {
         this.logger = logger;
         this.globals = globals;
         this.dispatcher = dispatcher;
         this.executionStatusViewModel = executionStatusViewModel;
+        this.breakpointsViewModel = breakpointsViewModel;
         this.projectFactory = projectFactory;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         ProjectExplorer = projectExplorerViewModel;
@@ -58,6 +61,10 @@ public class DebuggerViewModel : ScopedViewModel
 
     void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (executionStatusViewModel.IsStartingDebugging)
+        {
+            return;
+        }
         switch (e.PropertyName)
         {
             case nameof(ExecutionStatusViewModel.IsDebugging):
@@ -85,7 +92,8 @@ public class DebuggerViewModel : ScopedViewModel
 
     void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (pdbManager is null)
+        // first exclude processing based on execution status
+        if (pdbManager is null || !executionStatusViewModel.IsDebugging || executionStatusViewModel.IsStartingDebugging)
         {
             return;
         }
@@ -95,6 +103,14 @@ public class DebuggerViewModel : ScopedViewModel
             var matchingLine = pdbManager.FindLineUsingAddress(address.Value);
             if (matchingLine is not null)
             {
+                // when not stepping in/over, stop only on lines that are under a breakpoint
+                if (!(executionStatusViewModel.IsSteppingInto || executionStatusViewModel.IsSteppingOver))
+                {
+                    if (breakpointsViewModel.GetBreakpointsAssociatedWithLine(matchingLine).IsEmpty)
+                    {
+                        return;
+                    }
+                }
                 var file = pdbManager.FindFileOfLine(matchingLine)!;
                 int matchingLineNumber = file.Lines.IndexOf(matchingLine);
                 dispatcher.Dispatch(

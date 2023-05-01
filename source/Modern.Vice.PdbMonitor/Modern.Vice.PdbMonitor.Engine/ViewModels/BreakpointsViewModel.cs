@@ -74,7 +74,14 @@ public class BreakpointsViewModel: NotifiableObject
             pdbManager = null;
         }
     }
-
+    public ImmutableArray<BreakpointViewModel> GetBreakpointsAssociatedWithLine(PdbLine line)
+    {
+        if (breakpointsLinesMap.TryGetValue(line, out var breakpoint))
+        {
+            return ImmutableArray<BreakpointViewModel>.Empty.Add(breakpoint);
+        }
+        return ImmutableArray<BreakpointViewModel>.Empty;
+    }
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)

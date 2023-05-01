@@ -197,7 +197,7 @@ public class MainViewModel : NotifiableObject
                     else
                     {
                         // when not debugging, stopping VICE is not desired. i.e. when a checkpoint is added
-                        viceBridge.EnqueueCommand(new ExitCommand());
+                        //viceBridge.EnqueueCommand(new ExitCommand());
                     }
                     break;
                 case ResumedResponse:
@@ -343,9 +343,11 @@ public class MainViewModel : NotifiableObject
                     await ExitViceMonitorAsync();
                 }
                 await RegistersViewModel.InitAsync();
+                executionStatusViewModel.IsStartingDebugging = false;
 
                 var command = viceBridge.EnqueueCommand(
-                    new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 0, Globals.Project.FullPrgPath!));
+                    new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 
+                        0, Globals.Project.FullPrgPath!));
                 await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
                 await stoppedExecution.Task;
 
@@ -355,7 +357,7 @@ public class MainViewModel : NotifiableObject
                         && Globals.Project.DebugSymbols.Labels.TryGetValue(Globals.Project!.StopAtLabel, out var label))
                     {
                         var checkpoint = viceBridge.EnqueueCommand(
-                        new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
+                            new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
                         await checkpoint.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpoint);
                     }
                     else
@@ -398,7 +400,8 @@ public class MainViewModel : NotifiableObject
         await EnqueueCommandAndWaitForResponseAsync(new ExitCommand());
     }
 
-    internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
+    internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(
+        ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
         where TResponse: ViceResponse
     {
         viceBridge.EnqueueCommand(command);
@@ -414,6 +417,7 @@ public class MainViewModel : NotifiableObject
     internal async Task ClearAfterDebuggingAsync()
     {
         logger.LogDebug("Cleaning after debugging");
+        executionStatusViewModel.IsDebugging = false;
         if (viceBridge?.IsConnected ?? false)
         {
             var command = viceBridge.EnqueueCommand(new ExitCommand());
@@ -453,7 +457,6 @@ public class MainViewModel : NotifiableObject
             //        viceProcess.Dispose();
             //    }
             //}
-            executionStatusViewModel.IsDebugging = false;
     }
     internal void CloseOverlay(object sender, CloseOverlayMessage message)
     {
