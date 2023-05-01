@@ -220,6 +220,7 @@
             <ProportionalDockSplitter x:Name="LeftSplitter" Id="LeftSplitter" />
             <ctl:ModernDocumentDock x:Name="DocumentsPane" Id="DocumentsPane" CanCreateDocument="False"
               Documents="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Files}"
+              SelectedDocument="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Selected, Mode=TwoWay}"
               IsCollapsable="False">
               <ctl:ModernDocumentDock.DocumentTemplate>
                 <DocumentTemplate>

@@ -65,7 +65,7 @@ public partial class SourceFileViewer : UserControl
                 Margin = new Thickness(4, 0),
             };
             leftMargins.Insert(1, addressMargin);
-            lineColorizer.LineNumber = viewModel.ExecutionRow;
+            lineColorizer.LineNumber = viewModel.ExecutionRow + 1;
             Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             if (viewModel.SourceLanguage == SourceLanguage.Custom)
             {

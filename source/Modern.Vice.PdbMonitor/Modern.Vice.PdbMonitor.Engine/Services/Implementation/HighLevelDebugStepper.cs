@@ -27,7 +27,7 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
             {
                 ct.ThrowIfCancellationRequested();
                 PrepareForContinue();
-                await AtomicStepOverAsync(ct);
+                await AtomicStepIntoAsync(ct);
                 await ContinueTask!;
             }
         }

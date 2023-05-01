@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -34,7 +35,10 @@ public class SourceFileViewerViewModel : NotifiableObject
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
     }
-
+    protected override void OnPropertyChanged([CallerMemberName] string name = null)
+    {
+        base.OnPropertyChanged(name);
+    }
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
