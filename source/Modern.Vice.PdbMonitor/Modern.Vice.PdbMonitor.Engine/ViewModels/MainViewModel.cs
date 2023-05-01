@@ -482,15 +482,11 @@ public class MainViewModel : NotifiableObject
     }
     internal async Task StepIntoAsync()
     {
-        ushort instructionsNumber = 1;
-        var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: false, instructionsNumber));
-        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+        await DebuggerViewModel.StepIntoAsync();
     }
     internal async Task StepOverAsync()
     {
-        ushort instructionsNumber = 1;
-        var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: true, instructionsNumber));
-        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+        await DebuggerViewModel.StepOverAsync();
     }
     internal void SwitchOverlayContent<T>()
         where T : ScopedViewModel

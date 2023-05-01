@@ -9,4 +9,5 @@ public class ExecutionStatusViewModel: NotifiableObject
     public bool IsDebuggingPaused { get; internal set; }
     public bool IsSteppingInto { get; internal set; }
     public bool IsSteppingOver { get; internal set; }
+    public bool IsStepping => IsSteppingInto || IsSteppingOver;
 }

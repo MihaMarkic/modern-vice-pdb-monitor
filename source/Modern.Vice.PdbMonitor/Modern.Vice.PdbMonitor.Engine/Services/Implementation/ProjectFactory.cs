@@ -36,6 +36,15 @@ public class ProjectFactory : IProjectFactory
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
+    public IDebugStepper GetDebugStepper(CompilerType compilerType)
+    {
+        return compilerType switch
+        {
+            CompilerType.Acme => serviceProvider.GetRequiredService<AssemblyDebugStepper>(),
+            CompilerType.Oscar64 => serviceProvider.GetRequiredService<HighLevelDebugStepper>(),
+            _ => throw new Exception($"Unknown compiler type {compilerType}"),
+        };
+    }
     public IPdbManager GetPdbManager(CompilerType compilerType)
     {
         return compilerType switch

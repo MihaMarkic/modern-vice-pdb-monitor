@@ -11,26 +11,28 @@ public static class IoCRegistrar
 {
     public static void AddEngine(this IServiceCollection services)
     {
-        services.AddScoped<MainViewModel>();
-        services.AddScoped<SettingsViewModel>();
-        services.AddScoped<DebuggerViewModel>();
-        services.AddScoped<ErrorMessagesViewModel>();
-        services.AddScoped<ProjectExplorerViewModel>();
-        services.AddScoped<ProjectViewModel>();
-        services.AddScoped<SourceFileViewerViewModel>();
-        services.AddSingleton<RegistersViewModel>();
-        services.AddSingleton<VariablesViewModel>();
-        services.AddSingleton<RegistersMapping>();
-        services.AddSingleton<ExecutionStatusViewModel>();
-        services.AddSingleton<BreakpointsViewModel>();
-        services.AddTransient<SourceFileViewModel>();
-        services.AddSingleton<Globals>();
-        services.AddSingleton<ISettingsManager, SettingsManager>();
-        services.AddSingleton<IDispatcher, Dispatcher>();
-        services.AddSingleton<IProjectPrgFileWatcher, ProjectPrgFileWatcher>();
-        services.AddSingleton<IPdbManager, PdbManager>();
-        services.AddViceBridge();
-        services.AddTransient(sp => sp.CreateScope());
-        services.AddTransient<IProjectFactory, ProjectFactory>();
+        services.AddScoped<MainViewModel>()
+            .AddScoped<SettingsViewModel>()
+            .AddScoped<DebuggerViewModel>()
+            .AddScoped<ErrorMessagesViewModel>()
+            .AddScoped<ProjectExplorerViewModel>()
+            .AddScoped<ProjectViewModel>()
+            .AddScoped<SourceFileViewerViewModel>()
+            .AddSingleton<RegistersViewModel>()
+            .AddSingleton<VariablesViewModel>()
+            .AddSingleton<RegistersMapping>()
+            .AddSingleton<ExecutionStatusViewModel>()
+            .AddSingleton<BreakpointsViewModel>()
+            .AddTransient<SourceFileViewModel>()
+            .AddSingleton<Globals>()
+            .AddSingleton<ISettingsManager, SettingsManager>()
+            .AddSingleton<IDispatcher, Dispatcher>()
+            .AddSingleton<IProjectPrgFileWatcher, ProjectPrgFileWatcher>()
+            .AddSingleton<IPdbManager, PdbManager>()
+            .AddTransient(sp => sp.CreateScope())
+            .AddTransient<IProjectFactory, ProjectFactory>()
+            .AddSingleton<AssemblyDebugStepper>()
+            .AddSingleton<HighLevelDebugStepper>()
+            .AddViceBridge();
     }
 }

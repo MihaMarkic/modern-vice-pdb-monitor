@@ -70,6 +70,10 @@ public class VariablesViewModel: NotifiableObject
         {
             // ignore cancellations
         }
+        catch (Exception ex)
+        {
+
+        }
         finally
         {
             IsWorkingCount--;
