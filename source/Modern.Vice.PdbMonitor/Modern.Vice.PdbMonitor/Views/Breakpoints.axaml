@@ -46,11 +46,13 @@
         <c:HexAddressConverter x:Key="HexAddressConverter" />
       </DataGrid.Resources>
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneTime}" IsReadOnly="true" CellStyleClasses="colored" />
+        <DataGridTextColumn Header="Number" Binding="{Binding CheckpointNumber, Mode=OneWay}" IsReadOnly="true" CellStyleClasses="colored" />
         <DataGridCheckBoxColumn CellStyleClasses="colored" Header="Enabled" Binding="{Binding IsEnabled}" IsReadOnly="True" />
         <DataGridTextColumn CellStyleClasses="colored" Header="Mode" Binding="{Binding Mode}" IsReadOnly="True" />
-        <DataGridTextColumn CellStyleClasses="colored" Header="Start" Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
-        <DataGridTextColumn CellStyleClasses="colored" Header="End" Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneTime}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="Start" 
+          Binding="{Binding StartAddress, Converter={StaticResource HexAddressConverter}, Mode=OneWay}" IsReadOnly="True" />
+        <DataGridTextColumn CellStyleClasses="colored" Header="End" 
+          Binding="{Binding EndAddress, Converter={StaticResource HexAddressConverter}, Mode=OneWay}" IsReadOnly="True" />
         <DataGridTextColumn CellStyleClasses="colored" Header="Line" Binding="{Binding LineNumber}" IsReadOnly="True" />
         <DataGridTextColumn CellStyleClasses="colored" Header="File" Binding="{Binding FileName}" IsReadOnly="True" />
         <DataGridTextColumn CellStyleClasses="colored" Header="Label" Binding="{Binding Label.Name}" IsReadOnly="True" />

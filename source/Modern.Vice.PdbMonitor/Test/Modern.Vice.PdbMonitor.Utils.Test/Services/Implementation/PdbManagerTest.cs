@@ -78,28 +78,28 @@ class PdbManagerTest
         {
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x2663);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x2663));
+            Assert.That(actual.IsAddressWithinLine(0x2663), Is.True);
         }
         [Test]
         public void WhenSearchingInTheUpperNonStartAddress_ReturnsCorrectLine()
         {
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x2664);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x2663));
+            Assert.That(actual.IsAddressWithinLine(0x2663), Is.True);
         }
         [Test]
         public void WhenSearchingInTheLowerAddresses_ReturnsCorrectLine()
         {
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1cbb);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x1cbb));
+            Assert.That(actual.IsAddressWithinLine(0x1cbb), Is.True);
         }
         [Test]
         public void WhenSearchingInTheLowerNonStartAddress_ReturnsCorrectLine()
         {
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1cbc);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x1cbb));
+            Assert.That(actual.IsAddressWithinLine(0x1cbb), Is.True);
         }
     }
 

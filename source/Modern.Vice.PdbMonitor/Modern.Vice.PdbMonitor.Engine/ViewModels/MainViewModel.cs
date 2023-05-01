@@ -71,6 +71,7 @@ public class MainViewModel : NotifiableObject
     public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
+    public bool IsDebuggerStepping => executionStatusViewModel.IsStepping;
     public bool IsOverlayVisible => OverlayContent is not null;
     public bool IsViceConnected { get; private set; }
     public string RunCommandTitle => executionStatusViewModel.IsDebugging ? "Continue" : "Run";
@@ -132,11 +133,15 @@ public class MainViewModel : NotifiableObject
         CloseProjectCommand = commandsManager.CreateRelayCommand(CloseProject, () => IsProjectOpen && !IsDebugging);
         ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
         ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
-        RunCommand = commandsManager.CreateRelayCommandAsync(StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused));
+        RunCommand = commandsManager.CreateRelayCommandAsync(
+            StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping));
         StopCommand = commandsManager.CreateRelayCommand(StopDebugging, () => IsDebugging);
-        PauseCommand = commandsManager.CreateRelayCommand(PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected);
-        StepIntoCommand = commandsManager.CreateRelayCommandAsync(StepIntoAsync, () => IsDebugging && IsDebuggingPaused);
-        StepOverCommand = commandsManager.CreateRelayCommandAsync(StepOverAsync, () => IsDebugging && IsDebuggingPaused);
+        PauseCommand = commandsManager.CreateRelayCommand(
+            PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping);
+        StepIntoCommand = commandsManager.CreateRelayCommandAsync(
+            StepIntoAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+        StepOverCommand = commandsManager.CreateRelayCommandAsync(
+            StepOverAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
         UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
         // by default opens most recent project
         if (globals.Settings.RecentProjects.Count > 0)

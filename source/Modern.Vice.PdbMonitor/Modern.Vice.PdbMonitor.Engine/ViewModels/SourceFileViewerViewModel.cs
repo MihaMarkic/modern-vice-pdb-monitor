@@ -73,7 +73,7 @@ public class SourceFileViewerViewModel : NotifiableObject
         if (item is null)
         {
             var content = pdbFile.Lines
-                .Select((l, i) => new LineViewModel(l, l.LineNumber, l.StartAddress, l.Text))
+                .Select((l, i) => new LineViewModel(l, l.LineNumber, l.Text))
                 .ToImmutableArray();
             item = serviceProvider.CreateScopedSourceFileViewModel(pdbFile, content);
             Files.Add(item);

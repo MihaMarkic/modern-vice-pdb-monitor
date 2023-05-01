@@ -93,8 +93,16 @@ public class AcmePdbParser : IAcmePdbParser
                         {
                             dataLength = 0;
                         }
-                        var line = new PdbLine(reportCodeLine.LineNumber, reportCodeLine.StartAddress, 
-                            reportCodeLine.Data, dataLength, reportCodeLine.IsMoreData, reportCodeLine.Text);
+                        PdbLine line;
+                        if (reportCodeLine.StartAddress is not null && reportCodeLine.IsMoreData is not null)
+                        {
+                            line = PdbLine.Create(reportCodeLine.LineNumber, reportCodeLine.StartAddress.Value,
+                                reportCodeLine.Data, dataLength, reportCodeLine.IsMoreData.Value, reportCodeLine.Text);
+                        }
+                        else
+                        {
+                            line = new PdbLine(reportCodeLine.LineNumber, reportCodeLine.Text);
+                        }
                         lineToFileMapBuilder.Add(line, file);
                         linesBuilder.Add(line);
                     }
@@ -132,7 +140,7 @@ public class AcmePdbParser : IAcmePdbParser
             finalLineToFileMap,
             ImmutableDictionary<string, PdbVariable>.Empty,
             ImmutableDictionary<int, PdbType>.Empty,
-            lines.Where(l => l.StartAddress.HasValue).ToImmutableArray());
+            lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray());
     }
     /// <summary>
     /// Adds DataLength to those lines with more data than reported by ACME
@@ -152,11 +160,13 @@ public class AcmePdbParser : IAcmePdbParser
         int i = 0;
         while (i < source.Length)
         {
+            // TODO verify transition to AddressRange
             bool proceedWithNext = true;
             PdbLine line = source[i];
+            var address = line.Addresses.SingleOrDefault();
             if (incomplete is null)
             {
-                if (line.HasMoreData ?? false)
+                if (address?.HasMoreData ?? false)
                 {
                     incomplete = line;
                     incompleteIndex = i;
@@ -164,15 +174,23 @@ public class AcmePdbParser : IAcmePdbParser
             }
             else
             {
-                if (line.StartAddress.HasValue)
+                if (address?.StartAddress is not null)
                 {
                     var existingLine = incomplete;
-                    incomplete = incomplete with { DataLength = (ushort)(line.StartAddress!.Value - incomplete.StartAddress!.Value) };
+                    var addresses = incomplete.Addresses;
+                    var targetAddress = addresses.Single()!;
+                    incomplete = incomplete with
+                    {
+                        Addresses = addresses.Replace(targetAddress, targetAddress with
+                        {
+                            Length = (ushort)(address.StartAddress - targetAddress.StartAddress)
+                        })
+                    };
                     source[incompleteIndex!.Value] = incomplete;
                     UpdateLineToFileMap(linesToFileBuilder, existingLine, incomplete);
                     incomplete = null;
                     incompleteIndex = null;
-                    proceedWithNext = !(line.HasMoreData ?? false);
+                    proceedWithNext = !address.HasMoreData;
                 }
             }
             // when a line with StartAddress if found
@@ -183,10 +201,16 @@ public class AcmePdbParser : IAcmePdbParser
         }
         // fix last line, just set the length to whatever
         PdbLine lastLine = source[^1];
-        if (lastLine.HasMoreData ?? false)
+        // TODO not checked transition to AddressRange
+        if (lastLine.Addresses.Length > 0 && lastLine.Addresses[0].HasMoreData)
         {
             var existingLine = lastLine;
-            lastLine = lastLine with { DataLength = (ushort)lastLine.Data!.Value.Length };
+            var addresses = lastLine.Addresses;
+            var address = addresses[0];
+            lastLine = lastLine with
+            {
+                Addresses = addresses.Replace(address, address with { Length = (ushort)address.Data!.Value.Length }),
+            };
             source[^1] = lastLine;
             UpdateLineToFileMap(linesToFileBuilder, existingLine, lastLine);
         }

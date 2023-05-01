@@ -54,22 +54,47 @@ public sealed class PdbFileByPathEqualityComparer : IEqualityComparer<PdbFile>
 /// <summary>
 /// DataLength might be longer than data where there are more than 8 bytes (ACME report omits next bytes)
 /// </summary>
-public record PdbLine(int LineNumber, ushort? StartAddress,
-    ImmutableArray<byte>? Data, ushort DataLength, bool? HasMoreData, string Text)
+public record PdbLine(int LineNumber, string Text)
 {
+    public ImmutableArray<AddressRange> Addresses { get; init; } = ImmutableArray<AddressRange>.Empty;
     /// <summary>
     /// Owner function of this line.
     /// </summary>
     public PdbFunction? Function { get; set; }
-    public ushort? EndAddress => StartAddress.HasValue ? (ushort)(StartAddress.Value + DataLength - 1) : null;
+    public static PdbLine Create(int lineNumber, string text, AddressRange addressRange)
+    {
+        return new PdbLine(lineNumber, text)
+        {
+            Addresses = ImmutableArray<AddressRange>.Empty.Add(addressRange),
+        };
+    }
+    public static PdbLine Create(int lineNumber, ushort startAddress,
+        ImmutableArray<byte> data, ushort dataLength, bool hasMoreData, string text)
+    {
+        return new PdbLine(lineNumber, text)
+        {
+            Addresses = ImmutableArray<AddressRange>.Empty.Add(new AddressRange(startAddress, dataLength, data, hasMoreData)),
+        };
+    }
     public bool IsAddressWithinLine(ushort address)
     {
-        if (StartAddress.HasValue)
+        foreach (var range in Addresses)
         {
-            return address >= StartAddress.Value && address <= EndAddress;
+            if (range.IsAddressInRange(address))
+            {
+                return true;
+            }
         }
+        
         return false;
     }
+}
+public  record AddressRange(ushort StartAddress, ushort Length, ImmutableArray<byte>? Data = null, bool HasMoreData = false)
+{
+    public static AddressRange FromRange(ushort startAddress, ushort endAddress)
+        => new AddressRange(startAddress, (ushort)(endAddress - startAddress + 1));
+    public ushort EndAddress => (ushort)(StartAddress + Length - 1);
+    public bool IsAddressInRange(ushort address) => address >= StartAddress && address <= EndAddress;
 }
 public record PdbLabel(ushort Address, string Name);
 

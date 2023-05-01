@@ -71,8 +71,8 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         UnbindToFileCommand = new RelayCommand(UnbindToFile, () => Breakpoint.Label is not null);
         FullUnbindCommand = new RelayCommand(FullUnbind, () => IsBreakpointBound);
 
-        startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a);
-        endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a);
+        //startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a);
+        //endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a);
         validators = ImmutableArray<IBindingValidator>.Empty.Add(startAddressValidator).Add(endAddressValidator);
         foreach (var validator in validators)
         {
@@ -130,13 +130,13 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         {
             errors.AddRange(validator.Errors);
         }
-        if (!startAddressValidator.HasErrors && !endAddressValidator.HasErrors)
-        {
-            if (Breakpoint.EndAddress <= Breakpoint.StartAddress)
-            {
-                errors.Add("End Address should be higher than Start Address");
-            }
-        }
+        //if (!startAddressValidator.HasErrors && !endAddressValidator.HasErrors)
+        //{
+        //    if (Breakpoint.EndAddress <= Breakpoint.StartAddress)
+        //    {
+        //        errors.Add("End Address should be higher than Start Address");
+        //    }
+        //}
         HasErrors = errors.Count > 0;
         return errors.ToImmutableArray();
     }

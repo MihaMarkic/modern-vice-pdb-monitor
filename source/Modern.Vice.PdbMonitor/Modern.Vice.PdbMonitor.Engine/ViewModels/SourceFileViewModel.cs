@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
-using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using PropertyChanged;
 using Righthand.ViceMonitor.Bridge;
@@ -109,7 +108,7 @@ public class SourceFileViewModel : ScopedViewModel
                         if (newBreakpoint.File == file)
                         {
                             var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
-                            targetLine.Breakpoint = null;
+                            targetLine.RemoveBreakpoint(newBreakpoint);
                         }
                     }
                     OnBreakpointsChanged(EventArgs.Empty);
@@ -118,7 +117,7 @@ public class SourceFileViewModel : ScopedViewModel
             case NotifyCollectionChangedAction.Reset:
                 foreach (var line in Lines)
                 {
-                    line.Breakpoint = null;
+                    line.ClearBreakpoints();
                 }
                 OnBreakpointsChanged(EventArgs.Empty);
                 break;
@@ -132,7 +131,7 @@ public class SourceFileViewModel : ScopedViewModel
             if (newBreakpoint.File == file)
             {
                 var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
-                targetLine.Breakpoint = newBreakpoint;
+                targetLine.AddBreakpoint(newBreakpoint);
             }
         }
     }
@@ -160,14 +159,17 @@ public class SourceFileViewModel : ScopedViewModel
     }
     internal async Task AddOrRemoveBreakpointAsync(LineViewModel? line)
     {
-        if (line!.Breakpoint is null)
+        if (line!.Breakpoints.IsEmpty)
         {
             int lineNumber = Lines.IndexOf(line);
             await breakpointsViewModel.AddBreakpointAsync(file, line!.SourceLine, lineNumber, label: null, condition: null);
         }
         else
         {
-            await breakpointsViewModel.RemoveBreakpointAsync(line!.Breakpoint, forceRemove: false);
+            foreach (var breakpoint in line!.Breakpoints)
+            {
+                await breakpointsViewModel.RemoveBreakpointAsync(breakpoint, forceRemove: false);
+            }
         }
     }
     public void SetExecutionRow(int rowIndex)
@@ -191,16 +193,29 @@ public class LineViewModel : NotifiableObject
 {
     public PdbLine SourceLine { get; }
     public bool IsExecution { get; set; }
-    public BreakpointViewModel? Breakpoint { get; set; }
-    public bool HasBreakpoint => Breakpoint is not null;
+    public ImmutableArray<BreakpointViewModel> Breakpoints { get; private set; }
+    public bool HasBreakpoint => !Breakpoints.IsEmpty;
     public int Row { get; }
     public ushort? Address { get; }
     public string Content { get; }
-    public LineViewModel(PdbLine sourceLine, int row, ushort? address, string content)
+    public LineViewModel(PdbLine sourceLine, int row, string content)
     {
+        Breakpoints = ImmutableArray<BreakpointViewModel>.Empty;
         SourceLine = sourceLine;
         Row = row;
-        Address = address;
         Content = content;
+        Address = sourceLine.Addresses.FirstOrDefault()?.StartAddress;
+    }
+    public void ClearBreakpoints()
+    {
+        Breakpoints = ImmutableArray<BreakpointViewModel>.Empty;
+    }
+    public void AddBreakpoint(BreakpointViewModel breakpoint)
+    {
+        Breakpoints = Breakpoints.Add(breakpoint);
+    }
+    public void RemoveBreakpoint(BreakpointViewModel breakpoint)
+    {
+        Breakpoints = Breakpoints.Remove(breakpoint);
     }
 }

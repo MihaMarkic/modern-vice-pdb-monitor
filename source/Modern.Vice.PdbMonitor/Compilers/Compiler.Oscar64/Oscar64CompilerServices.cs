@@ -72,7 +72,7 @@ public class Oscar64CompilerServices : ICompilerServices
             finalLineToFileMap,
             globalVariables,
             pdbTypes,
-            lines.Where(l => l.StartAddress.HasValue).OrderBy(l => l.StartAddress).ToImmutableArray());
+            lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray());
 
         return (pdb, null);
     }
@@ -195,8 +195,21 @@ public class Oscar64CompilerServices : ICompilerServices
                 var slots = linesMap[file];
                 var fileWithText = filesWithAllText[file];
                 int lineNumber = line.LineNumber - 1;
-                var pdbLine = new PdbLine(lineNumber, line.Start, null, (ushort)(line.End - line.Start), null,
-                    fileWithText[lineNumber]);
+                PdbLine pdbLine;
+                if (slots[lineNumber] is null)
+                {
+                    //var pdbLine = new PdbLine(lineNumber, line.Start, null, (ushort)(line.End - line.Start), null,
+                    //    fileWithText[lineNumber]);
+                    pdbLine = new PdbLine(lineNumber, fileWithText[lineNumber]);
+                }
+                else
+                {
+                    pdbLine = slots[lineNumber];
+                }
+                pdbLine = pdbLine with
+                {
+                    Addresses = pdbLine.Addresses.Add(new AddressRange(line.Start, (ushort)(line.End - line.Start))),
+                };
                 slots[lineNumber] = pdbLine;
                 linesBuilder.Add(pdbLine);
             }
@@ -219,7 +232,7 @@ public class Oscar64CompilerServices : ICompilerServices
             {
                 if (slots[i] is null)
                 {
-                    slots[i] = new PdbLine(i, null, null, 0, null, textLines[i]);
+                    slots[i] = new PdbLine(i, textLines[i]);
                 }
             }
         }
