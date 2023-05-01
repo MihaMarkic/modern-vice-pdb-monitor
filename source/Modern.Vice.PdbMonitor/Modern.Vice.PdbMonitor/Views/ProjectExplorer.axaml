@@ -16,6 +16,7 @@
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
   <UserControl.Resources>
     <cnv:PassthroughConverter x:Key="PassthroughConverter" />
+    <cnv:BoolToFontWeightConverter x:Key="RelativePathToBoldConverter" OnTrue="Bold" OnFalse="Normal" />
   </UserControl.Resources>
   <TreeView x:Name="Tree" Items="{Binding Nodes}">
     <i:Interaction.Behaviors>
@@ -28,7 +29,9 @@
         <TextBlock Text="{Binding Name}" />
       </TreeDataTemplate >
       <TreeDataTemplate DataType="c:PdbFile">
-        <TextBlock Text="{Binding Path.FileName}"/>
+        <TextBlock 
+          Text="{Binding Path.FileName}" 
+          FontWeight="{Binding Path.IsRelative, Converter={StaticResource RelativePathToBoldConverter}}" />
       </TreeDataTemplate>
       <TreeDataTemplate DataType="c:PdbLabel">
         <StackPanel Orientation="Horizontal">
