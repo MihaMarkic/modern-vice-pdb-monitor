@@ -84,6 +84,7 @@ public class SourceFileViewerViewModel : NotifiableObject
         }
         if (item is not null)
         {
+            Selected = item;
             int? cursorRow = null;
             if (message.Line.HasValue)
             {
@@ -102,7 +103,6 @@ public class SourceFileViewerViewModel : NotifiableObject
             {
                 item.SetCursorRow(cursorRow.Value);
             }
-            Selected = item;
         }
     }
     void CloseSourceFile(SourceFileViewModel? sourceFile)

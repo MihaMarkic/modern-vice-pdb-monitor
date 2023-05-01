@@ -153,7 +153,7 @@ public partial class SourceFileViewer : UserControl
     async Task CursorRowChanged(int cursorRow)
     {
         cts?.Cancel();
-        if (double.IsNaN(Editor.Height))
+        if (Editor.Bounds.Height <= 0)
         {
             cts = new CancellationTokenSource();
             var ct = cts.Token;
