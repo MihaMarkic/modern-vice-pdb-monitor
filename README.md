@@ -8,7 +8,7 @@ App is currently in *alpha* state. Feel free to open issues, if you are in a moo
 
 ### Requirements
 
-ACME Cross-Assembler, VICE emulator.
+Oscar64 compiler or ACME Cross-Assembler and VICE emulator.
 
 ### Steps
 
