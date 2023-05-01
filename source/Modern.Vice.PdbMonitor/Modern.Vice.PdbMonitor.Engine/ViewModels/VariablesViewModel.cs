@@ -86,7 +86,7 @@ public class VariablesViewModel: NotifiableObject
             if (variableSlot.IsExpanded)
             {
                 int slotPosition = Items.IndexOf(variableSlot);
-                while (Items.Count > slotPosition && Items[slotPosition+1].Level > variableSlot.Level)
+                while (Items.Count > slotPosition+1 && Items[slotPosition+1].Level > variableSlot.Level)
                 {
                     Items.RemoveAt(slotPosition + 1);
                 }
