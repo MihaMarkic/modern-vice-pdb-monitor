@@ -12,6 +12,7 @@
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
     <StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml" />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+    <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml"/>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
   </Application.Styles>
   <Application.DataTemplates>

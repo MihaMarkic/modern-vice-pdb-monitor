@@ -1,15 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Extensions;
 using Righthand.MessageBus;
+using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
-public class VariablesViewModel : NotifiableObject
+public class VariablesViewModelOld: NotifiableObject
 {
     readonly ILogger logger;
     readonly IViceBridge viceBridge;
@@ -17,10 +23,11 @@ public class VariablesViewModel : NotifiableObject
     readonly TaskFactory uiFactory;
     readonly Globals globals;
     readonly CommandsManager commandsManager;
+    public RelayCommand<VariableSlot> ToggleVariableExpansionCommand { get; }
     public ObservableCollection<VariableSlot> Items { get; } = new ObservableCollection<VariableSlot>();
     public bool IsWorking => IsWorkingCount > 0;
     int IsWorkingCount { get; set; }
-    public VariablesViewModel(ILogger<VariablesViewModel> logger, IViceBridge viceBridge,
+    public VariablesViewModelOld(ILogger<VariablesViewModelOld> logger, IViceBridge viceBridge,
         IDispatcher dispatcher, Globals globals)
     {
         this.logger = logger;
@@ -29,7 +36,21 @@ public class VariablesViewModel : NotifiableObject
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         this.globals = globals;
         commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
+        ToggleVariableExpansionCommand = commandsManager.CreateRelayCommand<VariableSlot>(ToggleVariableExpansion, v => !IsWorking);
+        //ShowDebugVariablesAsync();
     }
+
+    [Conditional("DEBUG")]
+    async void ShowDebugVariablesAsync()
+    {
+        var numericValue = new NumericVariableValue<ushort>(1234, ImmutableArray<byte>.Empty.Add(1).Add(2), 12);
+        var numericSlot = new VariableSlot(
+            new PdbVariable("Short1", 1, 2, Base: null, new PdbValueType(1, "ushort", 2, PdbVariableType.UInt16)), false);
+        Items.Add(numericSlot);
+        await Task.Delay(5000);
+        numericSlot.Value = numericValue;
+    }
+
     CancellationTokenSource? ctsUpdateForLineAsync;
     public void CancelUpdateForLine()
     {
@@ -56,6 +77,82 @@ public class VariablesViewModel : NotifiableObject
         finally
         {
             IsWorkingCount--;
+        }
+    }
+    void ToggleVariableExpansion(VariableSlot? variableSlot)
+    {
+        if (variableSlot is not null)
+        {
+            if (variableSlot.IsExpanded)
+            {
+                int slotPosition = Items.IndexOf(variableSlot);
+                while (Items.Count > slotPosition+1 && Items[slotPosition+1].Level > variableSlot.Level)
+                {
+                    Items.RemoveAt(slotPosition + 1);
+                }
+                variableSlot.IsExpanded = false;
+            }
+            else
+            {
+                int slotPosition = Items.IndexOf(variableSlot);
+                int start = variableSlot.Source.Start;
+                ushort? baseAddress = variableSlot.Source.Base;
+                switch (variableSlot.Source.Type)
+                {
+                    case PdbArrayType arrayType:
+                        var arrayVariableValue = (ArrayVariableValue?)variableSlot.Value!;
+                        int arrayItemSize = arrayType.ReferencedOfType!.Size;
+                        for (int i = 0; i < (arrayType.ItemsCount ?? 0); i++)
+                        {
+                            int end = start + arrayItemSize;
+                            var arrayItemVariable = new PdbVariable($"[{i}]", start, end, baseAddress, arrayType.ReferencedOfType!);
+                            var arrayItemSlot = new VariableSlot(arrayItemVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
+                            var arrayItemData = variableSlot.Data!.Value.AsSpan().Slice(i * arrayItemSize, arrayItemSize);
+                            var variableValue = arrayVariableValue.Items[i];
+                            if (variableValue is not null)
+                            {
+                                arrayItemSlot.Value = variableValue;
+                            }
+                            start += arrayItemSize;
+                            Items.Insert(slotPosition + 1 + i, arrayItemSlot);
+                        }
+                        break;
+                    case PdbStructType structType:
+                        var structVariableValue = (StructVariableValue?)variableSlot.Value!;
+                        for (int i=0; i<structType.Members.Length; i++)
+                        {
+                            var variableValue = structVariableValue.Items[i];
+                            var member = structType.Members[i];
+                            var memberType = (PdbDefinedType)member.Type;
+                            int memberStart = start + member.Offset;
+                            var memberVariable = new PdbVariable(
+                                member.Name, 
+                                memberStart, memberStart + variableValue.Data.Length,
+                                baseAddress,
+                                memberType);
+                            var structMemberSlot = new VariableSlot(memberVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
+                            if (variableValue is not null)
+                            {
+                                structMemberSlot.Value = variableValue;
+                            }
+                            Items.Insert(slotPosition + 1 + i, structMemberSlot);
+                        }
+                        break;
+                    case PdbPtrType ptrType:
+                        var ptrVariableValue = (PtrVariableValue)variableSlot.Value!;
+                        var referencedType = ptrType.ReferencedOfType!;
+                        ushort endAddress = (ushort)(ptrVariableValue.PointerAddress + referencedType.Size);
+                        var variable = new PdbVariable("*", ptrVariableValue.PointerAddress, endAddress, null, referencedType);
+                        var referencedTypeSlot = new VariableSlot(variable, variableSlot.IsGlobal, variableSlot.Level + 1);
+                        Items.Insert(slotPosition + 1, referencedTypeSlot);
+                        ctsUpdateForLineAsync?.Cancel();
+                        ctsUpdateForLineAsync = new ();
+                        _ = FillVariableValueAsync(referencedTypeSlot, variable, ctsUpdateForLineAsync.Token);
+                        break;
+
+                }
+                variableSlot.IsExpanded = true;
+            }
         }
     }
     /// <summary>
@@ -234,9 +331,9 @@ public class VariablesViewModel : NotifiableObject
     }
 }
 
-public class VariableSlot : NotifiableObject
+public class VariableSlot: NotifiableObject
 {
-    public bool IsExpandable => Source.Type is PdbStructType || Source.Type is PdbArrayType
+    public bool IsExpandable => Source.Type is PdbStructType || Source.Type is PdbArrayType 
         || (Source.Type is PdbPtrType ptrType && ptrType.ReferencedOfType is not null);
     public bool IsExpanded { get; set; }
     public PdbVariable Source { get; }
@@ -249,7 +346,7 @@ public class VariableSlot : NotifiableObject
     public bool IsHexRepresentation => HasValue && Source.Type is PdbPtrType;
     public bool CanBeChar => HasValue && Source.Type is PdbValueType valueType && valueType.VariableType == PdbVariableType.UByte;
     public bool IsGlobal { get; }
-    public int Level { get; }
+    public  int Level { get; }
     public VariableSlot(PdbVariable source, bool isGlobal, int level = 0)
     {
         Source = source;
@@ -274,17 +371,17 @@ public abstract class VariableValue
         Data = data;
     }
     public abstract object? CoreValue { get; }
-
+    
 }
 
-public class NumericVariableValue<T> : VariableValue
-    where T : struct
+public class NumericVariableValue<T>: VariableValue
+    where T: struct
 {
     public T Value { get; }
 
     public override object? CoreValue => Value;
 
-    public NumericVariableValue(ushort address, ImmutableArray<byte> data, T value)
+    public NumericVariableValue(ushort address, ImmutableArray<byte> data, T value) 
         : base(address, data, ImmutableArray<VariableValue>.Empty)
     {
         Value = value;
@@ -301,15 +398,15 @@ public class PtrVariableValue : VariableValue
         PointerAddress = pointerAddress;
     }
 }
-public class StructVariableValue : VariableValue
+public class StructVariableValue: VariableValue
 {
     public override object? CoreValue => null;
-    public StructVariableValue(ushort address, ImmutableArray<byte> data, ImmutableArray<VariableValue> items)
+    public StructVariableValue(ushort address, ImmutableArray<byte> data, ImmutableArray<VariableValue> items) 
         : base(address, data, items)
     {
     }
 }
-public class ArrayVariableValue : VariableValue
+public  class ArrayVariableValue: VariableValue
 {
     public PdbType ItemType { get; }
     public override object? CoreValue
@@ -354,8 +451,8 @@ public class ArrayVariableValue : VariableValue
         };
     }
 
-    public ArrayVariableValue(ushort address, ImmutableArray<byte> data,
-        ImmutableArray<VariableValue> items, PdbType itemType)
+    public ArrayVariableValue(ushort address, ImmutableArray<byte> data, 
+        ImmutableArray<VariableValue> items, PdbType itemType) 
         : base(address, data, items)
     {
         ItemType = itemType;
