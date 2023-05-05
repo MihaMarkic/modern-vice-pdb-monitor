@@ -1,0 +1,9 @@
+ca65 V2.19 - Git fcda94f
+Main file   : text.s
+Current file: text.s
+
+000000r 1               .export _text
+000000r 1  C8 45 4C 4C  _text:  .asciiz "Hello world!"
+000004r 1  4F 20 57 4F  
+000008r 1  52 4C 44 21  
+00000Cr 1               

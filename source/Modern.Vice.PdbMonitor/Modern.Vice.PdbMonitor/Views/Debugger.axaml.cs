@@ -1,18 +1,11 @@
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+﻿using Avalonia.Controls;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
-public class Debugger : UserControl
+partial class Debugger : UserControl
 {
     public Debugger()
     {
         InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 }

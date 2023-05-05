@@ -92,7 +92,7 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         {
             var source = new PdbLine[0];
 
-            var actual = Target.FixLinesDataLength(source);
+            var actual = Target.FixLinesDataLength(source, PdbFile.CreateLineToFileMapBuilder());
 
             Assert.That(actual.Length, Is.Zero);
         }
@@ -100,40 +100,52 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         public void WhenFirstLineHasMoreData_ItsDataLengthIsSetCorrectly()
         {
             var source = new PdbLine[] {
-                new PdbLine(default, default, 0x0000, default, 0, true, default),
-                new PdbLine(default, default, 0x0010, default, 0, false, default),
+                PdbLine.Create(default,  default, new AddressRange(0x0000,0, default, true)),
+                PdbLine.Create(default,  default, new AddressRange(0x0010,0, default, false)),
             };
+            var builder = PdbFile.CreateLineToFileMapBuilder();
+            foreach (var line in source)
+            {
+                builder.Add(line, PdbFile.Empty);
+            }
 
-            var actual = Target.FixLinesDataLength(source);
+            var actual = Target.FixLinesDataLength(source, builder);
 
             Assert.That(actual.Length, Is.EqualTo(2));
-            Assert.That(actual[0].DataLength, Is.EqualTo(0x10));
+            Assert.That(actual[0].Addresses[0].Length, Is.EqualTo(0x10));
         }
         [Test]
         public void WhenNextLineHasAlsoMoreData_ItsDataLengthIsSetCorrectly()
         {
             var source = new PdbLine[] {
-                new PdbLine(default, default, 0x0000, default, 0, true, default),
-                new PdbLine(default, default, 0x0010, default, 0, true, default),
-                new PdbLine(default, default, 0x0025, default, 0, true, default),
-                new PdbLine(default, default, 0x0010, default, 0, false, default),
+                PdbLine.Create(default, 0x0000, default, 0, true, default),
+                PdbLine.Create(default, 0x0010, default, 0, true, default),
+                PdbLine.Create(default, 0x0025, default, 0, true, default),
+                PdbLine.Create(default, 0x0010, default, 0, false, default),
             };
+            var builder = PdbFile.CreateLineToFileMapBuilder();
+            foreach (var line in source)
+            {
+                builder.Add(line, PdbFile.Empty);
+            }
 
-            var actual = Target.FixLinesDataLength(source);
+            var actual = Target.FixLinesDataLength(source, builder);
 
-            Assert.That(actual[1].DataLength, Is.EqualTo(0x15));
+            Assert.That(actual[1].Addresses[0].Length, Is.EqualTo(0x15));
         }
         [Test]
         public void WhenLastLineHasMoreData_ItsDataLengthIsSetDataLength()
         {
             var data = Enumerable.Range(0, 8).Select(i => (byte)i).ToImmutableArray();
             var source = new PdbLine[] {
-                new PdbLine(default, default, 0x0000, data, 0, true, default),
+                PdbLine.Create(default, 0x0000, data, 0, true, default),
             };
+            var builder = PdbFile.CreateLineToFileMapBuilder();
+            builder.Add(source.Single(), PdbFile.Empty);
 
-            var actual = Target.FixLinesDataLength(source);
+            var actual = Target.FixLinesDataLength(source, builder);
 
-            Assert.That(actual[0].DataLength, Is.EqualTo(8));
+            Assert.That(actual[0].Addresses[0].Length, Is.EqualTo(8));
         }
     }
 }

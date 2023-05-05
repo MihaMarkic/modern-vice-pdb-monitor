@@ -10,7 +10,7 @@
              x:Class="Modern.Vice.PdbMonitor.Views.SourceFileViewer">
   <ae:TextEditor Name="Editor"
         FontFamily="{StaticResource CodeFont}"
-        Background="Transparent"
+        Background="#FFFDF6E3"
         ShowLineNumbers="True"
         IsReadOnly="True"
         Margin="12,4,4,4"

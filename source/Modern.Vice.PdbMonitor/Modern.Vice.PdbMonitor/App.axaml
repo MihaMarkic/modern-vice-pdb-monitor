@@ -1,17 +1,17 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
-             x:Class="Modern.Vice.PdbMonitor.App">
+             x:Class="Modern.Vice.PdbMonitor.App"
+             RequestedThemeVariant="Light">
   <Application.Resources>
     <!-- default font family for code -->
     <FontFamily x:Key="CodeFont">resm:Modern.Vice.PdbMonitor.Assets.Fonts.?assembly=Modern.Vice.PdbMonitor#Fira Code</FontFamily>
   </Application.Resources>
   <Application.Styles>
-    <FluentTheme Mode="Light"/>
-    <StyleInclude Source="avares://Avalonia.Themes.Default/DefaultTheme.xaml"/>
-    <StyleInclude Source="avares://Avalonia.Themes.Default/Accents/BaseLight.xaml"/>
-    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Default.xaml"/>
-    <StyleInclude Source="avares://AvaloniaEdit/AvaloniaEdit.xaml" />
+    <FluentTheme />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    <StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml" />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
     <StyleInclude Source="/Styles/AppStyles.xaml"/>
   </Application.Styles>
   <Application.DataTemplates>

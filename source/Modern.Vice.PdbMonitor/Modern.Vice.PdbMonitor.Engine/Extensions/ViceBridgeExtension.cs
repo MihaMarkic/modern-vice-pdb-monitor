@@ -12,7 +12,8 @@ namespace Righthand.ViceMonitor.Bridge.Services.Abstract;
 public static class ViceBridgeExtension
 {
     public static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
-    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, 
+    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(
+        this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, 
         TCommand command, Func<TResponse, Task> action, 
         TimeSpan? timeout = default, CancellationToken ct = default)
         where TCommand: ViceCommand<TResponse>
@@ -51,7 +52,8 @@ public static class ViceBridgeExtension
         }
         return true;
     }
-    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command, 
+    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(
+        this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command, 
         Action<TResponse> action,
         TimeSpan? timeout = default, CancellationToken ct = default)
         where TCommand : ViceCommand<TResponse>

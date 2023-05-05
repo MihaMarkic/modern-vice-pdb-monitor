@@ -2,24 +2,38 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+             xmlns:iac="clr-namespace:Avalonia.Xaml.Interactions.Custom;assembly=Avalonia.Xaml.Interactions.Custom"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:m="clr-namespace:Modern.Vice.PdbMonitor.Engine.Models;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Core.Common;assembly=Modern.Vice.PdbMonitor.Core"
+             xmlns:cnv="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
-  <TreeView x:Name="Tree" Items="{Binding Nodes}" b:DoubleTappedBehavior.Command="{Binding OpenSourceFileCommand}"
-          b:DoubleTappedBehavior.CommandParameter="{Binding #Tree.SelectedItem}">
+  <UserControl.Resources>
+    <cnv:PassthroughConverter x:Key="PassthroughConverter" />
+    <cnv:BoolToFontWeightConverter x:Key="RelativePathToBoldConverter" OnTrue="Bold" OnFalse="Normal" />
+  </UserControl.Resources>
+  <TreeView x:Name="Tree" Items="{Binding Nodes}">
+    <i:Interaction.Behaviors>
+      <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Tree}">
+        <ia:InvokeCommandAction Command="{Binding OpenSourceFileCommand}" CommandParameter="{Binding #Tree.SelectedItem}"/>
+      </ia:EventTriggerBehavior>
+    </i:Interaction.Behaviors>
     <TreeView.DataTemplates>
-      <TreeDataTemplate  DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
+      <TreeDataTemplate DataType="vm:ProjectExplorerHeaderNode" ItemsSource="{Binding Items}">
         <TextBlock Text="{Binding Name}" />
       </TreeDataTemplate >
-      <TreeDataTemplate  DataType="c:PdbFile">
-        <TextBlock Text="{Binding RelativePath}"/>
-      </TreeDataTemplate >
-      <TreeDataTemplate  DataType="c:PdbLabel">
+      <TreeDataTemplate DataType="c:PdbFile">
+        <TextBlock 
+          Text="{Binding Path.FileName}" 
+          FontWeight="{Binding Path.IsRelative, Converter={StaticResource RelativePathToBoldConverter}}" />
+      </TreeDataTemplate>
+      <TreeDataTemplate DataType="c:PdbLabel">
         <StackPanel Orientation="Horizontal">
           <StackPanel.ContextMenu>
             <ContextMenu>

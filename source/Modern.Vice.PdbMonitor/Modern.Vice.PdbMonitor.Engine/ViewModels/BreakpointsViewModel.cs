@@ -31,9 +31,10 @@ public class BreakpointsViewModel: NotifiableObject
     readonly IServiceScopeFactory serviceScopeFactory;
     readonly IProjectFactory projectFactory;
     public ObservableCollection<BreakpointViewModel> Breakpoints { get; }
-    readonly Dictionary<PdbLine, BreakpointViewModel> breakpointsLinesMap;
+    readonly Dictionary<PdbLine, List<BreakpointViewModel>> breakpointsLinesMap;
     readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
     IPdbManager? pdbManager;
+    readonly TaskFactory uiFactory;
     public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> ShowBreakpointPropertiesCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> RemoveBreakpointCommand { get; }
@@ -50,8 +51,9 @@ public class BreakpointsViewModel: NotifiableObject
         this.serviceScopeFactory = serviceScopeFactory;
         this.executionStatusViewModel = executionStatusViewModel;
         this.projectFactory = projectFactory;
+        uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         Breakpoints = new ObservableCollection<BreakpointViewModel>();
-        breakpointsLinesMap = new Dictionary<PdbLine, BreakpointViewModel>();
+        breakpointsLinesMap = new Dictionary<PdbLine, List<BreakpointViewModel>>();
         breakpointsMap = new Dictionary<uint, BreakpointViewModel>();
         ToggleBreakpointEnabledCommand = new RelayCommandAsync<BreakpointViewModel>(ToggleBreakpointEnabledAsync);
         ShowBreakpointPropertiesCommand = new RelayCommandAsync<BreakpointViewModel>(ShowBreakpointPropertiesAsync, b => b is not null);
@@ -74,7 +76,14 @@ public class BreakpointsViewModel: NotifiableObject
             pdbManager = null;
         }
     }
-
+    public ImmutableArray<BreakpointViewModel> GetBreakpointsAssociatedWithLine(PdbLine line)
+    {
+        if (breakpointsLinesMap.TryGetValue(line, out var breakpoints))
+        {
+            return breakpoints.ToImmutableArray();
+        }
+        return ImmutableArray<BreakpointViewModel>.Empty;
+    }
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -240,7 +249,7 @@ public class BreakpointsViewModel: NotifiableObject
                 else
                 {
                     logger.Log(LogLevel.Information, "Breakpoint on file  {file} and line {line_number} {line} not reapplied", 
-                        breakpoint.File.RelativePath, breakpoint.Line.LineNumber, breakpoint.Line.Text);
+                        breakpoint.File.Path, breakpoint.Line.LineNumber, breakpoint.Line.Text);
                 }
             }
             // for now set all non-line breakpoints as well
@@ -272,7 +281,7 @@ public class BreakpointsViewModel: NotifiableObject
         {
             return null;
         }
-        if (!pdb.Files.TryGetValue(originalFile.RelativePath, out var newFile))
+        if (!pdb.Files.TryGetValue(originalFile.Path, out var newFile))
         {
             return null;
         }
@@ -355,7 +364,10 @@ public class BreakpointsViewModel: NotifiableObject
         switch (e.Response)
         {
             case CheckpointInfoResponse checkpointInfo:
-                UpdateBreakpointDataFromVice(checkpointInfo);
+                uiFactory.StartNew(() =>
+                {
+                    UpdateBreakpointDataFromVice(checkpointInfo);
+                });
                 break;
         }
     }
@@ -378,18 +390,19 @@ public class BreakpointsViewModel: NotifiableObject
         }
         // doesn't make sense that there is no line for given label's address
         var line = pdbManager.FindLineUsingAddress(label.Address)!;
-        if (line.StartAddress is not null)
+        if (!line.Addresses.IsEmpty)
         {
-            if (!breakpointsLinesMap.TryGetValue(line, out var breakpoint))
+            if (!breakpointsLinesMap.TryGetValue(line, out var breakpoints))
             {
                 var file = pdbManager.FindFileOfLine(line)!;
                 int lineNumber = file.Lines.IndexOf(line);
-                await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
+                await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.Addresses, null);
             }
             // in case breakpoint at that line already exists, just update it's Label property
             else
             {
-                breakpoint.Label = label;
+                // TODO Update required
+                //breakpoints.Label = label;
             }
         }
     }
@@ -405,11 +418,11 @@ public class BreakpointsViewModel: NotifiableObject
     /// <returns></returns>
     public async Task AddBreakpointAsync(PdbFile file, PdbLine line, int lineNumber, PdbLabel? label, string? condition, CancellationToken ct = default)
     {
-        if (line.StartAddress is not null)
+        if (!line.Addresses.IsEmpty)
         {
             if (!breakpointsLinesMap.TryGetValue(line, out var breakpoint))
             {
-                await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.StartAddress.Value, line.EndAddress!.Value, null);
+                await AddBreakpointAsync(true, true, BreakpointMode.Exec, line, lineNumber, file, label, line.Addresses, null);
             }
         }
     }
@@ -426,16 +439,18 @@ public class BreakpointsViewModel: NotifiableObject
         }
     }
     /// <summary>
-    /// Wrapper around the other <see cref="AddBreakpointAsync(bool, bool, BreakpointMode, PdbLine?, int?, PdbFile?, PdbLabel?, ushort, ushort, string?, CancellationToken)"/>
+    /// Wrapper around the other <see cref="AddBreakpointAsync(bool, bool, BreakpointMode, PdbLine?, int?, PdbFile?, 
+    /// PdbLabel?, ushort, ushort, string?, CancellationToken)"/>
     /// </summary>
     /// <param name="breakpoint"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    internal async Task<BreakpointViewModel?> AddBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
+    internal async Task AddBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
     {
-        return await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
+        await AddBreakpointAsync(breakpoint.StopWhenHit, breakpoint.IsEnabled, breakpoint.Mode,
                     breakpoint.Line, breakpoint.LineNumber - 1, breakpoint.File, breakpoint.Label,
-                    breakpoint.StartAddress, breakpoint.EndAddress, breakpoint.Condition, ct);
+                    ImmutableArray<AddressRange>.Empty.Add(AddressRange.FromRange(breakpoint.StartAddress, breakpoint.EndAddress)), 
+                    breakpoint.Condition, ct);
     }
     /// <summary>
     /// Adds breakpoint to VICE
@@ -449,40 +464,50 @@ public class BreakpointsViewModel: NotifiableObject
     /// <param name="condition"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    internal async Task<BreakpointViewModel?> AddBreakpointAsync(bool stopWhenHit, bool isEnabled, BreakpointMode mode,
-        PdbLine? line, int? lineNumber, PdbFile? file, PdbLabel? label, ushort startAddress, ushort endAddress, string? condition, 
+    internal async Task AddBreakpointAsync(bool stopWhenHit, bool isEnabled, BreakpointMode mode,
+        PdbLine? line, int? lineNumber, PdbFile? file, PdbLabel? label, ImmutableArray<AddressRange> addressRange, string? condition, 
         CancellationToken ct = default)
     {
-        var checkpointSetCommand = viceBridge.EnqueueCommand(
-                   new CheckpointSetCommand(startAddress, endAddress, stopWhenHit, isEnabled, CpuOperation.Exec, false));
-        var checkpointSetResponse = await checkpointSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointSetCommand, ct: ct);
-        if (checkpointSetResponse is not null)
+        foreach (var range in addressRange)
         {
-            // apply condition to checkpoint if any
-            if (!string.IsNullOrWhiteSpace(condition))
+            var checkpointSetCommand = viceBridge.EnqueueCommand(
+                       new CheckpointSetCommand(range.StartAddress, range.EndAddress, stopWhenHit, isEnabled, CpuOperation.Exec, false));
+            var checkpointSetResponse = await checkpointSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointSetCommand, ct: ct);
+            if (checkpointSetResponse is not null)
             {
-                var conditionSetCommand = viceBridge.EnqueueCommand(new ConditionSetCommand(checkpointSetResponse.CheckpointNumber, condition));
-                var conditionSetResponse = conditionSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, conditionSetCommand, ct: ct);
-                // in case condition set fails, remove the checkpoint
-                if (conditionSetResponse is null)
+                // apply condition to checkpoint if any
+                if (!string.IsNullOrWhiteSpace(condition))
                 {
-                    var checkpointDeleteCommand = viceBridge.EnqueueCommand(new CheckpointDeleteCommand(checkpointSetResponse.CheckpointNumber));
-                    await checkpointDeleteCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointDeleteCommand, ct: ct);
-                    return default;
+                    var conditionSetCommand = viceBridge.EnqueueCommand(new ConditionSetCommand(checkpointSetResponse.CheckpointNumber, condition));
+                    var conditionSetResponse = conditionSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, conditionSetCommand, ct: ct);
+                    // in case condition set fails, remove the checkpoint
+                    if (conditionSetResponse is null)
+                    {
+                        var checkpointDeleteCommand = viceBridge.EnqueueCommand(new CheckpointDeleteCommand(checkpointSetResponse.CheckpointNumber));
+                        await checkpointDeleteCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointDeleteCommand, ct: ct);
+                        return;
+                    }
                 }
+                var breakpoint = new BreakpointViewModel(checkpointSetResponse.CheckpointNumber, checkpointSetResponse.StopWhenHit,
+                        checkpointSetResponse.Enabled, mode,
+                            line, lineNumber + 1, file, label,
+                            checkpointSetResponse.StartAddress, checkpointSetResponse.EndAddress, condition);
+                Breakpoints.Add(breakpoint);
+                if (line is not null)
+                {
+                    if (!breakpointsLinesMap.TryGetValue(line, out var breakpoints))
+                    {
+                        breakpoints = new List<BreakpointViewModel> { breakpoint };
+                        breakpointsLinesMap.Add(line, breakpoints);
+                    }
+                    else
+                    {
+                        breakpointsLinesMap[line].Add(breakpoint);
+                    }
+                }
+                breakpointsMap.Add(breakpoint.CheckpointNumber, breakpoint);
             }
-            var breakpoint = new BreakpointViewModel(checkpointSetResponse.CheckpointNumber, checkpointSetResponse.StopWhenHit, checkpointSetResponse.Enabled, mode,
-                        line, lineNumber+1, file, label,
-                        checkpointSetResponse.StartAddress, checkpointSetResponse.EndAddress, condition);
-            Breakpoints.Add(breakpoint);
-            if (line is not null)
-            {
-                breakpointsLinesMap[line] = breakpoint;
-            }
-            breakpointsMap.Add(breakpoint.CheckpointNumber, breakpoint);
-            return breakpoint;
         }
-        return default;
     }
     public async Task<bool> RemoveBreakpointAsync(BreakpointViewModel breakpoint, bool forceRemove, CancellationToken ct = default)
     {
@@ -527,15 +552,14 @@ public class BreakpointsViewModel: NotifiableObject
     /// <param name="ct"></param>
     /// <returns></returns>
     /// <remarks>Breakpoint might be a clone and thus equality on <see cref="BreakpointViewModel"/> can not be used.</remarks>
-    public async Task<BreakpointViewModel> UpdateBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
+    public async Task UpdateBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct = default)
     {
         bool result = await RemoveBreakpointAsync(breakpoint, forceRemove: false, ct);
         if (!result)
         {
             throw new Exception("Failed to remove breakpoint from the list");
         }
-        var newBreakpoint = await AddBreakpointAsync(breakpoint) ?? throw new Exception("Failed to set condition");
-        return newBreakpoint;
+        await AddBreakpointAsync(breakpoint);
     }
 
     protected override void Dispose(bool disposing)

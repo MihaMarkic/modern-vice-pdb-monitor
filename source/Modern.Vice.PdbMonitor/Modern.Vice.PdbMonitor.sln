@@ -18,6 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		..\..\.gitignore = ..\..\.gitignore
 		3rd_party_libraries.md = 3rd_party_libraries.md
+		Directory.Build.props = Directory.Build.props
+		..\..\README.md = ..\..\README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Core.Test", "Test\Modern.Vice.PdbMonitor.Core.Test\Modern.Vice.PdbMonitor.Core.Test.csproj", "{22782E2D-3FA7-47C5-9BC3-A7A971B28C4B}"
@@ -32,9 +34,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Comp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Compilers.Acme.Test", "Test\Compilers\Modern.Vice.PdbMonitor.Compilers.Acme.Test\Modern.Vice.PdbMonitor.Compilers.Acme.Test.csproj", "{D9CAEC29-BDC1-4175-A1A6-889770D3F19D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CC65.DebugDataParser", "Compilers\CC65.DebugDataParser\CC65.DebugDataParser.csproj", "{B56B3676-4074-4A8C-AB67-E28B1053A149}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CC65.DebugDataParser", "Compilers\CC65.DebugDataParser\CC65.DebugDataParser.csproj", "{B56B3676-4074-4A8C-AB67-E28B1053A149}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CC65.DebugDataParser.Test", "Test\Compilers\CC65.DebugDataParser.Test\CC65.DebugDataParser.Test.csproj", "{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CC65.DebugDataParser.Test", "Test\Compilers\CC65.DebugDataParser.Test\CC65.DebugDataParser.Test.csproj", "{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compiler.Oscar64", "Compilers\Compiler.Oscar64\Compiler.Oscar64.csproj", "{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compiler.Oscar64.Test", "Test\Compilers\Compiler.Oscar64.Test\Compiler.Oscar64.Test.csproj", "{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,6 +88,14 @@ Global
 		{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1984EA7B-4CE0-47F9-818F-DCD35797ED8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{471DF520-5284-412F-B9CE-F1ADAF2A2DE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,6 +109,8 @@ Global
 		{D9CAEC29-BDC1-4175-A1A6-889770D3F19D} = {C39F1B58-EAB5-40F4-B18C-71A952218C6A}
 		{B56B3676-4074-4A8C-AB67-E28B1053A149} = {FD4F88AD-9D2A-4E28-88EC-69F59FC6F3C8}
 		{1984EA7B-4CE0-47F9-818F-DCD35797ED8B} = {C39F1B58-EAB5-40F4-B18C-71A952218C6A}
+		{471DF520-5284-412F-B9CE-F1ADAF2A2DE5} = {FD4F88AD-9D2A-4E28-88EC-69F59FC6F3C8}
+		{CD2FCBCD-A2AB-4BEB-B803-2608A131F84E} = {C39F1B58-EAB5-40F4-B18C-71A952218C6A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {78BCB63E-7156-40A1-92FB-77484223EE10}

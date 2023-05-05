@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 
 namespace Modern.Vice.PdbMonitor.Views;
@@ -15,11 +14,6 @@ public partial class ModalDialogWindow : Window
 #if DEBUG
         this.AttachDevTools();
 #endif
-    }
-
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

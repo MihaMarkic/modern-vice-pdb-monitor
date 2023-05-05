@@ -86,16 +86,16 @@ public class CA65ListingParserTest: BaseTest<CA65ListingParser>
         [Test]
         public void GivenStringArrayOption_ParsesCorrectly()
         {
-            var actual = (StringArrayOptionListingLine)Target.ParseOption(info, "	.importzp	sp, sreg, regsave, regbank");
+            var actual = (StringArrayOptionListingLine?)Target.ParseOption(info, "	.importzp	sp, sreg, regsave, regbank");
 
-            Assert.That(actual.Value, Is.EquivalentTo(new[] { "sp", "sreg", "regsave", "regbank" }));
+            Assert.That(actual!.Value, Is.EquivalentTo(new[] { "sp", "sreg", "regsave", "regbank" }));
         }
         [Test]
         public void GivenDataArrayOption_ParsesCorrectly()
         {
-            var actual = (StringArrayOptionListingLine)Target.ParseOption(info, "	.byte	$25,$73,$0A,$00");
+            var actual = (StringArrayOptionListingLine?)Target.ParseOption(info, "	.byte	$25,$73,$0A,$00");
 
-            Assert.That(actual.Value, Is.EquivalentTo(new string[] { "$25", "$73", "$0A", "$00" }));
+            Assert.That(actual!.Value, Is.EquivalentTo(new string[] { "$25", "$73", "$0A", "$00" }));
         }
     }
     [TestFixture]
@@ -262,6 +262,66 @@ public class CA65ListingParserTest: BaseTest<CA65ListingParser>
 
             Assert.That(actual.Lines.Length, Is.EqualTo(1));
             Assert.That(line.Instructions, Is.EquivalentTo(new byte?[] { 0xA9, null }));
+        }
+        [Test]
+        public async Task GivenLabeledSampleCode_ParsesCorrectly()
+        {
+            const string lines = @"00001Ar 1  60           L0001:	rts";
+            using var sr = new StringReader(lines);
+
+            var actual = await Target.ParseAsync(sr, default);
+
+            var line = (CodeListingLine)actual.Lines.Single().Parsed;
+
+            Assert.That(actual.Lines.Length, Is.EqualTo(1));
+            Assert.That(line.Instructions, Is.EquivalentTo(new byte?[] { 0x60 }));
+            Assert.That(line.Label, Is.EqualTo("L0001"));
+        }
+        [Test]
+        public async Task GivenLabeledWithoutTabsSamplecode_ParsesCorrectly()
+        {
+            const string lines = @"000000r 1  C8 45 4C 4C      _text:  .asciiz ""Hello world!""";
+            using var sr = new StringReader(lines);
+
+            var actual = await Target.ParseAsync(sr, default);
+
+            var line = (CodeListingLine)actual.Lines.Single().Parsed;
+
+            Assert.That(actual.Lines.Length, Is.EqualTo(1));
+            Assert.That(line.Instructions, Is.EquivalentTo(new byte?[] { 0xC8, 0x45, 0x4C, 0x4C }));
+            Assert.That(line.Label, Is.EqualTo("_text"));
+        }
+        [Test]
+        public async Task GivenOnlyInstructions_ReturnsEmptyCodeLine()
+        {
+            const string lines = @"000004r 1  4F 20 57 4F  ";
+            using var sr = new StringReader(lines);
+
+            var actual = await Target.ParseAsync(sr, default);
+
+            var line = (CodeListingLine)actual.Lines.Single().Parsed;
+
+            Assert.That(actual.Lines.Length, Is.EqualTo(1));
+            Assert.That(line, Is.TypeOf<EmpyCodeListingLine>());
+            Assert.That(line.Instructions, Is.EquivalentTo(new byte?[] { 0x4F, 0x20, 0x57, 0x4F }));
+        }
+    }
+    [TestFixture]
+    public class GetLabelEndIndex : CA65ListingParserTest
+    {
+        [TestCase("_text:  .asciiz \"Hello world!\"", ExpectedResult = 5)]
+        [TestCase("L0001:	rts", ExpectedResult = 5)]
+        public int? GivenSampleWithLabel_ReturnsCorrectValue(string text)
+        {
+            return CA65ListingParser.GetLabelEndIndex(text);
+        }
+        [TestCase(" _text:  .asciiz \"Hello world!\"")]
+        [TestCase("L0001 :	rts")]
+        public void GivenSampleWithoutLabel_ReturnsNull(string text)
+        {
+            var actual = CA65ListingParser.GetLabelEndIndex(text);
+
+            Assert.That(actual, Is.Null);
         }
     }
 }

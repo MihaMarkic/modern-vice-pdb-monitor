@@ -6,4 +6,6 @@ public enum CompilerType
 {
     [Display(Description = "ACME")]
     Acme,
+    [Display(Description = "Oscar64")]
+    Oscar64,
 }

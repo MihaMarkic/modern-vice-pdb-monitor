@@ -63,3 +63,5 @@ public record EndProcListingLine(string Address) : MetaListingLine(Address);
 // Code
 public record CodeListingLine(string Address, ImmutableArray<byte?> Instructions, string? Label, string Code)
     : ParsedListingLine(Address, ListingLineType.Code);
+public record EmpyCodeListingLine(string Address, ImmutableArray<byte?> Instructions)
+    : CodeListingLine(Address, Instructions, null, string.Empty);

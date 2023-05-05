@@ -4,23 +4,18 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
-public class Project : UserControl
+partial class Project : UserControl
 {
     ProjectViewModel? viewModel;
     public Project()
     {
         InitializeComponent();
-    }
-
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -38,27 +33,30 @@ public class Project : UserControl
     }
     async Task<string?> ShowOpenDebugDataFileDialogAsync(DebugFileOpenDialogModel model, CancellationToken ct)
     {
-        var dialog = new OpenFileDialog
-        {
-            Title = model.Title,
-            AllowMultiple = false,
-        };
-        if (model.InitialDirectory is not null)
-        {
-            dialog.Directory = model.InitialDirectory;
-        }
-        if (dialog.Filters is null)
-        {
-            dialog.Filters = new();
-        }
-        dialog.Filters.Add(new FileDialogFilter { Name = model.Name, Extensions = { model.Extension } });
         if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var result = await dialog.ShowAsync(desktop.MainWindow);
-            if (result?.Length > 0)
+            var storageProvider = desktop.MainWindow!.StorageProvider;
+            var options = new FilePickerOpenOptions
             {
-                var viewModel = (ProjectViewModel)DataContext!;
-                return result[0];
+                Title = model.Title,
+                AllowMultiple = false,
+                FileTypeFilter = new FilePickerFileType[]
+                {
+                    new (model.Name)
+                    {
+                        Patterns = new []{ model.Extension }
+                    }
+                },
+            };
+            if (model.InitialDirectory is not null)
+            {
+                options.SuggestedStartLocation = await storageProvider.TryGetFolderFromPathAsync(model.InitialDirectory);
+            }
+
+            var result = await storageProvider.OpenFilePickerAsync(options);
+            if (result?.Count == 1)
+            {
+                return result[0].Path.LocalPath;
             }
         }
         return null;

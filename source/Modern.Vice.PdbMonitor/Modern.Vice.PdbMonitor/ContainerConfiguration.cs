@@ -1,10 +1,11 @@
-using System.IO;
+﻿using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using NLog.Extensions.Logging;
+using Compiler.Oscar64;
 
 namespace Modern.Vice.PdbMonitor;
 
@@ -26,6 +27,7 @@ public static class ContainerConfiguration
         services.AddEngine();
         services.AddCore();
         services.AddAcme();
+        services.AddOscar64();
         return services;
     }
 }

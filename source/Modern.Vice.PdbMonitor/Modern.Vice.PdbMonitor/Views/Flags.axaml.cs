@@ -1,6 +1,5 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
@@ -12,11 +11,6 @@ public partial class Flags : UserControl
     public Flags()
     {
         InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
     public byte? Value
     {

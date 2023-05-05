@@ -7,6 +7,7 @@ public interface IProjectFactory
 {
     ICompiler GetCompiler(CompilerType compilerType);
     ICompilerServices GetParser(CompilerType compilerType);
+    IDebugStepper GetDebugStepper(CompilerType compilerType);
     IPdbManager GetPdbManager(CompilerType compilerType);
     DebugFileOpenDialogModel GetDebugFileOpenDialogModel(string? initialDirectory, CompilerType compilerType);
 }

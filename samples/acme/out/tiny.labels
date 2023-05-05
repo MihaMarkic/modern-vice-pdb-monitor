@@ -1,0 +1,6 @@
+al C:0093 .CLEAR
+
+
+al C:080b .boot
+al C:ffd2 .basout
+al C:080d .start

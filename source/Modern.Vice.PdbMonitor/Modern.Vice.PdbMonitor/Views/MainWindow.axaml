@@ -6,13 +6,14 @@
         xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
         xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
         xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+        xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls"
         xmlns:cmn="clr-namespace:Modern.Vice.PdbMonitor.Engine.Common;assembly=Modern.Vice.PdbMonitor.Engine"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         MinWidth="400" Width="800"
         MinHeight="200" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="{Binding Globals.Caption}">
+        Title="{Binding Globals.ProjectCaption}">
   <Window.Resources>
     <SolidColorBrush x:Key="DisabledBrush">#c6c6c6</SolidColorBrush>
     <c:FirstNonNullConverter x:Key="FirstNonNullConverter" />
@@ -45,13 +46,18 @@
       <v:Debugger />
     </DataTemplate>
   </Window.DataTemplates>
-  <DockPanel LastChildFill="True" Margin="4">
+  <DockPanel x:Name="Source" LastChildFill="True" Margin="4">
     <Menu x:Name="Menu" DockPanel.Dock="Top">
       <MenuItem Header="_File">
         <MenuItem Header="_New...">
           <MenuItem Header="New ACME project" Command="{Binding CreateProjectCommand}">
             <MenuItem.CommandParameter>
               <cmn:CompilerType>Acme</cmn:CompilerType>
+            </MenuItem.CommandParameter>
+          </MenuItem>
+          <MenuItem Header="New Oscar64 project" Command="{Binding CreateProjectCommand}">
+            <MenuItem.CommandParameter>
+              <cmn:CompilerType>Oscar64</cmn:CompilerType>
             </MenuItem.CommandParameter>
           </MenuItem>
         </MenuItem>
@@ -106,6 +112,16 @@
         <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" />
         <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" />
       </MenuItem>
+      <!--<MenuItem Header="_View">
+        <MenuItem Header="Errors">
+            <MenuItem.Icon>
+              <CheckBox BorderThickness="0"
+                        IsHitTestVisible="False"
+                        IsChecked="{Binding #Errors.IsVisible}">
+              </CheckBox>
+            </MenuItem.Icon>
+        </MenuItem>
+      </MenuItem>-->
       <!--<MenuItem Header="_Window">
         <MenuItem Command="{Binding ToggleErrorsVisibilityCommand}">
           <MenuItem.Icon>
@@ -179,7 +195,7 @@
       <v:Spinner IsActive="{Binding IsBusy}" DockPanel.Dock="Right" Margin="4,0" />
       <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
         <Image Source="{Binding IsViceConnected, Converter={StaticResource IsConnectedToSvgImageConverter}}" />
-        <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Connection status to VICE" 
+        <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Connection status to VICE"
           Foreground="{Binding IsViceConnected, Converter={StaticResource IsConnectedToForegroundConverter}}">VICE</TextBlock>
       </StackPanel>
       <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
@@ -188,24 +204,49 @@
           Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">PDB sync</TextBlock>
       </StackPanel>
     </DockPanel>
-    <TabControl DockPanel.Dock="Bottom" Height="200" Margin="0,6,0,0">
-      <TabItem Header="Errors">
-        <v:ErrorMessages DataContext="{Binding ErrorMessagesViewModel}" />
-      </TabItem>
-      <TabItem Header="Registers">
-        <v:Registers DataContext="{Binding RegistersViewModel}" />
-      </TabItem>
-      <TabItem Header="Breakpoints">
-        <v:Breakpoints DataContext="{Binding BreakpointsViewModel}" />
-      </TabItem>
-    </TabControl>
-    <ContentControl>
-      <ContentControl.Content>
-        <MultiBinding Converter="{StaticResource FirstNonNullConverter}">
-          <Binding Path="OverlayContent" />
-          <Binding Path="Content" />
-        </MultiBinding>
-      </ContentControl.Content>
-    </ContentControl>
+    <DockControl x:Name="Dock" Grid.Row="1" InitializeLayout="True" InitializeFactory="True" 
+      IsVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNull}}">
+      <DockControl.Factory>
+        <Factory />
+      </DockControl.Factory>
+      <RootDock x:Name="Root" Id="Root" IsCollapsable="False" DefaultDockable="{Binding #MainLayout}">
+        <ProportionalDock x:Name="MainLayout" Id="MainLayout" Orientation="Vertical">
+          <ProportionalDock x:Name="TopPane" Id="TopPane" Orientation="Horizontal">
+            <ToolDock x:Name="LeftPane" Id="LeftPane" Proportion="0.25" Alignment="Left" IsCollapsable="True">
+              <Tool x:Name="ProjectExplorer" Id="ProjectExplorer" Title="Project Explorer" CanClose="False">
+                <v:ProjectExplorer DataContext="{Binding #Source.DataContext.DebuggerViewModel.ProjectExplorer}" />
+              </Tool>
+            </ToolDock>
+            <ProportionalDockSplitter x:Name="LeftSplitter" Id="LeftSplitter" />
+            <ctl:ModernDocumentDock x:Name="DocumentsPane" Id="DocumentsPane" CanCreateDocument="False"
+              Documents="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Files}"
+              SelectedDocument="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Selected, Mode=TwoWay}"
+              IsCollapsable="False">
+              <ctl:ModernDocumentDock.DocumentTemplate>
+                <DocumentTemplate>
+                  <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
+                </DocumentTemplate>
+              </ctl:ModernDocumentDock.DocumentTemplate>
+            </ctl:ModernDocumentDock>
+          </ProportionalDock>
+          <ProportionalDockSplitter x:Name="BottomSplitter" Id="BottomSplitter" />
+          <ToolDock x:Name="BottomPane" Id="BottomPane" Proportion="0.3" Alignment="Bottom" ActiveDockable="Errors">
+            <Tool x:Name="Errors" Id="Errors" Title="Errors" x:DataType="Tool" CanClose="False">
+              <v:ErrorMessages DataContext="{Binding #Source.DataContext.ErrorMessagesViewModel}" />
+            </Tool>
+            <Tool x:Name="Registers" Id="Registers" Title="Registers" x:DataType="Tool" CanClose="False">
+              <v:Registers DataContext="{Binding #Source.DataContext.RegistersViewModel}" />
+            </Tool>
+            <Tool x:Name="Breakpoints" Id="Breakpoints" Title="Breakpoints" x:DataType="Tool" CanClose="False">
+              <v:Breakpoints DataContext="{Binding #Source.DataContext.BreakpointsViewModel}" />
+            </Tool>
+            <Tool x:Name="Variables" Id="Variables" Title="Variables" x:DataType="Tool" CanClose="False">
+              <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
+            </Tool>
+          </ToolDock>
+        </ProportionalDock>
+      </RootDock>
+    </DockControl>
+    <ContentControl Content="{Binding OverlayContent}" />
   </DockPanel>
 </Window>

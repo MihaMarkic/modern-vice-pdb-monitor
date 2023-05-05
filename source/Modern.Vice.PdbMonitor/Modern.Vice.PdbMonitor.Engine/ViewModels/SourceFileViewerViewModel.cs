@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -34,7 +35,10 @@ public class SourceFileViewerViewModel : NotifiableObject
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
     }
-
+    protected override void OnPropertyChanged([CallerMemberName] string name = null)
+    {
+        base.OnPropertyChanged(name);
+    }
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -69,17 +73,18 @@ public class SourceFileViewerViewModel : NotifiableObject
     internal void OpenSourceFile(object sender, OpenSourceFileMessage? message)
     {
         var pdbFile = message!.File;
-        var item = Files.FirstOrDefault(f => string.Equals(f.Path, pdbFile.RelativePath, StringComparison.Ordinal));
+        var item = Files.FirstOrDefault(f => f.Path == pdbFile.Path);
         if (item is null)
         {
             var content = pdbFile.Lines
-                .Select((l, i) => new LineViewModel(l, l.LineNumber, l.StartAddress, l.Text))
+                .Select((l, i) => new LineViewModel(l, l.LineNumber, l.Text))
                 .ToImmutableArray();
             item = serviceProvider.CreateScopedSourceFileViewModel(pdbFile, content);
             Files.Add(item);
         }
         if (item is not null)
         {
+            Selected = item;
             int? cursorRow = null;
             if (message.Line.HasValue)
             {
@@ -98,7 +103,6 @@ public class SourceFileViewerViewModel : NotifiableObject
             {
                 item.SetCursorRow(cursorRow.Value);
             }
-            Selected = item;
         }
     }
     void CloseSourceFile(SourceFileViewModel? sourceFile)

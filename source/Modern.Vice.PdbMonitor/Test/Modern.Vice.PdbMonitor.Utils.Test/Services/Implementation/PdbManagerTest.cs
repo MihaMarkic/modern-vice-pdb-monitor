@@ -2,21 +2,36 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoFixture;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Compilers.Acme.Services.Implementation;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
+using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
-using Modern.Vice.PdbMonitor.Utils.Test;
+using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace Modern.Vice.PdbMonitor.Engine.Test.Services.Implementation;
 
-class AcmePdbManagerTest : BaseTest<PdbManager>
+/// <summary>
+/// 
+/// </summary>
+/// <remarks>Can't use BaseTest/NFixture because of circular references</remarks>
+class PdbManagerTest
 {
+    protected PdbManager Target;
+
+    [SetUp]
+    public void SetUp()
+    {
+        var globals = new Globals(Substitute.For<ILogger<Globals>>(), Substitute.For<ISettingsManager>());
+        Target = new PdbManager(Substitute.For<ILogger<PdbManager>>(), globals);
+    }
+
     // TODO eventually create compiler independent source files and get rid of ACME reference
     [TestFixture]
-    public class BinarySearch : AcmePdbManagerTest
+    public class BinarySearch : PdbManagerTest
     {
         Pdb pdb;
         [SetUp]
@@ -33,7 +48,6 @@ class AcmePdbManagerTest : BaseTest<PdbManager>
         [Test]
         public void WhenSearchingFirstAddress_ReturnsFirstLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1300);
 
             Assert.That(actual, Is.EqualTo(pdb.LinesWithAddress[0]));
@@ -41,7 +55,6 @@ class AcmePdbManagerTest : BaseTest<PdbManager>
         [Test]
         public void WhenSearchingBeforeFirstAddress_ReturnsNull()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1200);
 
             Assert.That(actual, Is.Null);
@@ -49,7 +62,6 @@ class AcmePdbManagerTest : BaseTest<PdbManager>
         [Test]
         public void WhenSearchingLastAddress_ReturnsLastLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x3014);
 
             Assert.That(actual, Is.EqualTo(pdb.LinesWithAddress.Last()));
@@ -57,7 +69,6 @@ class AcmePdbManagerTest : BaseTest<PdbManager>
         [Test]
         public void WhenSearchingAfterLastAddress_ReturnsNull()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x4000);
 
             Assert.That(actual, Is.Null);
@@ -65,34 +76,30 @@ class AcmePdbManagerTest : BaseTest<PdbManager>
         [Test]
         public void WhenSearchingInTheUpperAddresses_ReturnsCorrectLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x2663);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x2663));
+            Assert.That(actual.IsAddressWithinLine(0x2663), Is.True);
         }
         [Test]
         public void WhenSearchingInTheUpperNonStartAddress_ReturnsCorrectLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x2664);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x2663));
+            Assert.That(actual.IsAddressWithinLine(0x2663), Is.True);
         }
         [Test]
         public void WhenSearchingInTheLowerAddresses_ReturnsCorrectLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1cbb);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x1cbb));
+            Assert.That(actual.IsAddressWithinLine(0x1cbb), Is.True);
         }
         [Test]
         public void WhenSearchingInTheLowerNonStartAddress_ReturnsCorrectLine()
         {
-            var x = fixture.Build<Tubo>().OmitAutoProperties().Create();
             var actual = Target.BinarySearch(pdb.LinesWithAddress, 0x1cbc);
 
-            Assert.That(actual.StartAddress, Is.EqualTo(0x1cbb));
+            Assert.That(actual.IsAddressWithinLine(0x1cbb), Is.True);
         }
     }
 

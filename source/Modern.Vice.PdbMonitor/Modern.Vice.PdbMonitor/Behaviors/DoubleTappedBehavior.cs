@@ -32,7 +32,7 @@ public class DoubleTappedBehavior : AvaloniaObject
     /// The coerce value function. Returns the final (probably corrected result).
     /// can be used to perform actions during assign.
     /// </summary>
-    private static ICommand ValidateCommand(IAvaloniaObject element, ICommand commandValue)
+    private static ICommand ValidateCommand(AvaloniaObject element, ICommand commandValue)
     {
         if (element is Interactive interactElement)
         {

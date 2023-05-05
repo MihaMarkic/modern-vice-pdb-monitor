@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Collections.Immutable;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
-using System;
-using System.Collections.Immutable;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 
@@ -42,7 +42,7 @@ public class PdbManager : IPdbManager
     }
     public PdbFile? FindFileOfLine(PdbLine line)
     {
-        var file = globals.Project!.DebugSymbols!.Files[line.FileRelativePath];
+        var file = globals.Project!.DebugSymbols!.GetFileOfLine(line);
         return file;
     }
     /// <summary>
@@ -53,41 +53,45 @@ public class PdbManager : IPdbManager
     /// <returns></returns>
     public PdbLine? BinarySearch(ImmutableArray<PdbLine> lines, ushort address)
     {
-        int from = 0;
-        int to = lines.Length - 1;
-        PdbLine? line = null;
-        if (lines.Length == 0)
-        {
-            return null;
-        }
-        // if there is no next line, then address has to fall between StartAddress and bytes length even though it might not be correct,
-        // or before the StartAddress of the next line
-        while (from < to)
-        {
-            int middle = (from + to) / 2;
-            line = lines[middle];
+        // TODO reimplement
 
-            // address has to be in an earlier line
-            if (address < line.StartAddress)
-            {
-                to = Math.Max(middle - 1, from);
-            }
+        //int from = 0;
+        //int to = lines.Length - 1;
+        //PdbLine? line = null;
+        //if (lines.Length == 0)
+        //{
+        //    return null;
+        //}
+        //// if there is no next line, then address has to fall between StartAddress and bytes length even though it might not be correct,
+        //// or before the StartAddress of the next line
+        //while (from < to)
+        //{
+        //    int middle = (from + to) / 2;
+        //    line = lines[middle];
 
-            else if (line.IsAddressWithinLine(address))
-            {
-                return line;
-            }
-            else
-            {
-                from = Math.Min(middle + 1, to);
-            }
-        }
-        line = lines[from];
-        if (line.IsAddressWithinLine(address))
-        {
-            return line;
-        }
+        //    // address has to be in an earlier line
+        //    if (address < line.StartAddress)
+        //    {
+        //        to = Math.Max(middle - 1, from);
+        //    }
 
-        return null;
+        //    else if (line.IsAddressWithinLine(address))
+        //    {
+        //        return line;
+        //    }
+        //    else
+        //    {
+        //        from = Math.Min(middle + 1, to);
+        //    }
+        //}
+        //line = lines[from];
+        //if (line.IsAddressWithinLine(address))
+        //{
+        //    return line;
+        //}
+
+        //return null;
+        var line = lines.Where(l => l.IsAddressWithinLine(address)).SingleOrDefault();
+        return line;
     }
 }

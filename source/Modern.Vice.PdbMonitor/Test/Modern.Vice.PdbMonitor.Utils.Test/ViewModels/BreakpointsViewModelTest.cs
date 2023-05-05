@@ -2,6 +2,7 @@
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using Modern.Vice.PdbMonitor.Utils.Test;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -20,19 +21,24 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 			bne -		; check whether last
 		rts";
 
-    protected PdbFile CreateSourceFile() => CreateSourceFile(source, "file.asm");
-    protected PdbFile CreateSourceFile(string source, string fileName)
+    protected PdbFile CreateSourceFile() => CreateSourceFile(source, PdbPath.CreateRelative("file.asm"));
+    protected PdbFile CreateSourceFile(string source, PdbPath path)
     {
         var lines = source.Split("\n")
-            .Select((l, i) => new PdbLine(fileName, i + 1, default, default, 0, default, l))
+            .Select((l, i) => PdbLine.Create(i + 1, default, default, 0, default, l))
             .ToImmutableArray();
-        var file = new PdbFile(fileName, lines);
+        var file = new PdbFile(path, default, lines);
         return file;
     }
     protected Pdb CreatePdb(PdbFile file)
     {
-        return new Pdb(file.Lines, ImmutableDictionary<string, PdbFile>.Empty.Add(file.RelativePath, file),
-            ImmutableDictionary<string, PdbLabel>.Empty, file.Lines);
+        var linesToFileMap = file.Lines.ToImmutableDictionary(l => l, l => file);
+        return new Pdb( 
+            ImmutableDictionary<PdbPath, PdbFile>.Empty.Add(file.Path, file),
+            ImmutableDictionary<string, PdbLabel>.Empty,
+            linesToFileMap,
+            default, default,
+            file.Lines);
     }
     [TestFixture]
     public class FindMatchingLine: BreakpointsViewModelTest
@@ -48,10 +54,11 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
         public void WhenLineContentIsEqual_ReturnsNewLine()
         {
             const string text = "		beq +			; enter loop";
-            var sourceLine = new PdbLine("file.a", 1, default, default, 0, default, text);
-            var sourceFile = new PdbFile("file.a", ImmutableArray<PdbLine>.Empty.Add(sourceLine));
+            var sourceLine = PdbLine.Create(1, default, default, 0, default, text);
+            var sourceFile = new PdbFile(PdbPath.CreateRelative("file.a"), default, ImmutableArray<PdbLine>.Empty.Add(sourceLine));
             // duplicates data
-            var newLine = sourceLine with { DataLength = 0 };
+            //var newLine = sourceLine with { DataLength = 0 };
+            var newLine = sourceLine with { };
             var lines = ImmutableArray<PdbLine>.Empty.Add(newLine);
             var newFile = sourceFile with { Lines = lines };
             var pdb = CreatePdb(newFile);
@@ -64,14 +71,22 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
         public void WhenLineContentIsEqualButFileDiffers_ReturnsNull()
         {
             const string text = "		beq +			; enter loop";
-            var sourceLine = new PdbLine("file.a", 1, default, default, 0, default, text);
-            var sourceFile = new PdbFile("file.a", ImmutableArray<PdbLine>.Empty.Add(sourceLine));
+            var linesToFileMap = ImmutableDictionary.CreateBuilder<PdbLine, PdbFile>(ReferenceEqualityComparer.Instance);
+            var sourceLine = PdbLine.Create(1, default, default, 0, default, text);
+            var sourceFile = new PdbFile(PdbPath.CreateRelative("file.a"), default, ImmutableArray<PdbLine>.Empty.Add(sourceLine));
+            linesToFileMap.Add(sourceLine, sourceFile);
             // duplicates data
-            var newLine = sourceLine with { DataLength = 0 };
+            //var newLine = sourceLine with { DataLength = 0 };
+            var newLine = sourceLine with { };
             var lines = ImmutableArray<PdbLine>.Empty.Add(newLine);
-            var newFile = sourceFile with { RelativePath = "another_file.s", Lines = lines };
-            var pdb = new Pdb(lines, ImmutableDictionary<string, PdbFile>.Empty.Add(newFile.RelativePath, newFile),
-                ImmutableDictionary<string, PdbLabel>.Empty, lines);
+            var newFile = sourceFile with { Path = PdbPath.CreateRelative("another_file.s"), Lines = lines };
+            linesToFileMap.Add(newLine, newFile);
+            var pdb = new Pdb(
+                ImmutableDictionary<PdbPath, PdbFile>.Empty.Add(newFile.Path, newFile),
+                ImmutableDictionary<string, PdbLabel>.Empty,
+                linesToFileMap.ToImmutableDictionary(),
+                default, default,
+                lines);
 
             var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, sourceLine);
 
@@ -94,7 +109,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 
             var sourceFile = CreateSourceFile();
             var sourceLine = sourceFile.Lines[4];
-            var newFile = CreateSourceFile(modifiedSource, sourceFile.RelativePath);
+            var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
             var pdb = CreatePdb(newFile);
 
             // using 'jsr basout	; output character' as checkpoint
@@ -123,7 +138,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 
             var sourceFile = CreateSourceFile();
             var sourceLine = sourceFile.Lines[4];
-            var newFile = CreateSourceFile(modifiedSource, sourceFile.RelativePath);
+            var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
             var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
@@ -146,7 +161,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 
             var sourceFile = CreateSourceFile();
             var sourceLine = sourceFile.Lines[4];
-            var newFile = CreateSourceFile(modifiedSource, sourceFile.RelativePath);
+            var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
             var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
@@ -170,7 +185,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 
             var sourceFile = CreateSourceFile();
             var sourceLine = sourceFile.Lines[4];
-            var newFile = CreateSourceFile(modifiedSource, sourceFile.RelativePath);
+            var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
             var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
@@ -192,7 +207,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 
             var sourceFile = CreateSourceFile();
             var sourceLine = sourceFile.Lines[4];
-            var newFile = CreateSourceFile(modifiedSource, sourceFile.RelativePath);
+            var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
             var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);

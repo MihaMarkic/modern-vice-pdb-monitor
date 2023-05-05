@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
@@ -18,6 +19,7 @@ public class Globals : NotifiableObject
     readonly ISettingsManager settingsManager;
     Project? project;
     public Settings Settings { get; set; } = default!;
+    public string? ProjectCaption => Project?.Caption ?? Globals.AppName;
     public Globals(ILogger<Globals> logger, ISettingsManager settingsManager)
     {
         this.logger = logger;
@@ -52,6 +54,17 @@ public class Globals : NotifiableObject
                 break;
             case nameof(Project.DebugSymbols):
                 OnPropertyChanged(ProjectDebugSymbols);
+                break;
+        }
+    }
+
+    protected override void OnPropertyChanged([CallerMemberName] string name = null!)
+    {
+        base.OnPropertyChanged(name);
+        switch (name)
+        {
+            case nameof(Project):
+                OnPropertyChanged(nameof(ProjectCaption));
                 break;
         }
     }

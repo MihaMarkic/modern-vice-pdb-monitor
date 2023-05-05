@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -23,7 +24,7 @@ public class ProjectExplorerViewModel : NotifiableObject
     IPdbManager? pdbManager;
     public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
     public Project? Project => globals.Project;
-    public ImmutableArray<ProjectExplorerHeaderNode> Nodes { get; private set; }
+    public ImmutableArray<object> Nodes { get; private set; }
     public RelayCommand<object> OpenSourceFileCommand { get; }
     public RelayCommandAsync<PdbLabel> AddBreakpointOnLabelCommand { get; }
     ImmutableArray<PdbFile> files = ImmutableArray<PdbFile>.Empty;
@@ -117,8 +118,8 @@ public class ProjectExplorerViewModel : NotifiableObject
     {
         if (Project is not null)
         {
-            files = globals.Project?.DebugSymbols?.Files.Values.ToImmutableArray() ?? ImmutableArray<PdbFile>.Empty;
-            Nodes = ImmutableArray<ProjectExplorerHeaderNode>.Empty
+            files = globals.Project?.DebugSymbols?.Files.Values.OrderBy(f => f.Path.FileName).ToImmutableArray() ?? ImmutableArray<PdbFile>.Empty;
+            Nodes = ImmutableArray<object>.Empty
                 .Add(new ProjectExplorerHeaderNode("Files", files))
                 .Add(new ProjectExplorerHeaderNode("Labels", globals.Project?.DebugSymbols?.Labels.Values.ToImmutableArray() ?? ImmutableArray<PdbLabel>.Empty));
         }

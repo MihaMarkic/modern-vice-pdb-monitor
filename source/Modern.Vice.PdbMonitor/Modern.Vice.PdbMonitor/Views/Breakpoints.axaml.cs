@@ -1,18 +1,11 @@
-using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+﻿using Avalonia.Controls;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
-public partial class Breakpoints : UserControl
+partial class Breakpoints : UserControl
 {
     public Breakpoints()
     {
         InitializeComponent();
     }
-
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
 }

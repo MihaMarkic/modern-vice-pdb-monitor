@@ -1,16 +1,16 @@
-using System;
+﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
-using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
 // TODO make font settable
-public class CustomSourceFileViewer : UserControl
+partial class CustomSourceFileViewer : UserControl
 {
     int cursorRow;
     int? executionRow;
@@ -19,8 +19,6 @@ public class CustomSourceFileViewer : UserControl
     /// Prevents resetting cursor row when initializing and setting cursor row at the same time
     /// </summary>
     bool settingCursorRow;
-    readonly ItemsRepeater lines;
-    readonly ScrollViewer scroller;
     public static readonly DirectProperty<CustomSourceFileViewer, int> CursorRowProperty =
         AvaloniaProperty.RegisterDirect<CustomSourceFileViewer, int>(nameof(CursorRow),
             o => o.CursorRow, 
@@ -34,8 +32,6 @@ public class CustomSourceFileViewer : UserControl
     public CustomSourceFileViewer()
     {
         InitializeComponent();
-        lines = this.Find<ItemsRepeater>("lines");
-        scroller = this.Find<ScrollViewer>("scroller");
         scroller.ScrollChanged += Scroller_ScrollChanged;
     }
 
@@ -75,6 +71,7 @@ public class CustomSourceFileViewer : UserControl
         //    lines.ElementPrepared += Lines_ElementPrepared;
         //}
     }
+    CancellationTokenSource? cursorRowChangedCts;
     /// <summary>
     /// Row to jump to.
     /// </summary>
@@ -86,11 +83,13 @@ public class CustomSourceFileViewer : UserControl
             if (CursorRow != value)
             {
                 SetAndRaise(CursorRowProperty, ref cursorRow, value);
-                CursorRowChanged();
+                cursorRowChangedCts?.Cancel();
+                cursorRowChangedCts = new CancellationTokenSource();
+                _ = CursorRowChangedAsync(cursorRowChangedCts.Token);
             }
         }
     }
-    async Task CursorRowChanged()
+    async Task CursorRowChangedAsync(CancellationToken ct)
     {
         if (CursorRow >= 0)
         {
@@ -102,7 +101,7 @@ public class CustomSourceFileViewer : UserControl
                 {
                     while (!success)
                     {
-                        await WaitForLayoutUpdatedAsync();
+                        await WaitForLayoutUpdatedAsync(ct);
                         success = ScrollToCursorRow();
                     }
                 }
@@ -113,9 +112,10 @@ public class CustomSourceFileViewer : UserControl
             }
         }
     }
-    Task WaitForLayoutUpdatedAsync()
+    Task WaitForLayoutUpdatedAsync(CancellationToken ct)
     {
         var tcs = new TaskCompletionSource();
+        ct.Register(tcs.SetCanceled);
         EventHandler layoutUpdatedHandler = default!;
         layoutUpdatedHandler = (s, e) =>
         {
@@ -154,9 +154,5 @@ public class CustomSourceFileViewer : UserControl
             return true;
         }
         return false;
-    }
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 }

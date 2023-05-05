@@ -5,6 +5,7 @@ using CC65.DebugDataParser.Models.CA65;
 namespace CC65.DebugDataParser.Services.Implementation;
 public class CA65ListingParser
 {
+    static readonly char[] BlankOrTab = new char[] {'\t', ' '};
     internal readonly record struct ParserState(bool IsMacro);
     public readonly record struct LineInfo(string Address, ListingLineType Type, ImmutableArray<byte?> Data);
     public async Task<Listing> ParseAsync(TextReader reader, CancellationToken ct)
@@ -76,7 +77,7 @@ public class CA65ListingParser
     {
         var span = line.AsSpan();
         var info = ExtractAddressAndType(span[0..24]);
-        var contentText = span[24..];
+        var contentText = span[24..].Trim();
         if (state.IsMacro)
         {
             return ParseMacro(info, contentText);
@@ -91,24 +92,56 @@ public class CA65ListingParser
             {
                 return ParseComment(info, contentText);
             }
-            else if (contentText.StartsWith("\t"))
+            else if (contentText.StartsWith("."))
             {
-                var text = contentText[1..];
-                if (text.StartsWith("."))
+                var meta = ParseMeta(info, contentText[1..]);
+                if (meta is null)
                 {
-                    return ParseOption(info, contentText[2..]);
+                    var option = ParseOption(info, contentText[1..]);
+                    if (option is null)
+                    {
+                        throw new Exception($"Unknown option or segment: {contentText}");
+                    }
+                    return option;
                 }
                 else
                 {
-                    return ParseCode(info, text[1..]);
+                    return meta;
                 }
             }
-            else if (contentText.StartsWith("."))
+            else
             {
-                return ParseMeta(info, contentText[1..]);
+                if (contentText.Length > 0)
+                {
+                    //int? endLabelIndex = GetLabelEndIndex(contentText);
+                    //if (endLabelIndex.HasValue)
+                    //{
+                    return ParseCode(info, contentText);
+                    //}
+                }
+                else
+                {
+                    return new EmpyCodeListingLine(info.Address, info.Data);
+                }
             }
         }
         throw new NotImplementedException();
+    }
+    internal static int? GetLabelEndIndex(ReadOnlySpan<char> text)
+    {
+        int columnIndex = text.IndexOf(':');
+        if (columnIndex < 0)
+        {
+            return null;
+        }
+        for (int i = 0; i < columnIndex; i++)
+        {
+            if (text[i] == ' ' || text[i] == '\t')
+            {
+                return null;
+            }
+        }
+        return columnIndex;
     }
     // Comment
     internal CommentListingLine ParseComment(LineInfo info, ReadOnlySpan<char> line)
@@ -117,7 +150,7 @@ public class CA65ListingParser
         return new CommentListingLine(info.Address, text);
     }
     // Options
-    internal ParsedListingLine ParseOption(LineInfo info, ReadOnlySpan<char> text)
+    internal ParsedListingLine? ParseOption(LineInfo info, ReadOnlySpan<char> text)
     {
         int firstTab = text.IndexOf('\t');
         if (firstTab < 0)
@@ -162,7 +195,7 @@ public class CA65ListingParser
             case "dbg":
                 return ParseDbg(info, content);
             default:
-                throw new Exception($"Couldn't parse option line '{text}'");
+                return null;
         }
     }
     internal string ParseStringOptionValue(ReadOnlySpan<char> value) => value.ToString();
@@ -231,20 +264,20 @@ public class CA65ListingParser
         return new ExternFuncDbgListingLine(info.Address, parts[0].Trim('\"'), parts[1].Trim('\"'), parts[3].Trim('\"'));
     }
     // Meta
-    internal MetaListingLine ParseMeta(LineInfo info, ReadOnlySpan<char> line)
+    internal MetaListingLine? ParseMeta(LineInfo info, ReadOnlySpan<char> line)
     {
-        var parts = line.ToString().Split('\t', StringSplitOptions.TrimEntries);
+        var parts = line.ToString().Split(BlankOrTab, StringSplitOptions.TrimEntries);
         return parts[0] switch
         {
             "segment" => new SegmentListingLine(info.Address, parts[1].Trim('\"')),
             "proc" => new StartProcListingLine(info.Address, line["proc".Length..].Trim().ToString()),
             "endproc" => new EndProcListingLine(info.Address),
-            _ => throw new Exception($"Unsupported meta {parts[0]}"),
+            _ => null,
         };
     }
     internal CodeListingLine ParseCode(LineInfo info, ReadOnlySpan<char> line)
     {
-        var parts = line.ToString().Split('\t', StringSplitOptions.TrimEntries);
+        var parts = line.ToString().Split(BlankOrTab, StringSplitOptions.TrimEntries);
         string? label;
         string content;
         if (parts[0].EndsWith(':'))

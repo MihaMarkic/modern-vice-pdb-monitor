@@ -6,10 +6,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
@@ -69,9 +71,9 @@ public class MainViewModel : NotifiableObject
     public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
+    public bool IsDebuggerStepping => executionStatusViewModel.IsStepping;
     public bool IsOverlayVisible => OverlayContent is not null;
     public bool IsViceConnected { get; private set; }
-    
     public string RunCommandTitle => executionStatusViewModel.IsDebugging ? "Continue" : "Run";
     public string RunMenuCommandTitle => executionStatusViewModel.IsDebugging ? "_Continue" : "_Run";
     /// <summary>
@@ -79,9 +81,11 @@ public class MainViewModel : NotifiableObject
     /// </summary>
     public bool IsUpdatedPdbAvailable { get; private set; }
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
-    public ScopedViewModel Content { get; private set; } = default!;
-    public RegistersViewModel RegistersViewModel { get; private set; } = default!;
-    public BreakpointsViewModel BreakpointsViewModel { get; private set; } = default!;
+    //public ScopedViewModel Content { get; private set; } = default!;
+    public RegistersViewModel RegistersViewModel { get; } = default!;
+    public BreakpointsViewModel BreakpointsViewModel { get; } = default!;
+    public VariablesViewModel VariablesViewModel { get; } = default!;
+    public DebuggerViewModel DebuggerViewModel { get; } = default!;
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -95,7 +99,8 @@ public class MainViewModel : NotifiableObject
     public MainViewModel(ILogger<MainViewModel> logger, Globals globals, IDispatcher dispatcher,
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
-        ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel)
+        ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
+        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -108,6 +113,8 @@ public class MainViewModel : NotifiableObject
         this.serviceProvider = serviceProvider;
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
+        VariablesViewModel = variablesViewModel;
+        DebuggerViewModel = debuggerViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -126,13 +133,16 @@ public class MainViewModel : NotifiableObject
         CloseProjectCommand = commandsManager.CreateRelayCommand(CloseProject, () => IsProjectOpen && !IsDebugging);
         ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
         ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
-        RunCommand = commandsManager.CreateRelayCommandAsync(StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused));
+        RunCommand = commandsManager.CreateRelayCommandAsync(
+            StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping));
         StopCommand = commandsManager.CreateRelayCommand(StopDebugging, () => IsDebugging);
-        PauseCommand = commandsManager.CreateRelayCommand(PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected);
-        StepIntoCommand = commandsManager.CreateRelayCommandAsync(StepIntoAsync, () => IsDebugging && IsDebuggingPaused);
-        StepOverCommand = commandsManager.CreateRelayCommandAsync(StepOverAsync, () => IsDebugging && IsDebuggingPaused);
+        PauseCommand = commandsManager.CreateRelayCommand(
+            PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping);
+        StepIntoCommand = commandsManager.CreateRelayCommandAsync(
+            StepIntoAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+        StepOverCommand = commandsManager.CreateRelayCommandAsync(
+            StepOverAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
         UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
-        SwitchContent<DebuggerViewModel>();
         // by default opens most recent project
         if (globals.Settings.RecentProjects.Count > 0)
         {
@@ -192,7 +202,7 @@ public class MainViewModel : NotifiableObject
                     else
                     {
                         // when not debugging, stopping VICE is not desired. i.e. when a checkpoint is added
-                        viceBridge.EnqueueCommand(new ExitCommand());
+                        //viceBridge.EnqueueCommand(new ExitCommand());
                     }
                     break;
                 case ResumedResponse:
@@ -338,9 +348,11 @@ public class MainViewModel : NotifiableObject
                     await ExitViceMonitorAsync();
                 }
                 await RegistersViewModel.InitAsync();
+                executionStatusViewModel.IsStartingDebugging = false;
 
                 var command = viceBridge.EnqueueCommand(
-                    new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 0, Globals.Project.FullPrgPath!));
+                    new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 
+                        0, Globals.Project.FullPrgPath!));
                 await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
                 await stoppedExecution.Task;
 
@@ -350,7 +362,7 @@ public class MainViewModel : NotifiableObject
                         && Globals.Project.DebugSymbols.Labels.TryGetValue(Globals.Project!.StopAtLabel, out var label))
                     {
                         var checkpoint = viceBridge.EnqueueCommand(
-                        new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
+                            new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
                         await checkpoint.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpoint);
                     }
                     else
@@ -393,7 +405,8 @@ public class MainViewModel : NotifiableObject
         await EnqueueCommandAndWaitForResponseAsync(new ExitCommand());
     }
 
-    internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
+    internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(
+        ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
         where TResponse: ViceResponse
     {
         viceBridge.EnqueueCommand(command);
@@ -409,51 +422,54 @@ public class MainViewModel : NotifiableObject
     internal async Task ClearAfterDebuggingAsync()
     {
         logger.LogDebug("Cleaning after debugging");
+        executionStatusViewModel.IsDebugging = false;
         if (viceBridge?.IsConnected ?? false)
         {
-            var command = viceBridge.EnqueueCommand(new ExitCommand());
-            await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            if (Globals.Settings.ResetOnStop)
+            {
+                await ResetViceAsync(CancellationToken.None);
+            }
+            else
+            {
+                var command = viceBridge.EnqueueCommand(new ExitCommand());
+                await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+            }
         }
-            //if (viceProcess is not null)
-            //{
-            //    if (viceBridge.IsConnected)
-            //    {
-            //        logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
-            //        var quitCommand = new ViceBridgeCommand.QuitCommand();
-            //        viceBridge.EnqueueCommand(quitCommand);
-            //        (bool success, var result) = await quitCommand.Response.AwaitWithTimeout(TimeSpan.FromSeconds(10));
-            //        bool isQuitSuccess = true;
-            //        if (!success)
-            //        {
-            //            logger.LogDebug("Timeout while waiting for VICE response to Quit command");
-            //            isQuitSuccess = false;
-            //        }
-            //        else
-            //        {
-            //            if (result!.ErrorCode != ViceBridgeCommand.ErrorCode.OK)
-            //            {
-            //                logger.LogDebug("VICE returned {ErrorCode} to Quit command", result!.ErrorCode);
-            //                isQuitSuccess = false;
-            //            }
-            //        }
-            //        if (!isQuitSuccess)
-            //        {
-            //            viceProcess.Kill();
-            //        }
-            //        bool waitForKillSuccess = viceProcess.WaitForExit(5000);
-            //        if (!waitForKillSuccess)
-            //        {
-            //            logger.LogWarning("Couldn't kill VICE process");
-            //        }
-            //        viceProcess.Dispose();
-            //    }
-            //}
-            executionStatusViewModel.IsDebugging = false;
     }
+
+    /// <summary>
+    /// Kills VICE process if any associated.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>Not tested.</remarks>
+    internal async Task KillViceAsync()
+    {
+        if (viceProcess is not null && viceBridge?.IsConnected == true)
+        {
+            logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
+            var quitCommand = viceBridge.EnqueueCommand(new QuitCommand());
+            var result = await quitCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, quitCommand, TimeSpan.FromSeconds(10));
+            if (result is not null)
+            {
+                logger.LogDebug("Timeout while waiting for VICE response to Quit command");
+                viceProcess.Kill();
+                bool waitForKillSuccess = viceProcess.WaitForExit(5000);
+                if (!waitForKillSuccess)
+                {
+                    logger.LogWarning("Couldn't kill VICE process");
+                }
+                viceProcess.Dispose();
+            }
+        }
+    }
+
     internal void CloseOverlay(object sender, CloseOverlayMessage message)
     {
-        OverlayContent?.Dispose();
-        OverlayContent = null;
+        if (OverlayContent is not null)
+        {
+            OverlayContent.Dispose();
+            OverlayContent = null;
+        }
     }
     internal void ShowSettings()
     {
@@ -471,21 +487,11 @@ public class MainViewModel : NotifiableObject
     }
     internal async Task StepIntoAsync()
     {
-        ushort instructionsNumber = 1;
-        var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: false, instructionsNumber));
-        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+        await DebuggerViewModel.StepIntoAsync();
     }
     internal async Task StepOverAsync()
     {
-        ushort instructionsNumber = 1;
-        var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: true, instructionsNumber));
-        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
-    }
-    internal void SwitchContent<T>()
-        where T : ScopedViewModel
-    {
-        Content?.Dispose();
-        Content = scope.ServiceProvider.CreateScopedContent<T>();
+        await DebuggerViewModel.StepOverAsync();
     }
     internal void SwitchOverlayContent<T>()
         where T : ScopedViewModel
@@ -579,7 +585,8 @@ public class MainViewModel : NotifiableObject
             {
                 return false;
             }
-            var project = Project.FromConfiguration(projectConfiguration);
+            var sourceLanguage = GetCompilerLanguage(projectConfiguration.CompilerType);
+            var project = Project.FromConfiguration(projectConfiguration, sourceLanguage);
             project.File = path;
             Globals.Project = project;
             if (project!.PrgPath is not null)
@@ -604,8 +611,8 @@ public class MainViewModel : NotifiableObject
         {
             var model = new OpenFileDialogModel(
                 Globals.Settings.LastAccessedDirectory,
-                "Modern PDB Debugger .mapd",
-                "mapd");
+                "Modern PDB Debugger files",
+                "*.mapd");
             string? projectPath = await ShowOpenProjectFileDialogAsync(model, CancellationToken.None);
             if (!string.IsNullOrWhiteSpace(projectPath))
             {
@@ -618,9 +625,9 @@ public class MainViewModel : NotifiableObject
         if (ShowCreateProjectFileDialogAsync is not null)
         {
             var model = new OpenFileDialogModel(
-                Globals.Settings.LastAccessedDirectory,
-                "Modern PDB Debugger .mapd",
-                "mapd");
+                                        Globals.Settings.LastAccessedDirectory,
+                                        "Modern PDB Debugger files",
+                                        "*.mapd");
             string? projectPath = await ShowCreateProjectFileDialogAsync(model, CancellationToken.None);
             if (!string.IsNullOrWhiteSpace(projectPath))
             {
@@ -630,6 +637,16 @@ public class MainViewModel : NotifiableObject
                     Globals.Settings.AddRecentProject(projectPath);
                 }
             }
+        }
+    }
+    internal SourceLanguage GetCompilerLanguage(CompilerType compilerType)
+    {
+        // custom scope is used for compiler creation to figure out language
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var projectFactory = scope.ServiceProvider.GetRequiredService<IProjectFactory>();
+            var compiler = projectFactory.GetCompiler(compilerType);
+            return compiler.Language;
         }
     }
     internal bool CreateProject(CompilerType compilerType, string projectPath)
@@ -643,7 +660,8 @@ public class MainViewModel : NotifiableObject
         {
             try
             {
-                var project = new Project { File = projectPath, CompilerType = compilerType };
+                var sourceLanguage = GetCompilerLanguage(compilerType);
+                var project = Project.Create(projectPath, compilerType, sourceLanguage);
                 settingsManager.Save(project.ToConfiguration(), projectPath, false);
                 Globals.Project = project;
                 ShowProject();

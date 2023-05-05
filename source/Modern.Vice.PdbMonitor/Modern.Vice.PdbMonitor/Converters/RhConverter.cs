@@ -9,7 +9,7 @@ public static class RhConverter
 {
     static readonly Dictionary<Type, TypeConverter> converters = new Dictionary<Type, TypeConverter>();
 
-    public static T? ConvertFrom<T>(object source)
+    public static T? ConvertFrom<T>(object? source)
     {
         T? result;
         if (source is T)
@@ -34,7 +34,7 @@ public static class RhConverter
                 {
                     try
                     {
-                        result = (T)converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
+                        result = (T?)converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
                     }
                     catch
                     {
