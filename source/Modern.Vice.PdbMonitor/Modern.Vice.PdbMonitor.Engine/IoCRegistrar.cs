@@ -23,6 +23,7 @@ public static class IoCRegistrar
             .AddSingleton<RegistersMapping>()
             .AddSingleton<ExecutionStatusViewModel>()
             .AddSingleton<BreakpointsViewModel>()
+            .AddSingleton<TraceOutputViewModel>()
             .AddTransient<SourceFileViewModel>()
             .AddSingleton<Globals>()
             .AddSingleton<ISettingsManager, SettingsManager>()

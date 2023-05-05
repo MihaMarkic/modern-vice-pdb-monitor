@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -81,11 +82,12 @@ public class MainViewModel : NotifiableObject
     /// </summary>
     public bool IsUpdatedPdbAvailable { get; private set; }
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
-    //public ScopedViewModel Content { get; private set; } = default!;
-    public RegistersViewModel RegistersViewModel { get; } = default!;
-    public BreakpointsViewModel BreakpointsViewModel { get; } = default!;
-    public VariablesViewModel VariablesViewModel { get; } = default!;
-    public DebuggerViewModel DebuggerViewModel { get; } = default!;
+    //public ScopedViewModel Content { get; private set; }
+    public RegistersViewModel RegistersViewModel { get; }
+    public BreakpointsViewModel BreakpointsViewModel { get; }
+    public VariablesViewModel VariablesViewModel { get; }
+    public DebuggerViewModel DebuggerViewModel { get; }
+    public TraceOutputViewModel TraceOutputViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -100,7 +102,7 @@ public class MainViewModel : NotifiableObject
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
-        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel)
+        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel, TraceOutputViewModel traceOutputViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -115,6 +117,7 @@ public class MainViewModel : NotifiableObject
         BreakpointsViewModel = breakpointsViewModel;
         VariablesViewModel = variablesViewModel;
         DebuggerViewModel = debuggerViewModel;
+        TraceOutputViewModel = traceOutputViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -180,6 +183,7 @@ public class MainViewModel : NotifiableObject
         }
     }
 
+    bool traceCharAvailable;
     /// <summary>
     /// Unbound responses
     /// </summary>
@@ -198,6 +202,12 @@ public class MainViewModel : NotifiableObject
                         executionStatusViewModel.IsDebuggingPaused = true;
                         stoppedExecution.SetResult();
                         stoppedExecution = new TaskCompletionSource();
+                        if (traceCharAvailable)
+                        {
+                            traceCharAvailable = false;
+                            TraceOutputViewModel.LoadTraceChar();
+                            viceBridge.EnqueueCommand(new ExitCommand());
+                        }
                     }
                     else
                     {
@@ -211,6 +221,12 @@ public class MainViewModel : NotifiableObject
                         executionStatusViewModel.IsDebuggingPaused = false;
                         resumedExecution.SetResult();
                         resumedExecution = new TaskCompletionSource();
+                    }
+                    break;
+                case CheckpointInfoResponse checkpointInfoResponse:
+                    if (checkpointInfoResponse.CheckpointNumber == TraceOutputViewModel.CheckpointNumber)
+                    {
+                        traceCharAvailable = true;
                     }
                     break;
             }
@@ -342,6 +358,7 @@ public class MainViewModel : NotifiableObject
                     await BreakpointsViewModel.ReapplyBreakpoints(hasPdbChanged, startDebuggingCts.Token);
                     requiresBreakpointsRefresh = false;
                 }
+                await TraceOutputViewModel.CreateTraceCheckpointAsync(startDebuggingCts.Token);
                 // make sure vice isn't in paused state
                 if (IsDebuggingPaused)
                 {
@@ -423,6 +440,7 @@ public class MainViewModel : NotifiableObject
     {
         logger.LogDebug("Cleaning after debugging");
         executionStatusViewModel.IsDebugging = false;
+        await TraceOutputViewModel.ClearTraceCheckpointAsync();
         if (viceBridge?.IsConnected ?? false)
         {
             if (Globals.Settings.ResetOnStop)

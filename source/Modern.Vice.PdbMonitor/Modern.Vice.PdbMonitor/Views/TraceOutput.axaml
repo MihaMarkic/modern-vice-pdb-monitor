@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
+            xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+            xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+            xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+            xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls"
+            xmlns:cmn="clr-namespace:Modern.Vice.PdbMonitor.Engine.Common;assembly=Modern.Vice.PdbMonitor.Engine"
+            x:DataType="vm:TraceOutputViewModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Modern.Vice.PdbMonitor.Views.TraceOutput">
+  <DockPanel>
+    <StackPanel Orientation="Vertical" DockPanel.Dock="Right" Margin="2">
+      <Button Command="{Binding ClearCommand}" Width="16" Height="16" Padding="0">
+        <Image>
+          <Image.Source>
+            <svg:SvgImage Source="/Assets/Icons/trash.svg" />
+          </Image.Source>
+        </Image>
+      </Button>
+    </StackPanel>
+    <TextBox BorderThickness="0"
+    FontFamily="{StaticResource C64Mono}" FontSize="10"
+    IsReadOnly="True" Text="{Binding Text}" TextWrapping="Wrap" />
+  </DockPanel>
+</UserControl>

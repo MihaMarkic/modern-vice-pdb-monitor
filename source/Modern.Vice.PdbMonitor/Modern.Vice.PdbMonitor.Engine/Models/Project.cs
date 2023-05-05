@@ -24,6 +24,7 @@ public class Project : NotifiableObject
     public string StopAtLabel { get; set; } = StopAtLabelNone;
     public CompilerType CompilerType { get; init; }
     public SourceLanguage SourceLanguage { get; init; }
+    public ushort? DebugOutputAddress {  get; set; }
     private Project()
     { }
     public static Project Create(string file, CompilerType compilerType, SourceLanguage sourceLanguage)
@@ -33,6 +34,8 @@ public class Project : NotifiableObject
             File = file,
             CompilerType = compilerType,
             SourceLanguage = sourceLanguage,
+            // d4fc is the default address to listen on
+            DebugOutputAddress = 0xd4fc,
         };
     }
     public ProjectConfiguration ToConfiguration() => new ProjectConfiguration
@@ -41,6 +44,7 @@ public class Project : NotifiableObject
         AutoStartMode = AutoStartMode,
         StopAtLabel = StopAtLabel == StopAtLabelNone ? null: StopAtLabel,
         CompilerType = CompilerType,
+        DebugOutputAddress = DebugOutputAddress,
     };
     public static Project FromConfiguration(ProjectConfiguration configuration, SourceLanguage sourceLanguage) => new Project
     {
@@ -49,6 +53,7 @@ public class Project : NotifiableObject
         StopAtLabel = configuration.StopAtLabel ?? StopAtLabelNone,
         CompilerType = configuration.CompilerType,
         SourceLanguage = sourceLanguage,
+        DebugOutputAddress = configuration.DebugOutputAddress,
     };
 }
 
@@ -58,4 +63,5 @@ public record ProjectConfiguration
     public CompilerType CompilerType { get; init;  }
     public DebugAutoStartMode AutoStartMode { get; init; }
     public string? StopAtLabel { get; init; }
+    public ushort? DebugOutputAddress { get; init; }
 }

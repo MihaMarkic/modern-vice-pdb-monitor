@@ -243,6 +243,9 @@
             <Tool x:Name="Variables" Id="Variables" Title="Variables" x:DataType="Tool" CanClose="False">
               <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
             </Tool>
+            <Tool x:Name="Trace" Id="Trace" Title="Trace" x:DataType="Tool" CanClose="False">
+              <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
+            </Tool>
           </ToolDock>
         </ProportionalDock>
       </RootDock>

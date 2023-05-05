@@ -18,7 +18,7 @@ public abstract class StringValidator<TSource> : NotifiableObject, IBindingValid
     public event EventHandler? HasErrorsChanged;
     public ImmutableArray<string> Errors { get; private set; } = ImmutableArray<String>.Empty;
     public bool HasErrors => !Errors.IsDefaultOrEmpty;
-    public abstract string ConvertTo(TSource source);
+    public abstract string? ConvertTo(TSource source);
     public abstract (bool IsValid, TSource Value, string? error) ConvertFrom(string? text);
     public StringValidator(string sourcePropertyName, TSource initialValue, Action<TSource> assignToSource)
     {

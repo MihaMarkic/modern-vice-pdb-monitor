@@ -6,6 +6,7 @@
   <Application.Resources>
     <!-- default font family for code -->
     <FontFamily x:Key="CodeFont">resm:Modern.Vice.PdbMonitor.Assets.Fonts.?assembly=Modern.Vice.PdbMonitor#Fira Code</FontFamily>
+    <FontFamily x:Key="C64Mono">resm:Modern.Vice.PdbMonitor.Assets.Fonts.?assembly=Modern.Vice.PdbMonitor#C64 Pro Mono</FontFamily>
   </Application.Resources>
   <Application.Styles>
     <FluentTheme />

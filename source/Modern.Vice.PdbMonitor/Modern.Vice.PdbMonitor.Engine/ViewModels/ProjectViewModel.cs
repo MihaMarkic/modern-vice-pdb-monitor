@@ -10,10 +10,16 @@ using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core;
+using Modern.Vice.PdbMonitor.Engine.BindingValidators;
+using System.ComponentModel;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using PropertyChanged;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-public class ProjectViewModel : OverlayContentViewModel
+public class ProjectViewModel : OverlayContentViewModel, INotifyDataErrorInfo
 {
     readonly Globals globals;
     readonly ISettingsManager settingsManager;
@@ -44,6 +50,16 @@ public class ProjectViewModel : OverlayContentViewModel
     /// </summary>
     public string? PrgDirectory => Project.FullPrgPath is not null ? Path.GetDirectoryName(Project.FullPrgPath) : null;
     public CompilerType CompilerType => Project.CompilerType;
+    public bool HasErrors { get; private set; }
+    public string? DebugOutputAddress
+    {
+        get => debugOutputAddressValidator.TextValue;
+        set => debugOutputAddressValidator.UpdateText(value);
+    }
+    readonly HexValidator debugOutputAddressValidator;
+
+    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+
     public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
@@ -52,6 +68,7 @@ public class ProjectViewModel : OverlayContentViewModel
         ImmutableArray<string>.Empty.Add(Project.StopAtLabelNone).AddRange(globals.Project!.DebugSymbols?.Labels.Keys.ToImmutableArray() ?? ImmutableArray<string>.Empty);
     public RelayCommand OpenDebugDataFileCommand { get; }
     public Func<DebugFileOpenDialogModel, CancellationToken, Task<string?>>? ShowOpenDebugDataFileDialogAsync { get; set; }
+    readonly ImmutableArray<IBindingValidator> validators;
     public ProjectViewModel(Globals globals, ISettingsManager settingsManager, IDispatcher dispatcher,
         IProjectPrgFileWatcher projectPrgFileWatcher, ExecutionStatusViewModel executionStatusViewModel, 
         IProjectFactory projectFactory) : base(dispatcher)
@@ -66,6 +83,15 @@ public class ProjectViewModel : OverlayContentViewModel
         commandsManager = new CommandsManager(this, uiFactory);
         OpenDebugDataFileCommand = commandsManager.CreateRelayCommand(OpenDebugDataFileAsync, () => IsEditable);
         this.projectFactory = projectFactory;
+        debugOutputAddressValidator = new HexValidator(nameof(DebugOutputAddress), Project.DebugOutputAddress, 4, v => Project.DebugOutputAddress = v)
+        {
+            AllowEmpty = true,
+        };
+        validators = ImmutableArray<IBindingValidator>.Empty.Add(debugOutputAddressValidator);
+        foreach (var validator in validators)
+        {
+            validator.HasErrorsChanged += ValidatorHasErrorsChanged;
+        }
     }
 
     void ExecutionStatusViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -122,6 +148,7 @@ public class ProjectViewModel : OverlayContentViewModel
             return false;
         }
     }
+
     protected override void OnPropertyChanged(string name = null!)
     {
         switch (name)
@@ -129,9 +156,13 @@ public class ProjectViewModel : OverlayContentViewModel
             case nameof(PrgPath):
             case nameof(AutoStartMode):
             case nameof(StopAtLabel):
+            case nameof(DebugOutputAddress):
                 try
                 {
-                    settingsManager.Save(Project.ToConfiguration(), globals.Settings.RecentProjects[0], createDirectory: false);
+                    if (!HasErrors)
+                    {
+                        settingsManager.Save(Project.ToConfiguration(), globals.Settings.RecentProjects[0], createDirectory: false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -148,5 +179,22 @@ public class ProjectViewModel : OverlayContentViewModel
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
         }
         base.Dispose(disposing);
+    }
+    [SuppressPropertyChangedWarnings]
+    void OnErrorsChanged(DataErrorsChangedEventArgs e) => ErrorsChanged?.Invoke(this, e);
+    void ValidatorHasErrorsChanged(object? sender, EventArgs e)
+    {
+        var validator = (IBindingValidator)sender!;
+        OnErrorsChanged(new DataErrorsChangedEventArgs(validator.SourcePropertyName));
+    }
+    public IEnumerable GetErrors(string? propertyName)
+    {
+        var errors = new List<string>();
+        foreach (var validator in validators)
+        {
+            errors.AddRange(validator.Errors);
+        }
+        HasErrors = errors.Count > 0;
+        return errors.ToImmutableArray();
     }
 }

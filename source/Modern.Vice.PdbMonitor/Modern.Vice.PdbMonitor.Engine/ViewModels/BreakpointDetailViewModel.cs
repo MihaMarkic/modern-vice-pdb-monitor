@@ -71,8 +71,8 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         UnbindToFileCommand = new RelayCommand(UnbindToFile, () => Breakpoint.Label is not null);
         FullUnbindCommand = new RelayCommand(FullUnbind, () => IsBreakpointBound);
 
-        startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a);
-        endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a);
+        startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a ?? 0);
+        endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a ?? 0);
         validators = ImmutableArray<IBindingValidator>.Empty.Add(startAddressValidator).Add(endAddressValidator);
         foreach (var validator in validators)
         {

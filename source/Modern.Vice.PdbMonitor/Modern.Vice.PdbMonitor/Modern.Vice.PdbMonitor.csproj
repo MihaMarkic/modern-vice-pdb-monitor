@@ -6,6 +6,7 @@
     <Version>1.0.0-alpha.2</Version>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Assets\Fonts\C64_Pro_Mono-STYLE.ttf" />
     <None Remove="Assets\Fonts\FiraCode-Bold.ttf" />
     <None Remove="Assets\Fonts\FiraCode-Regular.ttf" />
     <None Remove="Assets\Icons\cog.svg" />
@@ -18,10 +19,13 @@
     <None Remove="Assets\Icons\sync-solid.svg" />
     <None Remove="Assets\Icons\sync.svg" />
     <None Remove="Assets\Icons\times.svg" />
+    <None Remove="Assets\Icons\trash.svg" />
+    <None Remove="Assets\Icons\xmark.svg" />
     <None Remove="Resources\breakpoint-condition.xshd" />
     <None Remove="Styles\AppStyles.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Assets\Fonts\C64_Pro_Mono-STYLE.ttf" />
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Bold.ttf" />
     <EmbeddedResource Include="Assets\Fonts\FiraCode-Regular.ttf" />
     <EmbeddedResource Include="Resources\breakpoint-condition.xshd" />
@@ -34,6 +38,8 @@
     <AvaloniaResource Include="Assets\Icons\disabled_sync.svg" />
     <AvaloniaResource Include="Assets\Icons\sync.svg" />
     <AvaloniaResource Include="Assets\Icons\times.svg" />
+    <AvaloniaResource Include="Assets\Icons\trash.svg" />
+    <AvaloniaResource Include="Assets\Icons\xmark.svg" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaXaml Include="Styles\AppStyles.xaml">
@@ -50,6 +56,7 @@
     <PackageReference Include="Avalonia" Version="11.0.0-preview6" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.0-preview6" />
     <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.0.0-preview6" />
+    <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.0.0-preview6.1" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.0-preview6" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.0-preview6" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.0-preview6" />

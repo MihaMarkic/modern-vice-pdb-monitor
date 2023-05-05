@@ -100,3 +100,15 @@ The actual app starts at *start* label while the code in front makes it accessib
 * Automatically reloads debugging symbols upon start when sources are compiled
 * Cross platform
 * Will add other features through time
+
+## Additional binaries used
+
+* [C64 TrueType (TTF) Fonts](https://style64.org/c64-truetype)
+* [Avalonia.Edit](https://github.com/avaloniaui/avaloniaedit)
+* [Dock.Avalonia](https://github.com/wieslawsoltes/Dock)
+* [Avalonia.Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia)
+* [NUnit](https://nunit.org/)
+* [AutoFixture](https://autofixture.github.io/)
+* [NSubstitute](https://nsubstitute.github.io/)
+* [FiraCode font](https://github.com/tonsky/FiraCode)
+* [FontAwesome](https://fontawesome.com/)

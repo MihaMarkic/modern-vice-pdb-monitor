@@ -100,7 +100,7 @@ public class DebuggerViewModel : ScopedViewModel
                 break;
         }
     }
-
+    
     internal async Task StepIntoAsync()
     {
         if (DebugStepper is not null)
