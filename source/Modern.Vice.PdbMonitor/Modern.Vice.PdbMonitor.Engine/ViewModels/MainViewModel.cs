@@ -191,7 +191,7 @@ public class MainViewModel : NotifiableObject
     /// <param name="e"></param>
     void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
     {
-        Debug.WriteLine($"Got unbounded {e.Response.GetType().Name}");
+        //Debug.WriteLine($"Got unbounded {e.Response.GetType().Name}");
         uiFactory.StartNew(() =>
         {
             switch (e.Response)
@@ -199,14 +199,17 @@ public class MainViewModel : NotifiableObject
                 case StoppedResponse:
                     if (executionStatusViewModel.IsDebugging)
                     {
-                        executionStatusViewModel.IsDebuggingPaused = true;
-                        stoppedExecution.SetResult();
-                        stoppedExecution = new TaskCompletionSource();
                         if (traceCharAvailable)
                         {
                             traceCharAvailable = false;
                             TraceOutputViewModel.LoadTraceChar();
                             viceBridge.EnqueueCommand(new ExitCommand());
+                        }
+                        else
+                        {
+                            executionStatusViewModel.IsDebuggingPaused = true;
+                            stoppedExecution.SetResult();
+                            stoppedExecution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                         }
                     }
                     else
@@ -218,14 +221,23 @@ public class MainViewModel : NotifiableObject
                 case ResumedResponse:
                     if (executionStatusViewModel.IsDebugging)
                     {
-                        executionStatusViewModel.IsDebuggingPaused = false;
-                        resumedExecution.SetResult();
-                        resumedExecution = new TaskCompletionSource();
+                        // when processing is disabled, enable it each time it hits Resume
+                        if (executionStatusViewModel.IsProcessingDisabled)
+                        {
+                            executionStatusViewModel.IsProcessingDisabled = false;
+                        }
+                        else
+                        {
+                            executionStatusViewModel.IsDebuggingPaused = false;
+                            resumedExecution.SetResult();
+                            resumedExecution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        }
                     }
                     break;
                 case CheckpointInfoResponse checkpointInfoResponse:
                     if (checkpointInfoResponse.CheckpointNumber == TraceOutputViewModel.CheckpointNumber)
                     {
+                        executionStatusViewModel.IsProcessingDisabled = true;
                         traceCharAvailable = true;
                     }
                     break;

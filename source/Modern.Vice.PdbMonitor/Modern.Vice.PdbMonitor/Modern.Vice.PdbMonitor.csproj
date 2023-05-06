@@ -12,6 +12,7 @@
     <None Remove="Assets\Icons\cog.svg" />
     <None Remove="Assets\Icons\disabled_link.svg" />
     <None Remove="Assets\Icons\disabled_sync.svg" />
+    <None Remove="Assets\Icons\follow.svg" />
     <None Remove="Assets\Icons\link.svg" />
     <None Remove="Assets\Icons\pause.svg" />
     <None Remove="Assets\Icons\play.svg" />
@@ -31,6 +32,7 @@
     <EmbeddedResource Include="Resources\breakpoint-condition.xshd" />
     <AvaloniaResource Include="Assets\Icons\cog.svg" />
     <AvaloniaResource Include="Assets\Icons\disabled_link.svg" />
+    <AvaloniaResource Include="Assets\Icons\follow.svg" />
     <AvaloniaResource Include="Assets\Icons\link.svg" />
     <AvaloniaResource Include="Assets\Icons\pause.svg" />
     <AvaloniaResource Include="Assets\Icons\play.svg" />
@@ -71,7 +73,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.2.3" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.13" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.14.1" />
    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />

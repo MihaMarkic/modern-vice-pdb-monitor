@@ -361,14 +361,17 @@ public class BreakpointsViewModel: NotifiableObject
     internal static int GetFuzzyMatchScore(string source, string proposed) => Fuzz.WeightedRatio(source, proposed);
     void ViceBridge_ViceResponse(object? sender, Righthand.ViceMonitor.Bridge.ViceResponseEventArgs e)
     {
-        switch (e.Response)
+        if (!executionStatusViewModel.IsProcessingDisabled)
         {
-            case CheckpointInfoResponse checkpointInfo:
-                uiFactory.StartNew(() =>
-                {
-                    UpdateBreakpointDataFromVice(checkpointInfo);
-                });
-                break;
+            switch (e.Response)
+            {
+                case CheckpointInfoResponse checkpointInfo:
+                    uiFactory.StartNew(() =>
+                    {
+                        UpdateBreakpointDataFromVice(checkpointInfo);
+                    });
+                    break;
+            }
         }
     }
 
