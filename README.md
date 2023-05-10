@@ -4,7 +4,20 @@ This is a project that provides a cross platform debugging environment for [VICE
 
 App is currently in *alpha* state. Feel free to open issues, if you are in a mood for contributing a PR, ask first. Find binaries in the Release section, for now just win-x64. If you want to run it on another OS, compile it your self: just clone repo, open solution and compile it. Or just use *dotnet* command line.
 
+## Chat
+
+I'm mostly hanging out at [Everything C64 discord development channel](https://discord.gg/SFQaN4jgqm) and
+[Mastodon](https://mastodon.social/@mihamarkic) as @mihamarkic@mastodon.social.
+
 ## Getting started
+
+Application was first developed with ACME as compiler in mind, then it was modified to be compiler agnostic and lastly
+Oscar64 support was added where most of the work has been done since. Until I update documentation below, consider it
+quite obsolete and it might not even work with ACME for now.
+
+Oscar64 compilation should use these parameters, to minimize optimizations:
+
+`oscar64 .\YOURFILE.c -g -tm=c64 -tf=prg -n -O0`
 
 ### Requirements
 
