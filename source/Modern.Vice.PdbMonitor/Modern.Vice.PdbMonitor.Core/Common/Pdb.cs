@@ -96,9 +96,9 @@ public  record AddressRange(ushort StartAddress, ushort Length, ImmutableArray<b
     public ushort EndAddress => (ushort)(StartAddress + Length - 1);
     public bool IsAddressInRange(ushort address) => address >= StartAddress && address <= EndAddress;
 }
-public record PdbLabel(ushort Address, string Name);
+public sealed record PdbLabel(ushort Address, string Name);
 
-public record PdbVariable(string Name, int Start, int End, ushort? Base, PdbDefinedType Type);
+public sealed record PdbVariable(string Name, int Start, int End, ushort? Base, PdbDefinedType Type);
 
 
 /* PdbType stuff */

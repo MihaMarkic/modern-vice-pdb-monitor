@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -85,6 +88,34 @@ public class Globals : NotifiableObject
         {
             logger.LogError(ex, "Failed saving settings");
         }
+    }
+    public void SaveBreakpoints(IList<BreakpointViewModel> breakpoints)
+    {
+        if (Project?.BreakpointsSettingsPath is not null)
+        {
+            var items = breakpoints.Select(b =>
+                new BreakpointInfo(b.StopWhenHit, b.IsEnabled, b.Mode, b.StartAddress, b.EndAddress, b.Condition,
+                    b.FileName, b.LineNumber, b.Line?.Text, b.Label)
+                ).ToImmutableArray();
+            var settings = new BreakpointsSettings(items);
+            try
+            {
+                settingsManager.Save(settings, Project.BreakpointsSettingsPath);
+                logger.LogDebug("Saved breakpoints settings");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed saving breakpoints settings");
+            }
+        }
+    }
+    public BreakpointsSettings LoadBreakpoints()
+    {
+        if (Project?.BreakpointsSettingsPath is not null)
+        {
+            return settingsManager.LoadBreakpointsSettings(Project.BreakpointsSettingsPath);
+        }
+        return BreakpointsSettings.Empty;
     }
     protected override void Dispose(bool disposing)
     {

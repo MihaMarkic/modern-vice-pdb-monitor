@@ -16,6 +16,7 @@ using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Righthand.MessageBus;
@@ -622,6 +623,7 @@ public class MainViewModel : NotifiableObject
             if (project!.PrgPath is not null)
             {
                 await ParseDebugSymbolsAsync(project);
+                await LoadBreakpointsAsync(ct);
             }
             Globals.Settings.AddRecentProject(path);
         }
@@ -634,6 +636,11 @@ public class MainViewModel : NotifiableObject
             IsOpeningProject = false;
         }
         return false;
+    }
+    internal async Task LoadBreakpointsAsync(CancellationToken ct = default)
+    {
+        var settings = Globals.LoadBreakpoints();
+        await BreakpointsViewModel.LoadBreakpointsFromSettingsAsync(settings);
     }
     public async void OpenProject()
     {

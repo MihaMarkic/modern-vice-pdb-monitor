@@ -73,4 +73,19 @@ public class SettingsManager : ISettingsManager
             throw new Exception($"Failed saving settings:{ex.Message}", ex);
         }
     }
+    public void Save(BreakpointsSettings breakpointsSettings, string filePath) => Save(breakpointsSettings, filePath, false);
+    public BreakpointsSettings LoadBreakpointsSettings(string filePath)
+    {
+        BreakpointsSettings? result;
+        try
+        {
+            result = Load<BreakpointsSettings>(filePath);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"Failed to load breakpoints settings, will fallback to default");
+            result = null;
+        }
+        return result ?? BreakpointsSettings.Empty;
+    }
 }

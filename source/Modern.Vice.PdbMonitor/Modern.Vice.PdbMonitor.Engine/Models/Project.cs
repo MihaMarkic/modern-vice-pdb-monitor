@@ -13,6 +13,7 @@ public class Project : NotifiableObject
     public string? File { get; set; }
     public string? Directory => Path.GetDirectoryName(File);
     public string? FullPrgPath => IsPrgSet ? Path.Combine(Directory!, PrgPath!) : null;
+    public string? BreakpointsSettingsPath => IsPrgSet ? Path.Combine(Directory!, "breakpoints.json") : null;
     public bool IsPrgSet => !string.IsNullOrWhiteSpace(PrgPath);
     public Pdb? DebugSymbols { get; set; }
     public string Caption => $"{Globals.AppName} - {File}";

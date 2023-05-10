@@ -63,7 +63,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var newFile = sourceFile with { Lines = lines };
             var pdb = CreatePdb(newFile);
 
-            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, sourceLine);
+            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text));
 
             Assert.That(actual, Is.EqualTo((newFile, newLine)));
         }
@@ -88,7 +89,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
                 default, default,
                 lines);
 
-            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, sourceLine);
+            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, 
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text));
 
             Assert.That(actual, Is.Null);
         }
@@ -113,7 +115,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var pdb = CreatePdb(newFile);
 
             // using 'jsr basout	; output character' as checkpoint
-            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, sourceLine);
+            var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text));
 
             Assert.That(actual.Value.Line, Is.SameAs(newFile.Lines[5]));
         }
@@ -141,7 +144,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
-            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
+            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text), newFile.Lines);
 
             Assert.That(actual, Is.SameAs(newFile.Lines[5]));
         }
@@ -164,7 +168,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
-            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
+            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text), newFile.Lines);
 
             Assert.That(actual, Is.SameAs(newFile.Lines[4]));
         }
@@ -188,7 +193,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
-            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
+            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text), newFile.Lines);
 
             Assert.That(actual, Is.SameAs(newFile.Lines[5]));
         }
@@ -210,7 +216,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var newFile = CreateSourceFile(modifiedSource, sourceFile.Path);
 
             // using 'jsr basout	; output character' as checkpoint
-            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90, sourceLine, newFile.Lines);
+            var actual = BreakpointsViewModel.FuzzyFindLine(5, 90,
+                new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text), newFile.Lines);
 
             Assert.That(actual, Is.SameAs(newFile.Lines[3]));
         }
