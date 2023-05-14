@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Build", "BuildTool\build\Bu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{01EC4808-5CCE-4C38-8C2F-59917646B98C}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		..\build.ps1 = ..\build.ps1
 		..\build.sh = ..\build.sh
 	EndProjectSection
