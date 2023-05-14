@@ -33,6 +33,7 @@ Param(
     [Alias("WhatIf", "Noop")]
 	[ValidateSet("Squirrel")]
 	[string]$ProjectType,
+    [string]$Version,
 	[string]$ReleaseNotes
 )
 
@@ -45,6 +46,7 @@ if ($ShowDescription) { $cakeArguments += "--showdescription" }
 #if ($DryRun) { $cakeArguments += "--dryrun" }
 if ($ProjectType) { $cakeArguments += "--project-type=$ProjectType" }
 if ($ReleaseNotes) { $cakeArguments += "--releaseNotes=$ReleaseNotes" }
+if ($Version) { $cakeArguments += "--app-version=$Version"}
 $cakeArguments += $ScriptArgs
 
 dotnet run --project BuildTool/BuildTool/build/Build.csproj  --configuration Release -- $cakeArguments
