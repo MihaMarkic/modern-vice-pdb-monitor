@@ -47,5 +47,5 @@ if ($ProjectType) { $cakeArguments += "--project-type=$ProjectType" }
 if ($ReleaseNotes) { $cakeArguments += "--releaseNotes=$ReleaseNotes" }
 $cakeArguments += $ScriptArgs
 
-dotnet run --project BuildTool/BuildTool/build/Build.csproj -- $cakeArguments
+dotnet run --project BuildTool/BuildTool/build/Build.csproj  --configuration Release -- $cakeArguments
 exit $LASTEXITCODE;

@@ -9,7 +9,9 @@
     <PackageReference Include="Cake.Frosting" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include=" Cake.Common" />
     <Using Include="Cake.Common.IO" />
+    <Using Include="Cake.Common.IO.Paths" />
     <Using Include="Cake.Core" />
     <Using Include="Cake.Core.Diagnostics" />
     <Using Include="Cake.Frosting" />

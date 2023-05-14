@@ -6,14 +6,13 @@ public sealed class TestTask : FrostingTask<BuildContext>
 {
     public override void Run(BuildContext context)
     {
-        context.Log.Information(context.Root.Path.MakeAbsolute(context.Environment));
         var testProjects = ImmutableArray<string>.Empty
             .Add("Modern.Vice.PdbMonitor.Core.Test")
             .Add("Modern.Vice.PdbMonitor.Test")
             .Add("Modern.Vice.PdbMonitor.Engine.Test");
         var settings = new DotNetTestSettings
         {
-            Configuration = "Release",
+            Configuration = context.AppConfiguration,
         };
         foreach (var p in testProjects)
         {
