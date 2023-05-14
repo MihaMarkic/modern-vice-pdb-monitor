@@ -54,6 +54,13 @@
       <!-- We use the value of AssemblyName to declare the value of the attribute -->
     </AssemblyAttribute>
   </ItemGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);SQUIRREL</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.0.0-preview6" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.0-preview6" />
@@ -75,6 +82,9 @@
     <PackageReference Include="NLog.Extensions.Logging" Version="5.2.3" />
     <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.15" />
    </ItemGroup>
+  <ItemGroup Condition="$(DefineConstants.Contains(SQUIRREL))">
+    <PackageReference Include="Clowd.Squirrel" Version="2.9.42" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />

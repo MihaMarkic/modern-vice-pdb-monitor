@@ -1,7 +1,10 @@
-using System;
+﻿using System;
 using Avalonia;
 using Microsoft.Extensions.Hosting;
 using NLog;
+#if SQUIRREL
+using Squirrel;
+#endif
 
 namespace Modern.Vice.PdbMonitor;
 
@@ -16,6 +19,15 @@ class Program
         var logger = LogManager.GetCurrentClassLogger();
         try
         {
+#if SQUIRREL
+            if (OperatingSystem.IsWindows())
+            {
+                SquirrelAwareApp.HandleEvents(
+                onInitialInstall: OnAppInstall,
+                onAppUninstall: OnAppUninstall,
+                onEveryRun: OnAppRun);
+            }
+#endif
             var host = CreateHostBuilder(args);
             Core.IoC.Init(host.Build());
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
@@ -44,4 +56,29 @@ class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .LogToTrace();
+
+#if SQUIRREL
+    static void OnAppInstall(SemanticVersion version, IAppTools tools)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            tools.CreateShortcutForThisExe(ShortcutLocation.StartMenu);
+        }
+    }
+
+    static void OnAppUninstall(SemanticVersion version, IAppTools tools)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            tools.RemoveShortcutForThisExe(ShortcutLocation.StartMenu);
+        }
+    }
+
+    static void OnAppRun(SemanticVersion version, IAppTools tools, bool firstRun)
+    {
+        tools.SetProcessAppUserModelId();
+        // show a welcome message when the app is first installed
+        //if (firstRun) MessageBox.Show("Thanks for installing my application!");
+    }
+#endif
 }

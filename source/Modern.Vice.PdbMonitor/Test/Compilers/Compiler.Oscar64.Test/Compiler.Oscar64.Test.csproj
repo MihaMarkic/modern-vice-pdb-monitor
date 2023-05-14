@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Compilers\Modern.Vice.PdbMonitor.Compilers.Acme\Modern.Vice.PdbMonitor.Compilers.Acme.csproj" />
+    <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Engine.Test\Modern.Vice.PdbMonitor.Engine.Test.csproj" />
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Utils.Test\Modern.Vice.PdbMonitor.Engine.Test.csproj" />
   </ItemGroup>
   <ItemGroup>

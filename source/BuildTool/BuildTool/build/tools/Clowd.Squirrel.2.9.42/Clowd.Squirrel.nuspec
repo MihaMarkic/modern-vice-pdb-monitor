@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Clowd.Squirrel</id>
+    <version>2.9.42</version>
+    <title>Squirrel for Windows</title>
+    <authors>Anaïs Betts, Caelan Sayler, GitHub, others</authors>
+    <owners>Caelan Sayler</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>images\Squirrel-Clowd-Logo.png</icon>
+    <projectUrl>https://github.com/clowd/Clowd.Squirrel</projectUrl>
+    <iconUrl>https://user-images.githubusercontent.com/1287295/131249078-9e131e51-0b66-4dc7-8c0a-99cbea6bcf80.png</iconUrl>
+    <description>Quick and easy installer and automatic updates for desktop applications</description>
+    <copyright>Copyright © Caelan Sayler 2021</copyright>
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1">
+        <dependency id="SharpCompress" version="0.31.0" />
+        <dependency id="System.ValueTuple" version="4.5.0" />
+      </group>
+      <group targetFramework="net5.0">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="SharpCompress" version="0.31.0" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="SharpCompress" version="0.31.0" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Win32.Registry" version="5.0.0" />
+        <dependency id="SharpCompress" version="0.31.0" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Net.Http" targetFramework=".NETFramework4.6.1" />
+      <frameworkAssembly assemblyName="System.Web" targetFramework=".NETFramework4.6.1" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

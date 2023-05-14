@@ -1,0 +1,2992 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SquirrelLib</name>
+    </assembly>
+    <members>
+        <member name="T:Squirrel.ChecksumFailedException">
+            <summary>
+            Represents an error that occurs when a package does not match it's expected SHA checksum
+            </summary>
+        </member>
+        <member name="P:Squirrel.ChecksumFailedException.Filename">
+            <summary>
+            The filename of the package which failed validation
+            </summary>
+        </member>
+        <member name="T:Squirrel.GithubUpdateManager">
+            <summary>
+            An implementation of UpdateManager which supports checking updates and 
+            downloading releases directly from GitHub releases. This class is just a shorthand
+            for initialising <see cref="T:Squirrel.UpdateManager"/> with a <see cref="T:Squirrel.Sources.GithubSource"/>
+            as the first argument.
+            </summary>
+        </member>
+        <member name="M:Squirrel.GithubUpdateManager.#ctor(System.String,System.Boolean,System.String,System.String,System.String,Squirrel.Sources.IFileDownloader)">
+            <inheritdoc cref="M:Squirrel.UpdateManager.#ctor(System.String,System.String,System.String,Squirrel.Sources.IFileDownloader)"/>
+            <param name="repoUrl">
+            The URL of the GitHub repository to download releases from 
+            (e.g. https://github.com/myuser/myrepo)
+            </param>
+            <param name="applicationIdOverride">
+            The Id of your application should correspond with the 
+            appdata directory name, and the Id used with Squirrel releasify/pack.
+            If left null/empty, will attempt to determine the current application Id  
+            from the installed app location.
+            </param>
+            <param name="urlDownloader">
+            A custom file downloader, for using non-standard package sources or adding 
+            proxy configurations. 
+            </param>
+            <param name="localAppDataDirectoryOverride">
+            Provide a custom location for the system LocalAppData, it will be used 
+            instead of <see cref="F:System.Environment.SpecialFolder.LocalApplicationData"/>.
+            </param>
+            <param name="prerelease">
+            If true, the latest pre-release will be downloaded. If false, the latest 
+            stable release will be downloaded.
+            </param>
+            <param name="accessToken">
+            The GitHub access token to use with the request to download releases. 
+            If left empty, the GitHub rate limit for unauthenticated requests allows 
+            for up to 60 requests per hour, limited by IP address.
+            </param>
+        </member>
+        <member name="T:Squirrel.UpdateManager">
+            <inheritdoc cref="T:Squirrel.IUpdateManager"/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.GitHubUpdateManager(System.String,System.String,System.String,Squirrel.Sources.IFileDownloader,System.Boolean,System.String)">
+            <summary>
+            This function is obsolete and will be removed in a future version,
+            see the <see cref="T:Squirrel.GithubUpdateManager" /> class for a replacement.
+            </summary>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CheckForUpdate(System.Boolean,System.Action{System.Int32},Squirrel.UpdaterIntention)">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.UpdateManager.AppId">
+            <summary>The unique Id of the application.</summary>
+        </member>
+        <member name="P:Squirrel.UpdateManager.AppDirectory">
+            <summary>The directory the app is (or will be) installed in.</summary>
+        </member>
+        <member name="P:Squirrel.UpdateManager.IsInstalledApp">
+            <summary>True if the current executable is inside the target <see cref="P:Squirrel.UpdateManager.AppDirectory"/>.</summary>
+        </member>
+        <member name="P:Squirrel.UpdateManager.PackagesDirectory">
+            <summary>The directory packages and temp files are stored in.</summary>
+        </member>
+        <member name="F:Squirrel.UpdateManager._applicationIdOverride">
+            <summary>The application name provided in constructor, or null.</summary>
+        </member>
+        <member name="F:Squirrel.UpdateManager._localAppDataDirectoryOverride">
+            <summary>The path to the local app data folder on this machine.</summary>
+        </member>
+        <member name="F:Squirrel.UpdateManager._updateSource">
+            <summary>The <see cref="T:Squirrel.Sources.IUpdateSource"/> responsible for retrieving updates from a package repository.</summary>
+        </member>
+        <member name="M:Squirrel.UpdateManager.#ctor(System.String,System.String,System.String,Squirrel.Sources.IFileDownloader)">
+            <summary>
+            Create a new instance of <see cref="T:Squirrel.UpdateManager"/> to check for and install updates. 
+            Do not forget to dispose this class! This constructor is just a shortcut for
+            <see cref="M:Squirrel.UpdateManager.#ctor(Squirrel.Sources.IUpdateSource,System.String,System.String)"/>, and will automatically create
+            a <see cref="T:Squirrel.Sources.SimpleFileSource"/> or a <see cref="T:Squirrel.Sources.SimpleWebSource"/> depending on 
+            whether 'urlOrPath' is a filepath or a URL, respectively.
+            </summary>
+            <param name="urlOrPath">
+            The URL where your update packages or stored, or a local package repository directory.
+            </param>
+            <param name="applicationIdOverride">
+            The Id of your application should correspond with the 
+            appdata directory name, and the Id used with Squirrel releasify/pack.
+            If left null/empty, UpdateManger will attempt to determine the current application Id  
+            from the installed app location, or throw if the app is not currently installed during certain 
+            operations.
+            </param>
+            <param name="localAppDataDirectoryOverride">
+            Provide a custom location for the system LocalAppData, it will be used 
+            instead of <see cref="F:System.Environment.SpecialFolder.LocalApplicationData"/>.
+            </param>
+            <param name="urlDownloader">
+            A custom file downloader, for using non-standard package sources or adding proxy configurations. 
+            </param>
+        </member>
+        <member name="M:Squirrel.UpdateManager.#ctor(Squirrel.Sources.IUpdateSource,System.String,System.String)">
+            <summary>
+            Create a new instance of <see cref="T:Squirrel.UpdateManager"/> to check for and install updates. 
+            Do not forget to dispose this class!
+            </summary>
+            <param name="updateSource">
+            The source of your update packages. This can be a web server (<see cref="T:Squirrel.Sources.SimpleWebSource"/>),
+            a local directory (<see cref="T:Squirrel.Sources.SimpleFileSource"/>), a GitHub repository (<see cref="T:Squirrel.Sources.GithubSource"/>),
+            or a custom location.
+            </param>
+            <param name="applicationIdOverride">
+            The Id of your application should correspond with the 
+            appdata directory name, and the Id used with Squirrel releasify/pack.
+            If left null/empty, UpdateManger will attempt to determine the current application Id  
+            from the installed app location, or throw if the app is not currently installed during certain 
+            operations.
+            </param>
+            <param name="localAppDataDirectoryOverride">
+            Provide a custom location for the system LocalAppData, it will be used 
+            instead of <see cref="F:System.Environment.SpecialFolder.LocalApplicationData"/>.
+            </param>
+        </member>
+        <member name="M:Squirrel.UpdateManager.Finalize">
+            <summary>Clean up UpdateManager resources</summary>
+        </member>
+        <member name="M:Squirrel.UpdateManager.ApplyReleases(Squirrel.UpdateInfo,System.Action{System.Int32})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.FullInstall(System.Boolean,System.Action{System.Int32})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.FullUninstall">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CreateUninstallerRegistryEntry(System.String,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CreateUninstallerRegistryEntry">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.RemoveUninstallerRegistryEntry">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CreateShortcutsForExecutable(System.String,Squirrel.ShortcutLocation,System.Boolean,System.String,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.RemoveShortcutsForExecutable(System.String,Squirrel.ShortcutLocation)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CurrentlyInstalledVersion(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.SetProcessAppUserModelId">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.KillAllExecutablesBelongingToPackage">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.UpdateManager.RestartApp(System.String,System.String)">
+            <summary>
+            Terminates the current process immediately (with <see cref="M:System.Environment.Exit(System.Int32)"/>) and 
+            re-launches the latest version of the current (or target) executable. 
+            </summary>
+            <param name="exeToStart">The file *name* (not full path) of the exe to start, or null to re-launch 
+            the current executable. </param>
+            <param name="arguments">Arguments to start the exe with</param>
+            <remarks>See <see cref="M:Squirrel.UpdateManager.RestartAppWhenExited(System.String,System.String)"/> for a version which does not
+            exit the current process immediately, but instead allows you to exit the current process
+            however you'd like.</remarks>
+        </member>
+        <member name="M:Squirrel.UpdateManager.RestartAppWhenExited(System.String,System.String)">
+            <summary>
+            Launch Update.exe and ask it to wait until this process exits before starting
+            a new process. Used to re-start your app with the latest version after an update.
+            </summary>
+            <param name="exeToStart">The file *name* (not full path) of the exe to start, or null to re-launch 
+            the current executable. </param>
+            <param name="arguments">Arguments to start the exe with</param>
+            <returns>The Update.exe process that is waiting for this process to exit</returns>
+        </member>
+        <member name="M:Squirrel.UpdateManager.CalculateProgress(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Calculates the total percentage of a specific step that should report within a specific range.
+            <para />
+            If a step needs to report between 50 -> 75 %, this method should be used as CalculateProgress(percentage, 50, 75). 
+            </summary>
+            <param name="percentageOfCurrentStep">The percentage of the current step, a value between 0 and 100.</param>
+            <param name="stepStartPercentage">The start percentage of the range the current step represents.</param>
+            <param name="stepEndPercentage">The end percentage of the range the current step represents.</param>
+            <returns>The calculated percentage that can be reported about the total progress.</returns>
+        </member>
+        <member name="M:Squirrel.UpdateManager.DownloadReleases(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.Action{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.EnumerableExtensions.ContextualSingle``1(System.Collections.Generic.IEnumerable{``0},System.String,System.String,System.String)">
+            <summary>
+            Essentially just .Single() but with context aware error messages which are more helpful to a user.
+            Eg. "Invalid {is}. One {what} expected in {in}. None was found."
+            Eg. "Invalid {is}. Only a single {what} expected in {in}. There were 2 or more."
+            </summary>
+        </member>
+        <member name="M:Squirrel.EnumerableExtensions.ForEach``1(System.Collections.Generic.IEnumerable{``0},System.Action{``0})">
+            <summary>
+            Enumerates the sequence and invokes the given action for each value in the sequence.
+            </summary>
+            <typeparam name="TSource">Source sequence element type.</typeparam>
+            <param name="source">Source sequence.</param>
+            <param name="onNext">Action to invoke for each element.</param>
+        </member>
+        <member name="M:Squirrel.EnumerableExtensions.MaxBy``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1})">
+            <summary>
+            Returns the elements with the maximum key value by using the default comparer to compare key values.
+            </summary>
+            <typeparam name="TSource">Source sequence element type.</typeparam>
+            <typeparam name="TKey">Key type.</typeparam>
+            <param name="source">Source sequence.</param>
+            <param name="keySelector">Key selector used to extract the key for each element in the sequence.</param>
+            <returns>List with the elements that share the same maximum key value.</returns>
+        </member>
+        <member name="M:Squirrel.EnumerableExtensions.MaxBy``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1})">
+            <summary>
+            Returns the elements with the minimum key value by using the specified comparer to compare key values.
+            </summary>
+            <typeparam name="TSource">Source sequence element type.</typeparam>
+            <typeparam name="TKey">Key type.</typeparam>
+            <param name="source">Source sequence.</param>
+            <param name="keySelector">Key selector used to extract the key for each element in the sequence.</param>
+            <param name="comparer">Comparer used to determine the maximum key value.</param>
+            <returns>List with the elements that share the same maximum key value.</returns>
+        </member>
+        <member name="M:Squirrel.NativeMethods.ApplyDelta(Squirrel.ApplyFlags,System.String,System.String,System.String)">
+            <summary>
+                The ApplyDelta function use the specified delta and source files to create a new copy of the target file.
+            </summary>
+            <param name="applyFlags">Either DELTA_FLAG_NONE or DELTA_APPLY_FLAG_ALLOW_PA19.</param>
+            <param name="sourceName">The name of the source file to which the delta is to be applied.</param>
+            <param name="deltaName">The name of the delta to be applied to the source file.</param>
+            <param name="targetName">The name of the target file that is to be created.</param>
+            <returns>
+                Returns TRUE on success or FALSE otherwise.
+            </returns>
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#applydeltaaw
+            </remarks>
+        </member>
+        <member name="M:Squirrel.NativeMethods.CreateDelta(Squirrel.FileTypeSet,Squirrel.CreateFlags,Squirrel.CreateFlags,System.String,System.String,System.String,System.String,Squirrel.DeltaInput,System.IntPtr,Squirrel.HashAlgId,System.String)">
+            <summary>
+                The CreateDelta function creates a delta from the specified source and target files and write the output delta to the designated file name.
+            </summary>
+            <param name="fileTypeSet">The file type set used for Create.</param>
+            <param name="setFlags">The file type set used for Create.</param>
+            <param name="resetFlags">The file type set used for Create.</param>
+            <param name="sourceName">The file type set used for Create.</param>
+            <param name="targetName">The name of the target against which the source is compared.</param>
+            <param name="sourceOptionsName">Reserved. Pass NULL.</param>
+            <param name="targetOptionsName">Reserved. Pass NULL.</param>
+            <param name="globalOptions">Reserved. Pass a DELTA_INPUT structure with lpStart set to NULL and uSize set to 0.</param>
+            <param name="targetFileTime">The time stamp set on the target file after delta Apply. If NULL, the timestamp of the target file during delta Create will be used.</param>
+            <param name="hashAlgId">ALG_ID of the algorithm to be used to generate the target signature.</param>
+            <param name="deltaName">The name of the delta file to be created.</param>
+            <returns>
+                Returns TRUE on success or FALSE otherwise.
+            </returns>
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#createdeltaaw
+            </remarks>
+        </member>
+        <member name="T:Squirrel.ApplyFlags">
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#deltaflagtypeflags
+            </remarks>
+        </member>
+        <member name="F:Squirrel.ApplyFlags.None">
+            <summary>Indicates no special handling.</summary>
+        </member>
+        <member name="F:Squirrel.ApplyFlags.AllowLegacy">
+            <summary>Allow MSDelta to apply deltas created using PatchAPI.</summary>
+        </member>
+        <member name="T:Squirrel.FileTypeSet">
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#filetypesets
+            </remarks>
+        </member>
+        <member name="F:Squirrel.FileTypeSet.Executables">
+            <summary>
+                File type set that includes I386, IA64 and AMD64 Portable Executable (PE) files. Others are treated as raw.
+            </summary>
+        </member>
+        <member name="T:Squirrel.CreateFlags">
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#deltaflagtypeflags
+            </remarks>
+        </member>
+        <member name="F:Squirrel.CreateFlags.None">
+            <summary>Indicates no special handling.</summary>
+        </member>
+        <member name="F:Squirrel.CreateFlags.IgnoreFileSizeLimit">
+            <summary>Allow the source, target and delta files to exceed the default size limit.</summary>
+        </member>
+        <member name="T:Squirrel.DeltaInput">
+            <remarks>
+                http://msdn.microsoft.com/en-us/library/bb417345.aspx#deltainputstructure
+            </remarks>
+        </member>
+        <member name="F:Squirrel.DeltaInput.Start">
+            <summary>Memory address non-editable input buffer.</summary>
+        </member>
+        <member name="F:Squirrel.DeltaInput.Size">
+            <summary>Size of the memory buffer in bytes.</summary>
+        </member>
+        <member name="F:Squirrel.DeltaInput.Editable">
+            <summary>
+                Defines whether MSDelta is allowed to edit the input buffer. If you make the input editable, the buffer will
+                be zeroed at function return. However this will cause most MSDelta functions to use less memory.
+            </summary>
+        </member>
+        <member name="F:Squirrel.HashAlgId.None">
+            <summary>No signature.</summary>
+        </member>
+        <member name="F:Squirrel.HashAlgId.Crc32">
+            <summary>32-bit CRC defined in msdelta.dll.</summary>
+        </member>
+        <member name="T:Squirrel.Lib.JunctionPoint">
+            <summary>
+                Provides access to NTFS junction points in .Net.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.ERROR_NOT_A_REPARSE_POINT">
+            <summary>
+                The file or directory is not a reparse point.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.ERROR_REPARSE_ATTRIBUTE_CONFLICT">
+            <summary>
+                The reparse point attribute cannot be set because it conflicts with an existing attribute.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.ERROR_INVALID_REPARSE_DATA">
+            <summary>
+                The data present in the reparse point buffer is invalid.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.ERROR_REPARSE_TAG_INVALID">
+            <summary>
+                The tag present in the reparse point buffer is invalid.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.ERROR_REPARSE_TAG_MISMATCH">
+            <summary>
+                There is a mismatch between the tag specified in the request and the tag present in the reparse point.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.FSCTL_SET_REPARSE_POINT">
+            <summary>
+                Command to set the reparse point data block.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.FSCTL_GET_REPARSE_POINT">
+            <summary>
+                Command to get the reparse point data block.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.FSCTL_DELETE_REPARSE_POINT">
+            <summary>
+                Command to delete the reparse point data base.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.IO_REPARSE_TAG_MOUNT_POINT">
+            <summary>
+                Reparse point tag used to identify mount points and junction points.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.NonInterpretedPathPrefix">
+            <summary>
+                This prefix indicates to NTFS that the path is to be treated as a non-interpreted
+                path in the virtual file system.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Lib.JunctionPoint.Create(System.String,System.String,System.Boolean)">
+            <summary>
+                Creates a junction point from the specified directory to the specified target directory.
+            </summary>
+            <remarks>
+                Only works on NTFS.
+            </remarks>
+            <param name="junctionPoint">The junction point path</param>
+            <param name="targetDir">The target directory</param>
+            <param name="overwrite">If true overwrites an existing reparse point or empty directory</param>
+            <exception cref="T:System.IO.IOException">
+                Thrown when the junction point could not be created or when
+                an existing directory was found and <paramref name="overwrite" /> if false
+            </exception>
+        </member>
+        <member name="M:Squirrel.Lib.JunctionPoint.Delete(System.String)">
+            <summary>
+                Deletes a junction point at the specified source directory along with the directory itself.
+                Does nothing if the junction point does not exist.
+            </summary>
+            <remarks>
+                Only works on NTFS.
+            </remarks>
+            <param name="junctionPoint">The junction point path</param>
+        </member>
+        <member name="M:Squirrel.Lib.JunctionPoint.Exists(System.String)">
+            <summary>
+                Determines whether the specified path exists and refers to a junction point.
+            </summary>
+            <param name="path">The junction point path</param>
+            <returns>True if the specified path represents a junction point</returns>
+            <exception cref="T:System.IO.IOException">
+                Thrown if the specified path is invalid
+                or some other error occurs
+            </exception>
+        </member>
+        <member name="M:Squirrel.Lib.JunctionPoint.GetTarget(System.String)">
+            <summary>
+                Gets the target of the specified junction point.
+            </summary>
+            <remarks>
+                Only works on NTFS.
+            </remarks>
+            <param name="junctionPoint">The junction point path</param>
+            <returns>The target of the junction point</returns>
+            <exception cref="T:System.IO.IOException">
+                Thrown when the specified path does not
+                exist, is invalid, is not a junction point, or some other error occurs
+            </exception>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.ReparseTag">
+            <summary>
+                Reparse point tag. Must be a Microsoft reparse point tag.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.ReparseDataLength">
+            <summary>
+                Size, in bytes, of the data after the Reserved member. This can be calculated by:
+                (4 * sizeof(ushort)) + SubstituteNameLength + PrintNameLength +
+                (namesAreNullTerminated ? 2 * sizeof(char) : 0);
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.Reserved">
+            <summary>
+                Reserved; do not use.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.SubstituteNameOffset">
+            <summary>
+                Offset, in bytes, of the substitute name string in the PathBuffer array.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.SubstituteNameLength">
+            <summary>
+                Length, in bytes, of the substitute name string. If this string is null-terminated,
+                SubstituteNameLength does not include space for the null character.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.PrintNameOffset">
+            <summary>
+                Offset, in bytes, of the print name string in the PathBuffer array.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.PrintNameLength">
+            <summary>
+                Length, in bytes, of the print name string. If this string is null-terminated,
+                PrintNameLength does not include space for the null character.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Lib.JunctionPoint.REPARSE_DATA_BUFFER.PathBuffer">
+            <summary>
+                A buffer containing the unicode-encoded path string. The path string contains
+                the substitute name string and print name string.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Utility.ArgsToCommandLine(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+                Given a number of argument strings, constructs a single command line string with all the arguments escaped
+                correctly so that a process using standard Windows API for parsing the command line will receive exactly the
+                strings passed in here. See Remarks.</summary>
+            <remarks>
+                The string is only valid for passing directly to a process. If the target process is invoked by passing the
+                process name + arguments to cmd.exe then further escaping is required, to counteract cmd.exe's interpretation
+                of additional special characters. See <see cref="M:Squirrel.Utility.EscapeCmdExeMetachars(System.String)"/>.</remarks>
+        </member>
+        <member name="M:Squirrel.Utility.EscapeCmdExeMetachars(System.String)">
+            <summary>
+                Escapes all cmd.exe meta-characters by prefixing them with a ^. See <see cref="M:Squirrel.Utility.ArgsToCommandLine(System.Collections.Generic.IEnumerable{System.String})"/> for more
+                information.</summary>
+        </member>
+        <member name="M:Squirrel.Utility.InvokeProcessAsync(System.String,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken,System.String)">
+            <summary>
+            This function will escape command line arguments such that CommandLineToArgvW is guarenteed to produce the same output as the 'args' parameter. 
+            It also will automatically execute wine if trying to run an exe while not on windows.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Utility.DnsNamespace">
+            <summary>
+            The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="F:Squirrel.Utility.UrlNamespace">
+            <summary>
+            The namespace for URLs (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="F:Squirrel.Utility.IsoOidNamespace">
+            <summary>
+            The namespace for ISO OIDs (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="T:Squirrel.ShortcutLocation">
+            <summary>
+            Specifies several common places where shortcuts can be installed on a user's system
+            </summary>
+        </member>
+        <member name="F:Squirrel.ShortcutLocation.StartMenu">
+            <summary>
+            A shortcut in ProgramFiles within a publisher sub-directory
+            </summary>
+        </member>
+        <member name="F:Squirrel.ShortcutLocation.Desktop">
+            <summary>
+            A shortcut on the current user desktop
+            </summary>
+        </member>
+        <member name="F:Squirrel.ShortcutLocation.Startup">
+            <summary>
+            A shortcut in Startup/Run folder will cause the app to be automatially started on user login.
+            </summary>
+        </member>
+        <member name="F:Squirrel.ShortcutLocation.AppRoot">
+            <summary>
+            A shortcut in the application folder, useful for portable applications.
+            </summary>
+        </member>
+        <member name="F:Squirrel.ShortcutLocation.StartMenuRoot">
+            <summary>
+            A shortcut in ProgramFiles root folder (not in a company/publisher sub-directory). This is commonplace as of more recent versions of windows.
+            </summary>
+        </member>
+        <member name="T:Squirrel.UpdaterIntention">
+            <summary>
+            Indicates whether the UpdateManager is used in a Install or Update scenario.
+            </summary>
+        </member>
+        <member name="F:Squirrel.UpdaterIntention.Install">
+            <summary> 
+            The current intent is to perform a full app install, and overwrite or 
+            repair any app already installed of the same name.
+            </summary>
+        </member>
+        <member name="F:Squirrel.UpdaterIntention.Update">
+            <summary>
+            The current intent is to perform an app update, and to do nothing if there
+            is no newer version available to install.
+            </summary>
+        </member>
+        <member name="T:Squirrel.IUpdateManager">
+            <summary>
+            Provides update functionality to applications, and general helper
+            functions for managing installed shortcuts and registry entries. Use this
+            to check if the current app is installed or not before performing an update.
+            </summary>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.CheckForUpdate(System.Boolean,System.Action{System.Int32},Squirrel.UpdaterIntention)">
+            <summary>
+            Fetch the remote store for updates and compare against the current 
+            version to determine what updates to download.
+            </summary>
+            <param name="intention">Indicates whether the UpdateManager is used
+            in a Install or Update scenario.</param>
+            <param name="ignoreDeltaUpdates">Set this flag if applying a release
+            fails to fall back to a full release, which takes longer to download
+            but is less error-prone.</param>
+            <param name="progress">A Observer which can be used to report Progress - 
+            will return values from 0-100 and Complete, or Throw</param>
+            <returns>An UpdateInfo object representing the updates to install.
+            </returns>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.DownloadReleases(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.Action{System.Int32})">
+            <summary>
+            Download a list of releases into the local package directory.
+            </summary>
+            <param name="releasesToDownload">The list of releases to download, 
+            almost always from UpdateInfo.ReleasesToApply.</param>
+            <param name="progress">A Observer which can be used to report Progress - 
+            will return values from 0-100 and Complete, or Throw</param>
+            <returns>A completion Observable - either returns a single 
+            Unit.Default then Complete, or Throw</returns>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.ApplyReleases(Squirrel.UpdateInfo,System.Action{System.Int32})">
+            <summary>
+            Take an already downloaded set of releases and apply them, 
+            copying in the new files from the NuGet package and rewriting 
+            the application shortcuts.
+            </summary>
+            <param name="updateInfo">The UpdateInfo instance acquired from 
+            CheckForUpdate</param>
+            <param name="progress">A Observer which can be used to report Progress - 
+            will return values from 0-100 and Complete, or Throw</param>
+            <returns>The path to the installed application (i.e. the path where
+            your package's contents ended up</returns>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.FullInstall(System.Boolean,System.Action{System.Int32})">
+            <summary>
+            Completely Installs a targeted app
+            </summary>
+            <param name="silentInstall">If true, don't run the app once install completes.</param>
+            <param name="progress">A Observer which can be used to report Progress - 
+            will return values from 0-100 and Complete, or Throw</param>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.FullUninstall">
+            <summary>
+            Completely uninstalls the targeted app
+            </summary>
+        </member>
+        <member name="M:Squirrel.IUpdateManager.KillAllExecutablesBelongingToPackage">
+            <summary>
+            Kills all the executables in the target install directory, excluding
+            the currently executing process.
+            </summary>
+        </member>
+        <member name="T:Squirrel.IAppTools">
+            <summary>
+            Provides accessory functions such as managing uninstall registry or 
+            creating, updating, and removing shortcuts.
+            </summary>
+        </member>
+        <member name="M:Squirrel.IAppTools.CurrentlyInstalledVersion(System.String)">
+            <summary>
+            Gets the currently installed version of the given executable, or if
+            not given, the currently running assembly
+            </summary>
+            <param name="executable">The executable to check, or null for this 
+            executable</param>
+            <returns>The running version, or null if this is not a Squirrel
+            installed app (i.e. you're running from VS)</returns>
+        </member>
+        <member name="M:Squirrel.IAppTools.CreateUninstallerRegistryEntry(System.String,System.String)">
+            <summary>
+            Creates an entry in Programs and Features based on the currently 
+            applied package
+            </summary>
+            <param name="uninstallCmd">The command to run to uninstall, usually update.exe --uninstall</param>
+            <param name="quietSwitch">The switch for silent uninstall, usually --silent</param>
+            <returns>The registry key that was created</returns>
+        </member>
+        <member name="M:Squirrel.IAppTools.CreateUninstallerRegistryEntry">
+            <summary>
+            Creates an entry in Programs and Features based on the currently 
+            applied package. Uses the built-in Update.exe to handle uninstall.
+            </summary>
+            <returns>The registry key that was created</returns>
+        </member>
+        <member name="M:Squirrel.IAppTools.RemoveUninstallerRegistryEntry">
+            <summary>
+            Removes the entry in Programs and Features created via 
+            CreateUninstallerRegistryEntry
+            </summary>
+        </member>
+        <member name="M:Squirrel.IAppTools.CreateShortcutsForExecutable(System.String,Squirrel.ShortcutLocation,System.Boolean,System.String,System.String)">
+            <summary>
+            Create a shortcut on the Desktop / Start Menu for the given 
+            executable. Metadata from the currently installed NuGet package 
+            and information from the Version Header of the EXE will be used
+            to construct the shortcut folder / name.
+            </summary>
+            <param name="exeName">The name of the executable, relative to the 
+            app install directory.</param>
+            <param name="locations">The locations to install the shortcut</param>
+            <param name="updateOnly">Set to false during initial install, true 
+            during app update.</param>
+            <param name="programArguments">The arguments to code into the shortcut</param>
+            <param name="icon">The shortcut icon</param>
+        </member>
+        <member name="M:Squirrel.IAppTools.RemoveShortcutsForExecutable(System.String,Squirrel.ShortcutLocation)">
+            <summary>
+            Removes shortcuts created by CreateShortcutsForExecutable
+            </summary>
+            <param name="exeName">The name of the executable, relative to the
+            app install directory.</param>
+            <param name="locations">The locations to install the shortcut</param>
+        </member>
+        <member name="M:Squirrel.IAppTools.SetProcessAppUserModelId">
+            <summary>
+            Sets the AppUserModelID of the current process to match that which was added to the 
+            shell shortcuts. This ID is used to group an application's processes and windows under 
+            a single taskbar button.
+            </summary>
+        </member>
+        <member name="T:Squirrel.EasyModeMixin">
+            <summary>
+            Contains extension methods for <see cref="T:Squirrel.IUpdateManager"/> which provide simplified functionality
+            </summary>
+        </member>
+        <member name="M:Squirrel.EasyModeMixin.UpdateApp(Squirrel.IUpdateManager,System.Action{System.Int32})">
+            <summary>
+            This will check for updates, download any new available updates, and apply those
+            updates in a single step. The same task can be accomplished by using <see cref="M:Squirrel.IUpdateManager.CheckForUpdate(System.Boolean,System.Action{System.Int32},Squirrel.UpdaterIntention)"/>, 
+            followed by <see cref="M:Squirrel.IUpdateManager.DownloadReleases(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.Action{System.Int32})"/> and <see cref="M:Squirrel.IUpdateManager.ApplyReleases(Squirrel.UpdateInfo,System.Action{System.Int32})"/>.
+            </summary>
+            <returns>The installed update, or null if there were no updates available</returns>
+        </member>
+        <member name="M:Squirrel.EasyModeMixin.CreateShortcutForThisExe(Squirrel.IAppTools,Squirrel.ShortcutLocation)">
+            <summary>
+            Create a shortcut to the currently running executable at the specified locations. 
+            See <see cref="M:Squirrel.IAppTools.CreateShortcutsForExecutable(System.String,Squirrel.ShortcutLocation,System.Boolean,System.String,System.String)"/> to create a shortcut to a different program
+            </summary>
+        </member>
+        <member name="M:Squirrel.EasyModeMixin.RemoveShortcutForThisExe(Squirrel.IAppTools,Squirrel.ShortcutLocation)">
+            <summary>
+            Removes a shortcut for the currently running executable at the specified locations.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.BinaryPatchUtility.Create(System.Byte[],System.Byte[],System.IO.Stream)">
+            <summary>
+            Creates a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) that can be used
+            (by <see cref="M:Squirrel.Bsdiff.BinaryPatchUtility.Apply(System.IO.Stream,System.Func{System.IO.Stream},System.IO.Stream)"/>) to transform <paramref name="oldData"/> into <paramref name="newData"/>.
+            </summary>
+            <param name="oldData">The original binary data.</param>
+            <param name="newData">The new binary data.</param>
+            <param name="output">A <see cref="T:System.IO.Stream"/> to which the patch will be written.</param>
+        </member>
+        <member name="M:Squirrel.Bsdiff.BinaryPatchUtility.Apply(System.IO.Stream,System.Func{System.IO.Stream},System.IO.Stream)">
+            <summary>
+            Applies a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
+            <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
+            </summary>
+            <param name="input">A <see cref="T:System.IO.Stream"/> containing the input data.</param>
+            <param name="openPatchStream">A func that can open a <see cref="T:System.IO.Stream"/> positioned at the start of the patch data.
+            This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
+            the patch to be opened concurrently.</param>
+            <param name="output">A <see cref="T:System.IO.Stream"/> to which the patched data is written.</param>
+        </member>
+        <member name="T:Squirrel.Bsdiff.WrappingStream">
+            <summary>
+            A <see cref="T:System.IO.Stream"/> that wraps another stream. One major feature of <see cref="T:Squirrel.Bsdiff.WrappingStream"/> is that it does not dispose the
+            underlying stream when it is disposed if Ownership.None is used; this is useful when using classes such as <see cref="T:System.IO.BinaryReader"/> and
+            <see cref="T:System.Security.Cryptography.CryptoStream"/> that take ownership of the stream passed to their constructors.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2009/05/wrappingstream_implementation.html">WrappingStream Implementation</a>.</remarks>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.#ctor(System.IO.Stream,Squirrel.Bsdiff.Ownership)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Squirrel.Bsdiff.WrappingStream"/> class.
+            </summary>
+            <param name="streamBase">The wrapped stream.</param>
+            <param name="ownership">Use Owns if the wrapped stream should be disposed when this stream is disposed.</param>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.CanRead">
+            <summary>
+            Gets a value indicating whether the current stream supports reading.
+            </summary>
+            <returns><c>true</c> if the stream supports reading; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.CanSeek">
+            <summary>
+            Gets a value indicating whether the current stream supports seeking.
+            </summary>
+            <returns><c>true</c> if the stream supports seeking; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing.
+            </summary>
+            <returns><c>true</c> if the stream supports writing; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.Length">
+            <summary>
+            Gets the length in bytes of the stream.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.Position">
+            <summary>
+            Gets or sets the position within the current stream.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)">
+            <summary>
+            Begins an asynchronous read operation.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)">
+            <summary>
+            Begins an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.EndRead(System.IAsyncResult)">
+            <summary>
+            Waits for the pending asynchronous read to complete.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.EndWrite(System.IAsyncResult)">
+            <summary>
+            Ends an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.Flush">
+            <summary>
+            Clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads a sequence of bytes from the current stream and advances the position
+            within the stream by the number of bytes read.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.ReadByte">
+            <summary>
+            Reads a byte from the stream and advances the position within the stream by one byte, or returns -1 if at the end of the stream.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Sets the position within the current stream.
+            </summary>
+            <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
+            <param name="origin">A value of type <see cref="T:System.IO.SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
+            <returns>The new position within the current stream.</returns>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.SetLength(System.Int64)">
+            <summary>
+            Sets the length of the current stream.
+            </summary>
+            <param name="value">The desired length of the current stream in bytes.</param>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writes a sequence of bytes to the current stream and advances the current position
+            within this stream by the number of bytes written.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.WriteByte(System.Byte)">
+            <summary>
+            Writes a byte to the current position in the stream and advances the position within the stream by one byte.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Bsdiff.WrappingStream.WrappedStream">
+            <summary>
+            Gets the wrapped stream.
+            </summary>
+            <value>The wrapped stream.</value>
+        </member>
+        <member name="M:Squirrel.Bsdiff.WrappingStream.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by the <see cref="T:Squirrel.Bsdiff.WrappingStream"/> and optionally releases the managed resources.
+            </summary>
+            <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        </member>
+        <member name="T:Squirrel.Bsdiff.Ownership">
+            <summary>
+            Indicates whether an object takes ownership of an item.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Bsdiff.Ownership.None">
+            <summary>
+            The object does not own this item.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Bsdiff.Ownership.Owns">
+            <summary>
+            The object owns this item, and is responsible for releasing it.
+            </summary>
+        </member>
+        <member name="T:Squirrel.Bsdiff.StreamUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.IO.Stream"/>.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Bsdiff.StreamUtility.ReadExactly(System.IO.Stream,System.Int32)">
+            <summary>
+            Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/>.
+            </summary>
+            <param name="stream">The stream to read from.</param>
+            <param name="count">The count of bytes to read.</param>
+            <returns>A new byte array containing the data read from the stream.</returns>
+        </member>
+        <member name="M:Squirrel.Bsdiff.StreamUtility.ReadExactly(System.IO.Stream,System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/> into
+            <paramref name="buffer"/>, starting at the byte given by <paramref name="offset"/>.
+            </summary>
+            <param name="stream">The stream to read from.</param>
+            <param name="buffer">The buffer to read data into.</param>
+            <param name="offset">The offset within the buffer at which data is first written.</param>
+            <param name="count">The count of bytes to read.</param>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.AutoHyperlink">
+            <summary>
+            when true, (most) bare plain URLs are auto-hyperlinked
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.AutoNewlines">
+            <summary>
+            when true, RETURN becomes a literal newline
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.EmptyElementSuffix">
+            <summary>
+            use ">" for HTML output, or " />" for XHTML output
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.EncodeProblemUrlCharacters">
+            <summary>
+            when true, problematic URL characters like [, ], (, and so forth will be encoded
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.LinkEmails">
+            <summary>
+            when false, email addresses will never be auto-linked
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.MarkdownOptions.StrictBoldItalic">
+            <summary>
+            when true, bold and italic require non-word characters on either side
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="T:Squirrel.MarkdownSharp.Markdown">
+            <summary>
+            Markdown is a text-to-HTML conversion tool for web writers.
+            Markdown allows you to write using an easy-to-read, easy-to-write plain text format,
+            then convert it to structurally valid XHTML (or HTML).
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.#ctor">
+            <summary>
+            Create a new Markdown instance using default options
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.#ctor(Squirrel.MarkdownSharp.MarkdownOptions)">
+            <summary>
+            Create a new Markdown instance and set the options from the MarkdownOptions object.
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.EmptyElementSuffix">
+            <summary>
+            use ">" for HTML output, or " />" for XHTML output
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.LinkEmails">
+            <summary>
+            when false, email addresses will never be auto-linked
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.StrictBoldItalic">
+            <summary>
+            when true, bold and italic require non-word characters on either side
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.AutoNewLines">
+            <summary>
+            when true, RETURN becomes a literal newline
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.AutoHyperlink">
+            <summary>
+            when true, (most) bare plain URLs are auto-hyperlinked
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.EncodeProblemUrlCharacters">
+            <summary>
+            when true, problematic URL characters like [, ], (, and so forth will be encoded
+            WARNING: this is a significant deviation from the markdown spec
+            </summary>
+        </member>
+        <member name="F:Squirrel.MarkdownSharp.Markdown._nestDepth">
+            <summary>
+            maximum nested depth of [] and () supported by the transform; implementation detail
+            </summary>
+        </member>
+        <member name="F:Squirrel.MarkdownSharp.Markdown._tabWidth">
+            <summary>
+            Tabs are automatically converted to spaces as part of the transform
+            this constant determines how "wide" those tabs become in spaces
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.#cctor">
+            <summary>
+            In the static constuctor we'll initialize what stays the same across all transforms.
+            </summary>
+        </member>
+        <member name="P:Squirrel.MarkdownSharp.Markdown.Version">
+            <summary>
+            current version of MarkdownSharp;
+            see http://code.google.com/p/markdownsharp/ for the latest code or to contribute
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.Transform(System.String)">
+            <summary>
+            Transforms the provided Markdown-formatted text to HTML;
+            see http://en.wikipedia.org/wiki/Markdown
+            </summary>
+            <remarks>
+            The order in which other subs are called here is
+            essential. Link and image substitutions need to happen before
+            EscapeSpecialChars(), so that any *'s or _'s in the a
+            and img tags get encoded.
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.RunBlockGamut(System.String,System.Boolean)">
+            <summary>
+            Perform transformations that form block-level tags like paragraphs, headers, and list items.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.RunSpanGamut(System.String)">
+            <summary>
+            Perform transformations that occur *within* block-level tags like paragraphs, headers, and list items.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.FormParagraphs(System.String,System.Boolean)">
+            <summary>
+            splits on two or more newlines, to form "paragraphs";
+            each paragraph is then unhashed (if it is a hash and unhashing isn't turned off) or wrapped in HTML p tag
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.GetNestedBracketsPattern">
+            <summary>
+            Reusable pattern to match balanced [brackets]. See Friedl's
+            "Mastering Regular Expressions", 2nd Ed., pp. 328-331.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.GetNestedParensPattern">
+            <summary>
+            Reusable pattern to match balanced (parens). See Friedl's
+            "Mastering Regular Expressions", 2nd Ed., pp. 328-331.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.StripLinkDefinitions(System.String)">
+            <summary>
+            Strips link definitions from text, stores the URLs and titles in hash references.
+            </summary>
+            <remarks>
+            ^[id]: url "optional title"
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.GetBlockPattern">
+            <summary>
+            derived pretty much verbatim from PHP Markdown
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.HashHTMLBlocks(System.String)">
+            <summary>
+            replaces any block-level HTML blocks with hash entries
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.TokenizeHTML(System.String)">
+            <summary>
+            returns an array of HTML tokens comprising the input string. Each token is
+            either a tag (possibly with nested, tags contained therein, such
+            as &lt;a href="&lt;MTFoo&gt;"&gt;, or a run of text between tags. Each element of the
+            array is a two-element array; the first is either 'tag' or 'text'; the second is
+            the actual value.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoAnchors(System.String)">
+            <summary>
+            Turn Markdown link shortcuts into HTML anchor tags
+            </summary>
+            <remarks>
+            [link text](url "title")
+            [link text][id]
+            [id]
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoImages(System.String)">
+            <summary>
+            Turn Markdown image shortcuts into HTML img tags.
+            </summary>
+            <remarks>
+            ![alt text][id]
+            ![alt text](url "optional title")
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoHeaders(System.String)">
+             <summary>
+             Turn Markdown headers into HTML header tags
+             </summary>
+             <remarks>
+             Header 1
+             ========
+            
+             Header 2
+             --------
+            
+             # Header 1
+             ## Header 2
+             ## Header 2 with closing hashes ##
+             ...
+             ###### Header 6
+             </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoHorizontalRules(System.String)">
+            <summary>
+            Turn Markdown horizontal rules into HTML hr tags
+            </summary>
+            <remarks>
+            ***
+            * * *
+            ---
+            - - -
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoLists(System.String,System.Boolean)">
+            <summary>
+            Turn Markdown lists into HTML ul and ol and li tags
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.ProcessListItems(System.String,System.String,System.Boolean)">
+            <summary>
+            Process the contents of a single ordered or unordered list, splitting it
+            into individual list items.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoCodeBlocks(System.String)">
+            <summary>
+            /// Turn Markdown 4-space indented code into HTML pre code blocks
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoCodeSpans(System.String)">
+            <summary>
+            Turn Markdown `code spans` into HTML code tags
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoItalicsAndBold(System.String)">
+            <summary>
+            Turn Markdown *italics* and **bold** into HTML strong and em tags
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoHardBreaks(System.String)">
+            <summary>
+            Turn markdown line breaks (two space at end of line) into HTML break tags
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoBlockQuotes(System.String)">
+            <summary>
+            Turn Markdown > quoted blocks into HTML blockquote blocks
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.DoAutoLinks(System.String)">
+            <summary>
+            Turn angle-delimited URLs into HTML anchor tags
+            </summary>
+            <remarks>
+            &lt;http://www.example.com&gt;
+            </remarks>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.Outdent(System.String)">
+            <summary>
+            Remove one level of line-leading spaces
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EncodeEmailAddress(System.String)">
+            <summary>
+            encodes email address randomly
+            roughly 10% raw, 45% hex, 45% dec
+            note that @ is always encoded and : never is
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EncodeCode(System.String)">
+            <summary>
+            Encode/escape certain Markdown characters inside code blocks and spans where they are literals
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EncodeAmpsAndAngles(System.String)">
+            <summary>
+            Encode any ampersands (that aren't part of an HTML entity) and left or right angle brackets
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EscapeBackslashes(System.String)">
+            <summary>
+            Encodes any escaped characters such as \`, \*, \[ etc
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.Unescape(System.String)">
+            <summary>
+            swap back in all the special characters we've hidden
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EscapeBoldItalic(System.String)">
+            <summary>
+            escapes Bold [ * ] and Italic [ _ ] characters
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EncodeProblemUrlChars(System.String)">
+            <summary>
+            hex-encodes some unusual "problem" chars in URLs to avoid URL detection problems
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.EscapeSpecialCharsWithinTagAttributes(System.String)">
+            <summary>
+            Within tags -- meaning between &lt; and &gt; -- encode [\ ` * _] so they
+            don't conflict with their use in Markdown for code, italics and strong.
+            We're replacing each such character with its corresponding hash
+            value; this is likely overkill, but it should prevent us from colliding
+            with the escape values by accident.
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.Normalize(System.String)">
+            <summary>
+            convert all tabs to _tabWidth spaces;
+            standardizes line endings from DOS (CR LF) or Mac (CR) to UNIX (LF);
+            makes sure text ends with a couple of newlines;
+            removes any blank lines (only spaces) in the text
+            </summary>
+        </member>
+        <member name="M:Squirrel.MarkdownSharp.Markdown.RepeatString(System.String,System.Int32)">
+            <summary>
+            this is to emulate what's evailable in PHP
+            </summary>
+        </member>
+        <member name="T:Squirrel.Json.JsonArray">
+            <summary>
+            Represents the json array.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.JsonArray.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Squirrel.Json.JsonArray"/> class. 
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.JsonArray.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Squirrel.Json.JsonArray"/> class. 
+            </summary>
+            <param name="capacity">The capacity of the json array.</param>
+        </member>
+        <member name="M:Squirrel.Json.JsonArray.ToString">
+            <summary>
+            The json representation of the array.
+            </summary>
+            <returns>The json representation of the array.</returns>
+        </member>
+        <member name="T:Squirrel.Json.JsonObject">
+            <summary>
+            Represents the json object.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Json.JsonObject._members">
+            <summary>
+            The internal member dictionary.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.#ctor">
+            <summary>
+            Initializes a new instance of <see cref="T:Squirrel.Json.JsonObject"/>.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.#ctor(System.Collections.Generic.IEqualityComparer{System.String})">
+            <summary>
+            Initializes a new instance of <see cref="T:Squirrel.Json.JsonObject"/>.
+            </summary>
+            <param name="comparer">The <see cref="T:System.Collections.Generic.IEqualityComparer`1"/> implementation to use when comparing keys, or null to use the default <see cref="T:System.Collections.Generic.EqualityComparer`1"/> for the type of the key.</param>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.Item(System.Int32)">
+            <summary>
+            Gets the <see cref="T:System.Object"/> at the specified index.
+            </summary>
+            <value></value>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Add(System.String,System.Object)">
+            <summary>
+            Adds the specified key.
+            </summary>
+            <param name="key">The key.</param>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.ContainsKey(System.String)">
+            <summary>
+            Determines whether the specified key contains key.
+            </summary>
+            <param name="key">The key.</param>
+            <returns>
+                <c>true</c> if the specified key contains key; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.Keys">
+            <summary>
+            Gets the keys.
+            </summary>
+            <value>The keys.</value>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Remove(System.String)">
+            <summary>
+            Removes the specified key.
+            </summary>
+            <param name="key">The key.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TryGetValue(System.String,System.Object@)">
+            <summary>
+            Tries the get value.
+            </summary>
+            <param name="key">The key.</param>
+            <param name="value">The value.</param>
+            <returns></returns>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.Values">
+            <summary>
+            Gets the values.
+            </summary>
+            <value>The values.</value>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.Item(System.String)">
+            <summary>
+            Gets or sets the <see cref="T:System.Object"/> with the specified key.
+            </summary>
+            <value></value>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Add(System.Collections.Generic.KeyValuePair{System.String,System.Object})">
+            <summary>
+            Adds the specified item.
+            </summary>
+            <param name="item">The item.</param>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Clear">
+            <summary>
+            Clears this instance.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Contains(System.Collections.Generic.KeyValuePair{System.String,System.Object})">
+            <summary>
+            Determines whether [contains] [the specified item].
+            </summary>
+            <param name="item">The item.</param>
+            <returns>
+            	<c>true</c> if [contains] [the specified item]; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.CopyTo(System.Collections.Generic.KeyValuePair{System.String,System.Object}[],System.Int32)">
+            <summary>
+            Copies to.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="arrayIndex">Index of the array.</param>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.Count">
+            <summary>
+            Gets the count.
+            </summary>
+            <value>The count.</value>
+        </member>
+        <member name="P:Squirrel.Json.JsonObject.IsReadOnly">
+            <summary>
+            Gets a value indicating whether this instance is read only.
+            </summary>
+            <value>
+            	<c>true</c> if this instance is read only; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.Remove(System.Collections.Generic.KeyValuePair{System.String,System.Object})">
+            <summary>
+            Removes the specified item.
+            </summary>
+            <param name="item">The item.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.GetEnumerator">
+            <summary>
+            Gets the enumerator.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through a collection.
+            </summary>
+            <returns>
+            An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.ToString">
+            <summary>
+            Returns a json <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </summary>
+            <returns>
+            A json <see cref="T:System.String"/> that represents the current <see cref="T:System.Object"/>.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TryConvert(System.Dynamic.ConvertBinder,System.Object@)">
+            <summary>
+            Provides implementation for type conversion operations. Classes derived from the <see cref="T:System.Dynamic.DynamicObject"/> class can override this method to specify dynamic behavior for operations that convert an object from one type to another.
+            </summary>
+            <param name="binder">Provides information about the conversion operation. The binder.Type property provides the type to which the object must be converted. For example, for the statement (String)sampleObject in C# (CType(sampleObject, Type) in Visual Basic), where sampleObject is an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, binder.Type returns the <see cref="T:System.String"/> type. The binder.Explicit property provides information about the kind of conversion that occurs. It returns true for explicit conversion and false for implicit conversion.</param>
+            <param name="result">The result of the type conversion operation.</param>
+            <returns>
+            Alwasy returns true.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TryDeleteMember(System.Dynamic.DeleteMemberBinder)">
+            <summary>
+            Provides the implementation for operations that delete an object member. This method is not intended for use in C# or Visual Basic.
+            </summary>
+            <param name="binder">Provides information about the deletion.</param>
+            <returns>
+            Alwasy returns true.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TryGetIndex(System.Dynamic.GetIndexBinder,System.Object[],System.Object@)">
+            <summary>
+            Provides the implementation for operations that get a value by index. Classes derived from the <see cref="T:System.Dynamic.DynamicObject"/> class can override this method to specify dynamic behavior for indexing operations.
+            </summary>
+            <param name="binder">Provides information about the operation.</param>
+            <param name="indexes">The indexes that are used in the operation. For example, for the sampleObject[3] operation in C# (sampleObject(3) in Visual Basic), where sampleObject is derived from the DynamicObject class, <paramref name="indexes"/> is equal to 3.</param>
+            <param name="result">The result of the index operation.</param>
+            <returns>
+            Alwasy returns true.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TryGetMember(System.Dynamic.GetMemberBinder,System.Object@)">
+            <summary>
+            Provides the implementation for operations that get member values. Classes derived from the <see cref="T:System.Dynamic.DynamicObject"/> class can override this method to specify dynamic behavior for operations such as getting a value for a property.
+            </summary>
+            <param name="binder">Provides information about the object that called the dynamic operation. The binder.Name property provides the name of the member on which the dynamic operation is performed. For example, for the Console.WriteLine(sampleObject.SampleProperty) statement, where sampleObject is an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, binder.Name returns "SampleProperty". The binder.IgnoreCase property specifies whether the member name is case-sensitive.</param>
+            <param name="result">The result of the get operation. For example, if the method is called for a property, you can assign the property value to <paramref name="result"/>.</param>
+            <returns>
+            Alwasy returns true.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TrySetIndex(System.Dynamic.SetIndexBinder,System.Object[],System.Object)">
+            <summary>
+            Provides the implementation for operations that set a value by index. Classes derived from the <see cref="T:System.Dynamic.DynamicObject"/> class can override this method to specify dynamic behavior for operations that access objects by a specified index.
+            </summary>
+            <param name="binder">Provides information about the operation.</param>
+            <param name="indexes">The indexes that are used in the operation. For example, for the sampleObject[3] = 10 operation in C# (sampleObject(3) = 10 in Visual Basic), where sampleObject is derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, <paramref name="indexes"/> is equal to 3.</param>
+            <param name="value">The value to set to the object that has the specified index. For example, for the sampleObject[3] = 10 operation in C# (sampleObject(3) = 10 in Visual Basic), where sampleObject is derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, <paramref name="value"/> is equal to 10.</param>
+            <returns>
+            true if the operation is successful; otherwise, false. If this method returns false, the run-time binder of the language determines the behavior. (In most cases, a language-specific run-time exception is thrown.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.TrySetMember(System.Dynamic.SetMemberBinder,System.Object)">
+            <summary>
+            Provides the implementation for operations that set member values. Classes derived from the <see cref="T:System.Dynamic.DynamicObject"/> class can override this method to specify dynamic behavior for operations such as setting a value for a property.
+            </summary>
+            <param name="binder">Provides information about the object that called the dynamic operation. The binder.Name property provides the name of the member to which the value is being assigned. For example, for the statement sampleObject.SampleProperty = "Test", where sampleObject is an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, binder.Name returns "SampleProperty". The binder.IgnoreCase property specifies whether the member name is case-sensitive.</param>
+            <param name="value">The value to set to the member. For example, for sampleObject.SampleProperty = "Test", where sampleObject is an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject"/> class, the <paramref name="value"/> is "Test".</param>
+            <returns>
+            true if the operation is successful; otherwise, false. If this method returns false, the run-time binder of the language determines the behavior. (In most cases, a language-specific run-time exception is thrown.)
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.JsonObject.GetDynamicMemberNames">
+            <summary>
+            Returns the enumeration of all dynamic member names.
+            </summary>
+            <returns>
+            A sequence that contains dynamic member names.
+            </returns>
+        </member>
+        <member name="T:Squirrel.Json.SimpleJson">
+            <summary>
+            This class encodes and decodes JSON strings.
+            Spec. details, see http://www.json.org/
+            
+            JSON uses Arrays and Objects. These correspond here to the datatypes JsonArray(IList&lt;object>) and JsonObject(IDictionary&lt;string,object>).
+            All numbers are parsed to doubles.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Json.SimpleJson.DeserializeObject(System.String)">
+            <summary>
+            Parses the string json into a value
+            </summary>
+            <param name="json">A JSON string.</param>
+            <returns>An IList&lt;object>, a IDictionary&lt;string,object>, a double, a string, null, true, or false</returns>
+        </member>
+        <member name="M:Squirrel.Json.SimpleJson.TryDeserializeObject(System.String,System.Object@)">
+            <summary>
+            Try parsing the json string into a value.
+            </summary>
+            <param name="json">
+            A JSON string.
+            </param>
+            <param name="obj">
+            The object.
+            </param>
+            <returns>
+            Returns true if successfull otherwise false.
+            </returns>
+        </member>
+        <member name="M:Squirrel.Json.SimpleJson.SerializeObject(System.Object,Squirrel.Json.IJsonSerializerStrategy)">
+            <summary>
+            Converts a IDictionary&lt;string,object> / IList&lt;object> object into a JSON string
+            </summary>
+            <param name="json">A IDictionary&lt;string,object> / IList&lt;object></param>
+            <param name="jsonSerializerStrategy">Serializer strategy to use</param>
+            <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
+        </member>
+        <member name="M:Squirrel.Json.SimpleJson.IsNumeric(System.Object)">
+            <summary>
+            Determines if a given object is numeric in any way
+            (can be integer, double, null, etc).
+            </summary>
+        </member>
+        <member name="M:Squirrel.NuGet.NugetUtil.GetPath(System.Uri)">
+            <summary>
+            Converts a uri to a path. Only used for local paths.
+            </summary>
+        </member>
+        <member name="T:Squirrel.SemanticVersion">
+            <summary>
+            A hybrid implementation of SemVer that supports semantic versioning as described at http://semver.org while not strictly enforcing it to 
+            allow older 4-digit versioning schemes to continue working.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.String)">
+            <summary> Create a new instance of <see cref="T:Squirrel.SemanticVersion"/> with the specified version </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32)">
+            <inheritdoc cref="M:Squirrel.SemanticVersion.#ctor(System.String)"/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <inheritdoc cref="M:Squirrel.SemanticVersion.#ctor(System.String)"/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.Int32,System.Int32,System.Int32,System.String)">
+            <inheritdoc cref="M:Squirrel.SemanticVersion.#ctor(System.String)"/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.Version)">
+            <inheritdoc cref="M:Squirrel.SemanticVersion.#ctor(System.String)"/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.#ctor(System.Version,System.String)">
+            <inheritdoc cref="M:Squirrel.SemanticVersion.#ctor(System.String)"/>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.Major">
+            <summary> Gets the value of the major component of the version number for the current System.Version object. </summary>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.Minor">
+            <summary> Gets the value of the minor component of the version number for the current System.Version object. </summary>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.Build">
+            <summary> Gets the value of the build component of the version number for the current System.Version object. </summary>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.Revision">
+            <summary> Gets the value of the revision component of the version number for the current System.Version object. </summary>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.Version">
+            <summary>
+            Gets the normalized version portion.
+            </summary>
+        </member>
+        <member name="P:Squirrel.SemanticVersion.SpecialVersion">
+            <summary>
+            Gets the optional special version.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.GetOriginalVersionComponents">
+            <summary>
+            Gets the components of the original string used to construct this version instance.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.Parse(System.String)">
+            <summary>
+            Parses a version string using loose semantic versioning rules that allows 2-4 version components followed by an optional special version.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.TryParse(System.String,Squirrel.SemanticVersion@)">
+            <summary>
+            Parses a version string using loose semantic versioning rules that allows 2-4 version components followed by an optional special version.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.TryParseStrict(System.String,Squirrel.SemanticVersion@)">
+            <summary>
+            Parses a version string using strict semantic versioning rules that allows exactly 3 components and an optional special version.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.ParseOptionalVersion(System.String)">
+            <summary>
+            Attempts to parse the version token as a SemanticVersion.
+            </summary>
+            <returns>An instance of SemanticVersion if it parses correctly, null otherwise.</returns>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.CompareTo(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.CompareTo(Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_Equality(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_Inequality(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_LessThan(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_LessThanOrEqual(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_GreaterThan(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.op_GreaterThanOrEqual(Squirrel.SemanticVersion,Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.ToString">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.Equals(Squirrel.SemanticVersion)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.SemanticVersion.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="T:Squirrel.IReleaseEntry">
+            <summary>
+            Represents a Squirrel release, as described in a RELEASES file - usually also with an 
+            accompanying package containing the files needed to apply the release.
+            </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.SHA1">
+            <summary> The SHA1 checksum of the update package containing this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.Filename">
+            <summary> The filename of the update package containing this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.Filesize">
+            <summary> The size in bytes of the update package containing this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.IsDelta">
+            <summary> Whether this package represents a full update, or a delta update. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.EntryAsString">
+            <summary> The unparsed text used to construct this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.Version">
+            <summary> The version of this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.PackageName">
+            <summary> The name or Id of the package containing this release. </summary>
+        </member>
+        <member name="P:Squirrel.IReleaseEntry.StagingPercentage">
+            <summary> 
+            The percentage of users this package has been released to. This release
+            may or may not be applied if the current user is not in the staging group.
+            </summary>
+        </member>
+        <member name="M:Squirrel.IReleaseEntry.GetReleaseNotes(System.String)">
+            <summary>
+            Given a local directory containing a package corresponding to this release, returns the 
+            correspoding release notes from within the package.
+            </summary>
+        </member>
+        <member name="M:Squirrel.IReleaseEntry.GetIconUrl(System.String)">
+            <summary>
+            Given a local directory containing a package corresponding to this release, 
+            returns the iconUrl specified in the package.
+            </summary>
+        </member>
+        <member name="T:Squirrel.ReleaseEntry">
+            <inheritdoc cref="T:Squirrel.IReleaseEntry" />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.SHA1">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.BaseUrl">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.Filename">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.Query">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.Filesize">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.IsDelta">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.StagingPercentage">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.#ctor(System.String,System.String,System.Int64,System.String,System.String,System.Nullable{System.Single})">
+            <summary>
+            Create a new instance of <see cref="T:Squirrel.ReleaseEntry"/>.
+            </summary>
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.EntryAsString">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.Version">
+            <inheritdoc />
+        </member>
+        <member name="P:Squirrel.ReleaseEntry.PackageName">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GetReleaseNotes(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GetIconUrl(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.ParseReleaseEntry(System.String)">
+            <summary>
+            Parses an string entry from a RELEASES file and returns a <see cref="T:Squirrel.ReleaseEntry"/>.
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.IsStagingMatch(System.Nullable{System.Guid})">
+            <summary>
+            Checks if the current user is eligible for the current staging percentage.
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.ParseReleaseFile(System.String)">
+            <summary>
+            Parse the contents of a RELEASES file into a list of <see cref="T:Squirrel.ReleaseEntry"/>'s.
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.ParseReleaseFileAndApplyStaging(System.String,System.Nullable{System.Guid})">
+            <summary>
+            Parse the contents of a RELEASES file into a list of <see cref="T:Squirrel.ReleaseEntry"/>'s,
+            with any staging-uneligible releases removed.
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.WriteReleaseFile(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.IO.Stream)">
+            <summary>
+            Write a list of <see cref="T:Squirrel.ReleaseEntry"/>'s to a stream
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.WriteReleaseFile(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.String)">
+            <summary>
+            Write a list of <see cref="T:Squirrel.ReleaseEntry"/>'s to a local file
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GenerateFromFile(System.IO.Stream,System.String,System.String)">
+            <summary>
+            Generates a <see cref="T:Squirrel.ReleaseEntry"/> from a local update package file (such as a nupkg).
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GenerateFromFile(System.String,System.String)">
+            <summary>
+            Generates a <see cref="T:Squirrel.ReleaseEntry"/> from a local update package file (such as a nupkg).
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.BuildReleasesFile(System.String)">
+            <summary>
+            Generates a list of <see cref="T:Squirrel.ReleaseEntry"/>'s from a local directory containing
+            package files. Also writes/updates a RELEASES file in the specified directory
+            to match the packages the are currently present.
+            </summary>
+            <param name="releasePackagesDir">The local directory to read and update</param>
+            <returns>The list of packages in the directory</returns>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.ToString">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.GetPreviousRelease(System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},Squirrel.IReleasePackage,System.String)">
+            <summary>
+            Given a list of releases and a specified release package, returns the release package
+            directly previous to the specified version.
+            </summary>
+        </member>
+        <member name="M:Squirrel.ReleaseEntry.ParseEntryFileName(System.String)">
+            <summary>
+            Takes a filename such as 'My-Cool3-App-1.0.1-build.23-full.nupkg' and separates it into 
+            it's name and version (eg. 'My-Cool3-App', and '1.0.1-build.23'). Returns null values if 
+            the filename can not be parsed.
+            </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes">
+            <summary>
+            Contains static properties to access common supported runtimes, and a function to search for a runtime by name
+            </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.DotnetRuntimeType">
+            <summary> Dotnet Runtime SKU </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DotnetRuntimeType.DotNet">
+            <summary> The .NET Runtime contains just the components needed to run a console app </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DotnetRuntimeType.AspNetCore">
+            <summary> The The ASP.NET Core Runtime enables you to run existing web/server applications </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DotnetRuntimeType.WindowsDesktop">
+            <summary> The .NET Desktop Runtime enables you to run existing Windows desktop applications </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DotnetRuntimeType.SDK">
+            <summary> The .NET SDK enables you to compile dotnet applications you intend to run on other systems </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.RuntimeInstallResult">
+            <summary> Runtime installation result code </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.RuntimeInstallResult.InstallSuccess">
+            <summary> The install was successful </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.RuntimeInstallResult.UserCancelled">
+            <summary> The install failed because it was cancelled by the user </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.RuntimeInstallResult.AnotherInstallInProgress">
+            <summary> The install failed because another install is in progress, try again later </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.RuntimeInstallResult.RestartRequired">
+            <summary> The install failed because a system restart is required before continuing </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.RuntimeInstallResult.SystemDoesNotMeetRequirements">
+            <summary> The install failed because the current system does not support this runtime (outdated/unsupported) </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.RuntimeInfo">
+            <summary> Base type containing information about a runtime in relation to the current operating system </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.RuntimeInfo.Id">
+            <summary> The unique Id of this runtime. Can be used to retrieve a runtime instance with <see cref="M:Squirrel.Runtimes.GetRuntimeByName(System.String)"/> </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.RuntimeInfo.DisplayName">
+            <summary> The human-friendly name of this runtime - for displaying to users </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.#ctor">
+            <summary> Creates a new instance with the specified properties </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.#ctor(System.String,System.String)">
+            <summary> Creates a new instance with the specified properties </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.GetDownloadUrl">
+            <summary> Retrieves the web url to the latest compatible runtime installer exe </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.CheckIsInstalled">
+            <summary> Check if a runtime compatible with the current instance is installed on this system </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.CheckIsSupported">
+            <summary> Check if this runtime is supported on the current system </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.DownloadToFile(System.String,System.Action{System.Int32},Squirrel.Sources.IFileDownloader)">
+            <summary> Download the latest installer for this runtime to the specified file </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.InvokeInstaller(System.String,System.Boolean)">
+            <summary> Execute a runtime installer at a local file path. Typically used after <see cref="M:Squirrel.Runtimes.RuntimeInfo.DownloadToFile(System.String,System.Action{System.Int32},Squirrel.Sources.IFileDownloader)"/> </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.ToString">
+            <summary> The unique string representation of this runtime </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.RuntimeInfo.GetHashCode">
+            <summary> The unique hash code of this runtime </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.FrameworkInfo">
+            <summary> Represents a full .NET Framework runtime, usually included in Windows automatically through Windows Update </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.FrameworkInfo.DownloadUrl">
+            <summary> Permalink to the installer for this runtime </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.FrameworkInfo.ReleaseVersion">
+            <summary> The minimum compatible release version for this runtime </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.FrameworkInfo.#ctor(System.String,System.String,System.String,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.FrameworkInfo.GetDownloadUrl">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.FrameworkInfo.CheckIsSupported">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.FrameworkInfo.CheckIsInstalled">
+            <inheritdoc/>
+        </member>
+        <member name="T:Squirrel.Runtimes.DotnetInfo">
+            <summary> Represents a modern DOTNET runtime where versions are deployed independenly of the operating system </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.DotnetInfo.Id">
+            <inheritdoc/>
+        </member>
+        <member name="P:Squirrel.Runtimes.DotnetInfo.DisplayName">
+            <inheritdoc/>
+        </member>
+        <member name="P:Squirrel.Runtimes.DotnetInfo.MinVersion">
+            <summary> The minimum compatible version that must be installed. </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.DotnetInfo.CpuArchitecture">
+            <summary> The CPU architecture of the runtime. This must match the RID of the app being deployed.
+            For example, if the Squirrel app was deployed with 'win-x64', this must be X64 also. </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.#ctor(System.Version,Squirrel.RuntimeCpu)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.CheckIsInstalled">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.CheckIsSupported">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.GetDownloadUrl">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.Parse(System.String)">
+            <summary>
+            Parses a string such as 'net6' or net5.0.14-x86 into a DotnetInfo class capable of checking
+            the current system for installed status, or downloading / installing.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.TryParse(System.String,Squirrel.Runtimes.DotnetInfo@)">
+            <inheritdoc cref="M:Squirrel.Runtimes.DotnetInfo.Parse(System.String)"/>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.ParseVersion(System.String)">
+            <summary>
+            Safely converts a version string into a version structure, and provides some validation for invalid/unsupported versions.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.TrimVersion(Squirrel.SemanticVersion)">
+            <summary>
+            Converts a version structure into the shortest string possible, by trimming trailing zeros.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.GetLatestDotNetVersion(Squirrel.Runtimes.DotnetRuntimeType,System.String,Squirrel.Sources.IFileDownloader)">
+            <summary>
+            Get latest available version of dotnet. Channel can be 'LTS', 'current', or a two part version 
+            (eg. '6.0') to get the latest minor release.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.DotnetInfo.GetDotNetDownloadUrl(Squirrel.Runtimes.DotnetRuntimeType,System.String,System.String)">
+            <summary>
+            Get download url for a specific version of dotnet. Version must be an absolute version, such as one
+            returned by <see cref="M:Squirrel.Runtimes.DotnetInfo.GetLatestDotNetVersion(Squirrel.Runtimes.DotnetRuntimeType,System.String,Squirrel.Sources.IFileDownloader)"/>. cpuarch should be either
+            'x86', 'x64', or 'arm64'.
+            </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.VCRedistInfo">
+            <summary> The base class for a VC++ redistributable package. </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.VCRedistInfo.MinVersion">
+            <summary> The minimum compatible version that must be installed. </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.VCRedistInfo.CpuArchitecture">
+            <summary> The CPU architecture of the runtime. </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedistInfo.#ctor(System.String,System.String,Squirrel.SemanticVersion,Squirrel.RuntimeCpu)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedistInfo.CheckIsInstalled">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedistInfo.CheckIsSupported">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedistInfo.GetInstalledVCVersions">
+            <summary>
+            Returns the list of currently installed VC++ redistributables, as reported by the
+            Windows Programs &amp; Features dialog.
+            </summary>
+        </member>
+        <member name="T:Squirrel.Runtimes.VCRedist14">
+            <summary> Represents a VC++ 2015-2022 redistributable package. </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedist14.#ctor(System.String,System.String,Squirrel.SemanticVersion,Squirrel.RuntimeCpu)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedist14.GetDownloadUrl">
+            <inheritdoc/>
+        </member>
+        <member name="T:Squirrel.Runtimes.VCRedist00">
+            <summary> Represents a VC++ redistributable package which is referenced by a permalink </summary>
+        </member>
+        <member name="P:Squirrel.Runtimes.VCRedist00.DownloadUrl">
+            <summary> Permalink to the installer for this runtime </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedist00.#ctor(System.String,System.String,Squirrel.SemanticVersion,Squirrel.RuntimeCpu,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Squirrel.Runtimes.VCRedist00.GetDownloadUrl">
+            <inheritdoc/>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK45">
+            <summary> Runtime for .NET Framework 4.5 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK451">
+            <summary> Runtime for .NET Framework 4.5.1 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK452">
+            <summary> Runtime for .NET Framework 4.5.2 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK46">
+            <summary> Runtime for .NET Framework 4.6 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK461">
+            <summary> Runtime for .NET Framework 4.6.1 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK462">
+            <summary> Runtime for .NET Framework 4.6.2 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK47">
+            <summary> Runtime for .NET Framework 4.7 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK471">
+            <summary> Runtime for .NET Framework 4.7.1 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK472">
+            <summary> Runtime for .NET Framework 4.7.2 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.NETFRAMEWORK48">
+            <summary> Runtime for .NET Framework 4.8 </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNETCORE31_X86">
+            <summary> Runtime for .NET Core 3.1 Desktop Runtime (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNETCORE31_X64">
+            <summary> Runtime for .NET Core 3.1 Desktop Runtime (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNET5_X86">
+            <summary> Runtime for .NET 5.0 Desktop Runtime (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNET5_X64">
+            <summary> Runtime for .NET 5.0 Desktop Runtime (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNET6_X86">
+            <summary> Runtime for .NET 6.0 Desktop Runtime (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.DOTNET6_X64">
+            <summary> Runtime for .NET 6.0 Desktop Runtime (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST100_X86">
+            <summary> Runtime for Visual C++ 2010 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST100_X64">
+            <summary> Runtime for Visual C++ 2010 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST110_X86">
+            <summary> Runtime for Visual C++ 2012 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST110_X64">
+            <summary> Runtime for Visual C++ 2012 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST120_X86">
+            <summary> Runtime for Visual C++ 2013 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST120_X64">
+            <summary> Runtime for Visual C++ 2013 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST140_X86">
+            <summary> Runtime for Visual C++ 2015 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST140_X64">
+            <summary> Runtime for Visual C++ 2015 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST141_X86">
+            <summary> Runtime for Visual C++ 2017 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST141_X64">
+            <summary> Runtime for Visual C++ 2017 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST142_X86">
+            <summary> Runtime for Visual C++ 2019 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST142_X64">
+            <summary> Runtime for Visual C++ 2019 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST143_X86">
+            <summary> Runtime for Visual C++ 2022 Redistributable (x86) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.VCREDIST143_X64">
+            <summary> Runtime for Visual C++ 2022 Redistributable (x64) </summary>
+        </member>
+        <member name="F:Squirrel.Runtimes.All">
+            <summary> An array of all the currently supported runtimes </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.GetRuntimeByName(System.String)">
+            <summary> 
+            Search for a runtime by name. If a platform architecture is not specified, the default is x64.
+            Returns null if no match is found. 
+            </summary>
+        </member>
+        <member name="M:Squirrel.Runtimes.ParseDependencyString(System.String)">
+            <summary> Returns an array of runtimes representing the input string, or throws if the dependencies can not be parsed. </summary>
+        </member>
+        <member name="T:Squirrel.Shell.ShellLink">
+            <summary>
+            Summary description for ShellLink.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.PropVariant.PropVariantClear(Squirrel.Shell.ShellLink.PropVariant@)">
+            <summary>
+            Called to properly clean up the memory referenced by a PropVariant instance.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.PropVariant.Clear">
+            <summary>
+            Called to clear the PropVariant's referenced and local memory.
+            </summary>
+            <remarks>
+            You must call Clear to avoid memory leaks.
+            </remarks>
+        </member>
+        <member name="T:Squirrel.Shell.ShellLink.EShellLinkResolveFlags">
+            <summary>
+            Flags determining how the links with missing
+            targets are resolved.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_ANY_MATCH">
+            <summary>
+            Allow any match during resolution.  Has no effect
+            on ME/2000 or above, use the other flags instead.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_INVOKE_MSI">
+            <summary>
+            Call the Microsoft Windows Installer. 
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NOLINKINFO">
+            <summary>
+            Disable distributed link tracking. By default, 
+            distributed link tracking tracks removable media 
+            across multiple devices based on the volume name. 
+            It also uses the UNC path to track remote file 
+            systems whose drive letter has changed. Setting 
+            SLR_NOLINKINFO disables both types of tracking.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NO_UI">
+            <summary>
+            Do not display a dialog box if the link cannot be resolved. 
+            When SLR_NO_UI is set, a time-out value that specifies the 
+            maximum amount of time to be spent resolving the link can 
+            be specified in milliseconds. The function returns if the 
+            link cannot be resolved within the time-out duration. 
+            If the timeout is not set, the time-out duration will be 
+            set to the default value of 3,000 milliseconds (3 seconds). 
+            </summary>                                  
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NO_UI_WITH_MSG_PUMP">
+            <summary>
+            Not documented in SDK.  Assume same as SLR_NO_UI but 
+            intended for applications without a hWnd.
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NOUPDATE">
+            <summary>
+            Do not update the link information. 
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NOSEARCH">
+            <summary>
+            Do not execute the search heuristics. 
+            </summary>                                                        
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_NOTRACK">
+            <summary>
+            Do not use distributed link tracking. 
+            </summary>
+        </member>
+        <member name="F:Squirrel.Shell.ShellLink.EShellLinkResolveFlags.SLR_UPDATE">
+            <summary>
+            If the link object has changed, update its path and list 
+            of identifiers. If SLR_UPDATE is set, you do not need to 
+            call IPersistFile::IsDirty to determine whether or not 
+            the link object has changed. 
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.#ctor">
+            <summary>
+            Creates an instance of the Shell Link object.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.#ctor(System.String)">
+            <summary>
+            Creates an instance of a Shell Link object
+            from the specified link file
+            </summary>
+            <param name="linkFile">The Shortcut file to open</param>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Finalize">
+            <summary>
+            Call dispose just in case it hasn't happened yet
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Dispose">
+            <summary>
+            Dispose the object, releasing the COM ShellLink object
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.GetIcon(System.Boolean)">
+            <summary>
+            This pointer must be destroyed with DistroyIcon when you are done with it.
+            </summary>
+            <param name="large">Whether to return the small or large icon</param>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.IconPath">
+            <summary>
+            Gets the path to the file containing the icon for this shortcut.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.IconIndex">
+            <summary>
+            Gets the index of this icon within the icon path's resources
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.Target">
+            <summary>
+            Gets/sets the fully qualified path to the link's target
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.WorkingDirectory">
+            <summary>
+            Gets/sets the Working Directory for the Link
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.Description">
+            <summary>
+            Gets/sets the description of the link
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.Arguments">
+            <summary>
+            Gets/sets any command line arguments associated with the link
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.DisplayMode">
+            <summary>
+            Gets/sets the initial display mode when the shortcut is
+            run
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.ShellLink.HotKey">
+            <summary>
+            Gets/sets the HotKey to start the shortcut (if any)
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.SetAppUserModelId(System.String)">
+            <summary>
+            Sets the appUserModelId
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.SetToastActivatorCLSID(System.String)">
+            <summary>
+            Sets the ToastActivatorCLSID
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.SetToastActivatorCLSID(System.Guid)">
+            <summary>
+            Sets the ToastActivatorCLSID
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Save">
+            <summary>
+            Saves the shortcut to ShortCutFile.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Save(System.String)">
+            <summary>
+            Saves the shortcut to the specified file
+            </summary>
+            <param name="linkFile">The shortcut file (.lnk)</param>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Open(System.String)">
+            <summary>
+            Loads a shortcut from the specified file
+            </summary>
+            <param name="linkFile">The shortcut file (.lnk) to load</param>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Open(System.String,System.IntPtr,Squirrel.Shell.ShellLink.EShellLinkResolveFlags)">
+            <summary>
+            Loads a shortcut from the specified file, and allows flags controlling
+            the UI behaviour if the shortcut's target isn't found to be set.
+            </summary>
+            <param name="linkFile">The shortcut file (.lnk) to load</param>
+            <param name="hWnd">The window handle of the application's UI, if any</param>
+            <param name="resolveFlags">Flags controlling resolution behaviour</param>
+        </member>
+        <member name="M:Squirrel.Shell.ShellLink.Open(System.String,System.IntPtr,Squirrel.Shell.ShellLink.EShellLinkResolveFlags,System.UInt16)">
+            <summary>
+            Loads a shortcut from the specified file, and allows flags controlling
+            the UI behaviour if the shortcut's target isn't found to be set.  If
+            no SLR_NO_UI is specified, you can also specify a timeout.
+            </summary>
+            <param name="linkFile">The shortcut file (.lnk) to load</param>
+            <param name="hWnd">The window handle of the application's UI, if any</param>
+            <param name="resolveFlags">Flags controlling resolution behaviour</param>
+            <param name="timeOut">Timeout if SLR_NO_UI is specified, in ms.</param>
+        </member>
+        <member name="T:Squirrel.Shell.FileIcon">
+            <summary>
+            Enables extraction of icons for any file type from
+            the Shell.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.FileIcon.Flags">
+            <summary>
+            Gets/sets the flags used to extract the icon
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.FileIcon.FileName">
+            <summary>
+            Gets/sets the filename to get the icon for
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.FileIcon.ShellIcon">
+            <summary>
+            Gets the icon for the chosen file
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.FileIcon.DisplayName">
+            <summary>
+            Gets the display name for the selected file
+            if the SHGFI_DISPLAYNAME flag was set.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Shell.FileIcon.TypeName">
+            <summary>
+            Gets the type name for the selected file
+            if the SHGFI_TYPENAME flag was set.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.FileIcon.GetInfo">
+            <summary>
+             Gets the information for the specified 
+             file name and flags.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.FileIcon.#ctor">
+            <summary>
+            Constructs a new, default instance of the FileIcon
+            class.  Specify the filename and call GetInfo()
+            to retrieve an icon.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Shell.FileIcon.#ctor(System.String)">
+            <summary>
+            Constructs a new instance of the FileIcon class
+            and retrieves the icon, display name and type name
+            for the specified file.      
+            </summary>
+            <param name="fileName">The filename to get the icon, 
+            display name and type name for</param>
+        </member>
+        <member name="M:Squirrel.Shell.FileIcon.#ctor(System.String,Squirrel.Shell.FileIcon.SHGetFileInfoConstants)">
+            <summary>
+            Constructs a new instance of the FileIcon class
+            and retrieves the information specified in the 
+            flags.
+            </summary>
+            <param name="fileName">The filename to get information
+            for</param>
+            <param name="flags">The flags to use when extracting the
+            icon and other shell information.</param>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.IEnableLogger">
+            <summary>
+            "Implement" this interface in your class to get access to the Log() 
+            Mixin, which will give you a Logger that includes the class name in the
+            log.
+            </summary>
+        </member>
+        <member name="P:Squirrel.SimpleSplat.LogHost.Default">
+            <summary>
+            Use this logger inside miscellaneous static methods where creating
+            a class-specific logger isn't really worth it.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.LogHost.Log``1(``0)">
+            <summary>
+            Call this method to write log entries on behalf of the current 
+            class.
+            </summary>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.MemoizingMRUCache`2">
+             <summary>
+             This data structure is a representation of a memoizing cache - i.e. a
+             class that will evaluate a function, but keep a cache of recently
+             evaluated parameters.
+            
+             Since this is a memoizing cache, it is important that this function be a
+             "pure" function in the mathematical sense - that a key *always* maps to
+             a corresponding return value.
+             </summary>
+             <typeparam name="TParam">The type of the parameter to the calculation function.</typeparam>
+             <typeparam name="TVal">The type of the value returned by the calculation
+             function.</typeparam>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.MemoizingMRUCache`2.#ctor(System.Func{`0,System.Object,`1},System.Int32,System.Action{`1})">
+            <summary>
+            Constructor
+            </summary>
+            <param name="calculationFunc">The function whose results you want to cache,
+            which is provided the key value, and an Tag object that is
+            user-defined</param>
+            <param name="maxSize">The size of the cache to maintain, after which old
+            items will start to be thrown out.</param>
+            <param name="onRelease">A function to call when a result gets
+            evicted from the cache (i.e. because Invalidate was called or the
+            cache is full)</param>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.MemoizingMRUCache`2.Get(`0,System.Object)">
+            <summary>
+            Evaluates the function provided, returning the cached value if possible
+            </summary>
+            <param name="key">The value to pass to the calculation function.</param>
+            <param name="context">An additional optional user-specific parameter.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.MemoizingMRUCache`2.Invalidate(`0)">
+            <summary>
+            Ensure that the next time this key is queried, the calculation
+            function will be called.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.MemoizingMRUCache`2.InvalidateAll">
+            <summary>
+            Invalidate all items in the cache
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.MemoizingMRUCache`2.CachedValues">
+            <summary>
+            Returns all values currently in the cache
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:Squirrel.SimpleSplat.SquirrelLocator.Current">
+            <summary>
+            Gets or sets the dependency resolver. This class is used throughout
+            libraries for many internal operations as well as for general use
+            by applications. If this isn't assigned on startup, a default, highly
+            capable implementation will be used, and it is advised for most people
+            to simply use the default implementation.
+            </summary>
+            <value>The dependency resolver.</value>
+        </member>
+        <member name="P:Squirrel.SimpleSplat.SquirrelLocator.CurrentMutable">
+            <summary>
+            Convenience property to return the DependencyResolver cast to a
+            MutableDependencyResolver. The default resolver is also a mutable
+            resolver, so this will be non-null. Use this to register new types
+            on startup if you are using the default resolver
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.SquirrelLocator.RegisterResolverCallbackChanged(System.Action)">
+            <summary>
+            This method allows libraries to register themselves to be set up
+            whenever the dependency resolver changes. Applications should avoid
+            this method, it is usually used for libraries that depend on service
+            location.
+            </summary>
+            <param name="callback">A callback that is invoked when the 
+            resolver is changed. This callback is also invoked immediately,
+            to configure the current resolver.</param>
+            <returns>When disposed, removes the callback. You probably can 
+            ignore this.</returns>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.IDependencyResolver">
+            <summary>
+            Represents a dependency resolver, a service to look up global class 
+            instances or types.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.IDependencyResolver.GetService(System.Type,System.String)">
+            <summary>
+            Gets an instance of the given <paramref name="serviceType"/>. Must return <c>null</c>
+            if the service is not available (must not throw).
+            </summary>
+            <param name="serviceType">The object type.</param>
+            <returns>The requested object, if found; <c>null</c> otherwise.</returns>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.IDependencyResolver.GetServices(System.Type,System.String)">
+            <summary>
+            Gets all instances of the given <paramref name="serviceType"/>. Must return an empty
+            collection if the service is not available (must not return <c>null</c> or throw).
+            </summary>
+            <param name="serviceType">The object type.</param>
+            <returns>A sequence of instances of the requested <paramref name="serviceType"/>. The sequence
+            should be empty (not <c>null</c>) if no objects of the given type are available.</returns>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.IMutableDependencyResolver">
+            <summary>
+            Represents a dependency resolver where types can be registered after 
+            setup.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.IMutableDependencyResolver.ServiceRegistrationCallback(System.Type,System.String,System.Action{System.IDisposable})">
+            <summary>
+            Register a callback to be called when a new service matching the type 
+            and contract is registered.
+            
+            When registered, the callback is also called for each currently matching 
+            service.
+            </summary>
+            <returns>When disposed removes the callback</returns>
+            <param name="serviceType">Service type.</param>
+            <param name="contract">Contract.</param>
+            <param name="callback">Callback.</param>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.DependencyResolverMixins.GetService``1(Squirrel.SimpleSplat.IDependencyResolver,System.String)">
+            <summary>
+            Gets an instance of the given <paramref name="serviceType"/>. Must return <c>null</c>
+            if the service is not available (must not throw).
+            </summary>
+            <param name="serviceType">The object type.</param>
+            <returns>The requested object, if found; <c>null</c> otherwise.</returns>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.DependencyResolverMixins.GetServices``1(Squirrel.SimpleSplat.IDependencyResolver,System.String)">
+            <summary>
+            Gets all instances of the given <paramref name="serviceType"/>. Must return an empty
+            collection if the service is not available (must not return <c>null</c> or throw).
+            </summary>
+            <param name="serviceType">The object type.</param>
+            <returns>A sequence of instances of the requested <paramref name="serviceType"/>. The sequence
+            should be empty (not <c>null</c>) if no objects of the given type are available.</returns>
+        </member>
+        <member name="M:Squirrel.SimpleSplat.DependencyResolverMixins.WithResolver(Squirrel.SimpleSplat.IDependencyResolver)">
+            <summary>
+            Override the default Dependency Resolver until the object returned 
+            is disposed.
+            </summary>
+            <param name="resolver">The test resolver to use.</param>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.ModernDependencyResolver">
+             <summary>
+             This class is a dependency resolver written for modern C# 5.0 times. 
+             It implements all registrations via a Factory method. With the power
+             of Closures, you can actually implement most lifetime styles (i.e.
+             construct per call, lazy construct, singleton) using this.
+            
+             Unless you have a very compelling reason not to, this is the only class
+             you need in order to do dependency resolution, don't bother with using
+             a full IoC container.
+             </summary>
+        </member>
+        <member name="T:Squirrel.SimpleSplat.FuncDependencyResolver">
+            <summary>
+            A simple dependency resolver which takes Funcs for all its actions.
+            GetService is always implemented via GetServices().LastOrDefault()
+            </summary>
+        </member>
+        <member name="T:Squirrel.Sources.GithubRelease">
+            <summary> Describes a GitHub release, including attached assets. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubRelease.Name">
+            <summary> The name of this release. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubRelease.Prerelease">
+            <summary> True if this release is a prerelease. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubRelease.PublishedAt">
+            <summary> The date which this release was published publically. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubRelease.Assets">
+            <summary> A list of assets (files) uploaded to this release. </summary>
+        </member>
+        <member name="T:Squirrel.Sources.GithubReleaseAsset">
+            <summary> Describes a asset (file) uploaded to a GitHub release. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubReleaseAsset.Url">
+            <summary> 
+            The asset URL for this release asset. Requests to this URL will use API
+            quota and return JSON unless the 'Accept' header is "application/octet-stream". 
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubReleaseAsset.BrowserDownloadUrl">
+            <summary>  
+            The browser URL for this release asset. This does not use API quota,
+            however this URL only works for public repositories. If downloading
+            assets from a private repository, the <see cref="P:Squirrel.Sources.GithubReleaseAsset.Url"/> property must
+            be used with an appropriate access token.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubReleaseAsset.Name">
+            <summary> The name of this release asset. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubReleaseAsset.ContentType">
+            <summary> The mime type of this release asset (as detected by GitHub). </summary>
+        </member>
+        <member name="T:Squirrel.Sources.GithubSource">
+            <summary>
+            Retrieves available releases from a GitHub repository. This class only
+            downloads assets from the very latest GitHub release.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.RepoUri">
+            <summary> 
+            The URL of the GitHub repository to download releases from 
+            (e.g. https://github.com/myuser/myrepo)
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.Prerelease">
+            <summary>  
+            If true, the latest pre-release will be downloaded. If false, the latest 
+            stable release will be downloaded.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.Downloader">
+            <summary> 
+            The file downloader used to perform HTTP requests. 
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.Release">
+            <summary>  
+            The GitHub release which this class should download assets from when 
+            executing <see cref="M:Squirrel.Sources.GithubSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})"/>. This property can be set
+            explicitly, otherwise it will also be set automatically when executing
+            <see cref="M:Squirrel.Sources.GithubSource.GetReleaseFeed(System.Nullable{System.Guid},Squirrel.ReleaseEntry)"/>.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.AccessToken">
+            <summary>
+            The GitHub access token to use with the request to download releases. 
+            If left empty, the GitHub rate limit for unauthenticated requests allows 
+            for up to 60 requests per hour, limited by IP address.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.GithubSource.Authorization">
+            <summary> The Bearer token used in the request. </summary>
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.#ctor(System.String,System.String,System.Boolean,Squirrel.Sources.IFileDownloader)">
+            <inheritdoc cref="T:Squirrel.Sources.GithubSource" />
+            <param name="repoUrl">
+            The URL of the GitHub repository to download releases from 
+            (e.g. https://github.com/myuser/myrepo)
+            </param>
+            <param name="accessToken">
+            The GitHub access token to use with the request to download releases. 
+            If left empty, the GitHub rate limit for unauthenticated requests allows 
+            for up to 60 requests per hour, limited by IP address.
+            </param>
+            <param name="prerelease">
+            If true, the latest pre-release will be downloaded. If false, the latest 
+            stable release will be downloaded.
+            </param>
+            <param name="downloader">
+            The file downloader used to perform HTTP requests. 
+            </param>
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.GetReleaseFeed(System.Nullable{System.Guid},Squirrel.ReleaseEntry)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.GetReleases(System.Boolean,System.Int32,System.Int32)">
+            <summary>
+            Retrieves a list of <see cref="T:Squirrel.Sources.GithubRelease"/> from the current repository.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.GetAssetUrlFromName(Squirrel.Sources.GithubRelease,System.String)">
+            <summary>
+            Given a <see cref="T:Squirrel.Sources.GithubRelease"/> and an asset filename (eg. 'RELEASES') this 
+            function will return either <see cref="P:Squirrel.Sources.GithubReleaseAsset.BrowserDownloadUrl"/> or
+            <see cref="P:Squirrel.Sources.GithubReleaseAsset.Url"/>, depending whether an access token is available
+            or not. Throws if the specified release has no matching assets.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.GithubSource.GetApiBaseUrl(System.Uri)">
+            <summary>
+            Given a repository URL (e.g. https://github.com/myuser/myrepo) this function
+            returns the API base for performing requests. (eg. "https://api.github.com/" 
+            or http://internal.github.server.local/api/v3)
+            </summary>
+            <param name="repoUrl"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Squirrel.Sources.HttpClientFileDownloader">
+            <inheritdoc cref="T:Squirrel.Sources.IFileDownloader"/>
+        </member>
+        <member name="P:Squirrel.Sources.HttpClientFileDownloader.UserAgent">
+            <summary>
+            The User-Agent sent with Squirrel requests
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.DownloadFile(System.String,System.String,System.Action{System.Int32},System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.DownloadBytes(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.DownloadString(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.DownloadToStreamInternal(System.Net.Http.HttpClient,System.String,System.IO.Stream,System.Action{System.Int32},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously downloads a remote url to the specified destination stream while 
+            providing progress updates.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.CreateHttpClientHandler">
+            <summary>
+            Creates a new <see cref="T:System.Net.Http.HttpClientHandler"/> with default settings, used for
+            new <see cref="T:System.Net.Http.HttpClient"/>'s. Override this function to add client certificates,
+            proxy configurations, cookies, or change other http behaviors.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.HttpClientFileDownloader.CreateHttpClient(System.String,System.String)">
+            <summary>
+            Creates a new <see cref="T:System.Net.Http.HttpClient"/> for every request.
+            </summary>
+        </member>
+        <member name="T:Squirrel.Sources.IFileDownloader">
+            <summary>
+            A simple abstractable file downloader
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.IFileDownloader.DownloadFile(System.String,System.String,System.Action{System.Int32},System.String,System.String)">
+            <summary>
+            Downloads a remote file to the specified local path
+            </summary>
+            <param name="url">The url which will be downloaded.</param>
+            <param name="targetFile">
+            The local path where the file will be stored
+            If a file exists at this path, it will be overritten.</param>
+            <param name="progress">
+            A delegate for reporting download progress, with expected values from 0-100.
+            </param>
+            <param name="authorization">
+            Text to be sent in the 'Authorization' header of the request.
+            </param>
+            <param name="accept">
+            Text to be sent in the 'Accept' header of the request.
+            </param>
+        </member>
+        <member name="M:Squirrel.Sources.IFileDownloader.DownloadBytes(System.String,System.String,System.String)">
+            <summary>
+            Returns a byte array containing the contents of the file at the specified url
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.IFileDownloader.DownloadString(System.String,System.String,System.String)">
+            <summary>
+            Returns a string containing the contents of the specified url
+            </summary>
+        </member>
+        <member name="T:Squirrel.Sources.IUpdateSource">
+            <summary>
+            Abstraction for finding and downloading updates from a package source / repository.
+            An implementation may copy a file from a local repository, download from a web address, 
+            or even use third party services and parse proprietary data to produce a package feed.
+            </summary>
+        </member>
+        <member name="M:Squirrel.Sources.IUpdateSource.GetReleaseFeed(System.Nullable{System.Guid},Squirrel.ReleaseEntry)">
+            <summary>
+            Retrieve the list of available remote releases from the package source. These releases
+            can subsequently be downloaded with <see cref="M:Squirrel.Sources.IUpdateSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})"/>.
+            </summary>
+            <param name="stagingId">A persistent user-id, used for calculating whether a specific
+            release should be available to this user or not. (eg, for the purposes of rolling out
+            an update to only a small portion of users at a time).</param>
+            <param name="latestLocalRelease">The latest / current local release. If specified,
+            metadata from this package may be provided to the remote server (such as package id,
+            or cpu architecture) to ensure that the correct package is downloaded for this user.
+            </param>
+            <returns>An array of <see cref="T:Squirrel.ReleaseEntry"/> objects that are available for download
+            and are applicable to this user.</returns>
+        </member>
+        <member name="M:Squirrel.Sources.IUpdateSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})">
+            <summary>
+            Download the specified <see cref="T:Squirrel.ReleaseEntry"/> to the provided local file path.
+            </summary>
+            <param name="releaseEntry">The release to download.</param>
+            <param name="localFile">The path on the local disk to store the file. If this file exists,
+            it will be overwritten.</param>
+            <param name="progress">This delegate will be executed with values from 0-100 as the
+            download is being processed.</param>
+        </member>
+        <member name="T:Squirrel.Sources.SimpleFileSource">
+            <summary>
+            Retrieves available updates from a local or network-attached disk. The directory
+            must contain one or more valid packages, as well as a 'RELEASES' index file.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.SimpleFileSource.BaseDirectory">
+            <summary> The local directory containing packages to update to. </summary>
+        </member>
+        <member name="M:Squirrel.Sources.SimpleFileSource.#ctor(System.IO.DirectoryInfo)">
+            <inheritdoc cref="T:Squirrel.Sources.SimpleFileSource" />
+            <param name="baseDirectory">The directory where to search for packages.</param>
+        </member>
+        <member name="M:Squirrel.Sources.SimpleFileSource.GetReleaseFeed(System.Nullable{System.Guid},Squirrel.ReleaseEntry)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.SimpleFileSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="T:Squirrel.Sources.SimpleWebSource">
+            <summary>
+            Retrieves updates from a static file host or other web server. 
+            Will perform a request for '{baseUri}/RELEASES' to locate the available packages,
+            and provides query parameters to specify the name of the requested package.
+            </summary>
+        </member>
+        <member name="P:Squirrel.Sources.SimpleWebSource.BaseUri">
+            <summary> The URL of the server hosting packages to update to. </summary>
+        </member>
+        <member name="P:Squirrel.Sources.SimpleWebSource.Downloader">
+            <summary> The <see cref="T:Squirrel.Sources.IFileDownloader"/> to be used for performing http requests. </summary>
+        </member>
+        <member name="M:Squirrel.Sources.SimpleWebSource.#ctor(System.String,Squirrel.Sources.IFileDownloader)">
+            <inheritdoc cref="T:Squirrel.Sources.SimpleWebSource" />
+        </member>
+        <member name="M:Squirrel.Sources.SimpleWebSource.#ctor(System.Uri,Squirrel.Sources.IFileDownloader)">
+            <inheritdoc cref="T:Squirrel.Sources.SimpleWebSource" />
+        </member>
+        <member name="M:Squirrel.Sources.SimpleWebSource.GetReleaseFeed(System.Nullable{System.Guid},Squirrel.ReleaseEntry)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.SimpleWebSource.DownloadReleaseEntry(Squirrel.ReleaseEntry,System.String,System.Action{System.Int32})">
+            <inheritdoc />
+        </member>
+        <member name="T:Squirrel.Sources.WebClientFileDownloader">
+            This class is obsolete. Use <see cref="T:Squirrel.Sources.HttpClientFileDownloader"/> instead.
+        </member>
+        <member name="M:Squirrel.Sources.WebClientFileDownloader.DownloadFile(System.String,System.String,System.Action{System.Int32},System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.WebClientFileDownloader.DownloadBytes(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.WebClientFileDownloader.DownloadString(System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Squirrel.Sources.WebClientFileDownloader.CreateWebClient(System.String,System.String)">
+            <summary>
+            Creates and returns a new WebClient for every requst
+            </summary>
+        </member>
+        <member name="T:Squirrel.SquirrelHook">
+            <summary>
+            A delegate type for handling Squirrel command line events easily
+            </summary>
+            <param name="version">The currently executing version of this application</param>
+            <param name="tools">Helper functions for managing application shortcuts and registry</param>
+        </member>
+        <member name="T:Squirrel.SquirrelRunHook">
+            <summary>
+            A delegate type for handling Squirrel command line events easily
+            </summary>
+            <param name="version">The currently executing version of this application</param>
+            <param name="tools">Helper functions for managing application shortcuts and registry</param>
+            <param name="firstRun">True if this is the first run following application installation</param>
+        </member>
+        <member name="T:Squirrel.SquirrelAwareApp">
+            <summary>
+            SquirrelAwareApp helps you to handle Squirrel app activation events
+            correctly.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SquirrelAwareApp.HandleEvents(Squirrel.SquirrelHook,Squirrel.SquirrelHook,Squirrel.SquirrelHook,Squirrel.SquirrelHook,Squirrel.SquirrelRunHook,System.String[])">
+            <summary>
+            Call this method as early as possible in app startup. This method
+            will dispatch to your methods to set up your app. Depending on the
+            parameter, your app will exit after this method is called, which 
+            is required by Squirrel. UpdateManager has methods to help you to
+            do this, such as CreateShortcutForThisExe.
+            </summary>
+            <param name="onInitialInstall">Called when your app is initially
+            installed. Set up app shortcuts here as well as file associations.
+            </param>
+            <param name="onAppUpdate">Called when your app is updated to a new
+            version.</param>
+            <param name="onAppObsoleted">Called when your app is no longer the
+            latest version (i.e. they have installed a new version and your app
+            is now the old version)</param>
+            <param name="onAppUninstall">Called when your app is uninstalled 
+            via Programs and Features. Remove all of the things that you created
+            in onInitialInstall.</param>
+            <param name="onEveryRun">Called when your application is run normally,
+            also indicates whether this is first time your app is run, so you can
+            show a welcome screen. Also see <see cref="M:Squirrel.IAppTools.SetProcessAppUserModelId"/>
+            which can be executed here.</param>
+            <param name="arguments">Use in a unit-test runner to mock the 
+            arguments. In your app, leave this as null.</param>
+        </member>
+        <member name="T:Squirrel.RuntimeCpu">
+            <summary> The Runtime CPU Architecture </summary>
+        </member>
+        <member name="F:Squirrel.RuntimeCpu.Unknown">
+            <summary> Unknown or unsupported </summary>
+        </member>
+        <member name="F:Squirrel.RuntimeCpu.x86">
+            <summary> Intel x86 </summary>
+        </member>
+        <member name="F:Squirrel.RuntimeCpu.x64">
+            <summary> x64 / Amd64 </summary>
+        </member>
+        <member name="F:Squirrel.RuntimeCpu.arm64">
+            <summary> Arm64 </summary>
+        </member>
+        <member name="T:Squirrel.SquirrelRuntimeInfo">
+            <summary>
+            Convenience class which provides runtime information about the current executing process, 
+            in a way that is safe in older and newer versions of the framework.
+            </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.EntryExePath">
+            <summary> The path on disk of the entry assembly. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.BaseDirectory">
+            <summary> Gets the directory that the assembly resolver uses to probe for assemblies. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.ExecutingAssemblyName">
+            <summary> The name of the currently executing assembly. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.IsSingleFile">
+            <summary> Check if the current application is a published SingleFileBundle. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.SystemArchitecture">
+            <summary> The current machine architecture, ignoring the current process / pe architecture. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.SystemOsName">
+            <summary> The name of the current OS - eg. 'windows', 'linux', or 'osx'. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.IsWindows">
+            <summary> True if executing on a Windows platform. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.IsLinux">
+            <summary> True if executing on a Linux platform. </summary>
+        </member>
+        <member name="P:Squirrel.SquirrelRuntimeInfo.IsOSX">
+            <summary> True if executing on a MacOS / OSX platform. </summary>
+        </member>
+        <member name="M:Squirrel.SquirrelRuntimeInfo.SelectPackageArchitecture(System.Collections.Generic.IEnumerable{Squirrel.RuntimeCpu})">
+            <summary>
+            Given a list of machine architectures, this function will try to select the best 
+            architecture for a Squirrel package to maximize compatibility.
+            </summary>
+        </member>
+        <member name="M:Squirrel.SquirrelRuntimeInfo.IsPackageCompatibleWithCurrentOS(Squirrel.RuntimeCpu)">
+            <summary>
+            Checks a given package architecture against the current executing OS to detect
+            if it can be properly installed and run.
+            </summary>
+        </member>
+        <member name="T:Squirrel.UpdateInfo">
+            <summary>
+            Holds information about the current version and pending updates, such as how many there are, and access to release notes.
+            </summary>
+        </member>
+        <member name="P:Squirrel.UpdateInfo.CurrentlyInstalledVersion">
+            <summary>
+            The currently executing version of the application, or null if not currently installed.
+            </summary>
+        </member>
+        <member name="P:Squirrel.UpdateInfo.FutureReleaseEntry">
+            <summary>
+            The same as <see cref="P:Squirrel.UpdateInfo.CurrentlyInstalledVersion"/> if there are no updates available, otherwise
+            this will be the version that we are updating to.
+            </summary>
+        </member>
+        <member name="P:Squirrel.UpdateInfo.ReleasesToApply">
+            <summary>
+            The list of versions between the <see cref="P:Squirrel.UpdateInfo.CurrentlyInstalledVersion"/> and <see cref="P:Squirrel.UpdateInfo.FutureReleaseEntry"/>.
+            These will all be applied in order.
+            </summary>
+        </member>
+        <member name="P:Squirrel.UpdateInfo.IsBootstrapping">
+            <summary>
+            True if the currently executing program is not currently installed
+            </summary>
+        </member>
+        <member name="P:Squirrel.UpdateInfo.PackageDirectory">
+            <summary>
+            Path to folder containing local/downloaded packages
+            </summary>
+        </member>
+        <member name="M:Squirrel.UpdateInfo.#ctor(Squirrel.ReleaseEntry,System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.String)">
+            <summary>
+            Create a new instance of <see cref="T:Squirrel.UpdateInfo"/>
+            </summary>
+        </member>
+        <member name="M:Squirrel.UpdateInfo.FetchReleaseNotes">
+            <summary>
+            Retrieves all the release notes for pending packages (ie. <see cref="P:Squirrel.UpdateInfo.ReleasesToApply"/>)
+            </summary>
+        </member>
+        <member name="M:Squirrel.UpdateInfo.Create(Squirrel.ReleaseEntry,System.Collections.Generic.IEnumerable{Squirrel.ReleaseEntry},System.String)">
+            <summary>
+            Create a new <see cref="T:Squirrel.UpdateInfo"/> from a current release and a list of future releases
+            yet to be installed.
+            </summary>
+            <exception cref="T:System.Exception">When availableReleases is null or empty</exception>
+        </member>
+    </members>
+</doc>

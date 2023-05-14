@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor", "Modern.Vice.PdbMonitor\Modern.Vice.PdbMonitor.csproj", "{93BE0838-5D01-41A4-8166-8BB8A685FD8A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Engine.Test", "Test\Modern.Vice.PdbMonitor.Utils.Test\Modern.Vice.PdbMonitor.Engine.Test.csproj", "{261DEC40-D65B-4C28-99EA-56D2DF133FBA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Modern.Vice.PdbMonitor.Engine.Test", "Test\Modern.Vice.PdbMonitor.Engine.Test\Modern.Vice.PdbMonitor.Engine.Test.csproj", "{261DEC40-D65B-4C28-99EA-56D2DF133FBA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{CB9786A7-6B63-4434-A234-BC93974D7B34}"
 EndProject
