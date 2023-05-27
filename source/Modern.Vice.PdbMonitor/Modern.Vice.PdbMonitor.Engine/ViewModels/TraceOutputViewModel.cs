@@ -63,10 +63,6 @@ public class TraceOutputViewModel: NotifiableObject
             }
         }
     }
-
-    //Stopwatch sw = Stopwatch.StartNew();
-    //int count;
-    bool isDelayingNotificaton;
     internal async Task LoadTraceLineAsync(CancellationToken ct)
     {
         var registers = registersViewModel.Current;

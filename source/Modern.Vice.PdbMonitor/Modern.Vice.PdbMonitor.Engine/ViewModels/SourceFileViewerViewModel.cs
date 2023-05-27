@@ -35,9 +35,9 @@ public class SourceFileViewerViewModel : NotifiableObject
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
     }
-    protected override void OnPropertyChanged([CallerMemberName] string name = null)
+    protected override void OnPropertyChanged([CallerMemberName] string? name = null)
     {
-        base.OnPropertyChanged(name);
+        base.OnPropertyChanged(name!);
     }
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
