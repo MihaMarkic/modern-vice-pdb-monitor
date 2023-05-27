@@ -8,6 +8,9 @@ using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
+using Righthand.ViceMonitor.Bridge.Commands;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using Righthand.ViceMonitor.Bridge.Services.Implementation;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -115,6 +118,21 @@ public class DebuggerViewModel : ScopedViewModel
             await DebugStepper.StepOverAsync(lastActiveLine);
         }
     }
+    internal async Task ContinueAsync()
+    {
+        if (DebugStepper is not null)
+        {
+            await DebugStepper.ContinueAsync(lastActiveLine);
+        }
+    }
+    internal async Task ExitViceMonitorAsync()
+    {
+        if (DebugStepper is not null)
+        {
+            await DebugStepper.ExitViceMonitorAsync();
+        }
+    }
+
     bool registersUpdated;
     void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

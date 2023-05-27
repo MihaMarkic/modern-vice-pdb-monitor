@@ -1,0 +1,733 @@
+﻿{	"memory": [	],
+	"variables": [],
+  "functions": [
+    {
+      "name": "sformat",
+      "start": 2403,
+      "end": 4002,
+      "typeid": 12,
+      "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+      "line": 542,
+      "lines": [
+        {
+          "start": 2403,
+          "end": 2413,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 547
+        },
+        {
+          "start": 2413,
+          "end": 2428,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 544
+        },
+        {
+          "start": 2428,
+          "end": 2434,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 550
+        },
+        {
+          "start": 2434,
+          "end": 2448,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 545
+        },
+        {
+          "start": 2448,
+          "end": 2466,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 550
+        },
+        {
+          "start": 2466,
+          "end": 2476,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 552
+        },
+        {
+          "start": 2476,
+          "end": 2505,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 714
+        },
+        {
+          "start": 2505,
+          "end": 2507,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 715
+        },
+        {
+          "start": 2507,
+          "end": 2523,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 717
+        },
+        {
+          "start": 2523,
+          "end": 2533,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 723
+        },
+        {
+          "start": 2536,
+          "end": 2549,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 719
+        },
+        {
+          "start": 2549,
+          "end": 2552,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 720
+        },
+        {
+          "start": 2552,
+          "end": 2554,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 724
+        },
+        {
+          "start": 2554,
+          "end": 2557,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 619
+        },
+        {
+          "start": 2557,
+          "end": 2593,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 550
+        },
+        {
+          "start": 2593,
+          "end": 2622,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 728
+        },
+        {
+          "start": 2622,
+          "end": 2624,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 729
+        },
+        {
+          "start": 2624,
+          "end": 2629,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 731
+        },
+        {
+          "start": 2629,
+          "end": 2641,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 734
+        },
+        {
+          "start": 2641,
+          "end": 2643,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 737
+        },
+        {
+          "start": 2644,
+          "end": 2655,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 732
+        },
+        {
+          "start": 2655,
+          "end": 2661,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 737
+        },
+        {
+          "start": 2664,
+          "end": 2669,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 554
+        },
+        {
+          "start": 2669,
+          "end": 2690,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 556
+        },
+        {
+          "start": 2690,
+          "end": 2700,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 562
+        },
+        {
+          "start": 2703,
+          "end": 2718,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 558
+        },
+        {
+          "start": 2718,
+          "end": 2721,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 559
+        },
+        {
+          "start": 2721,
+          "end": 2726,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 563
+        },
+        {
+          "start": 2726,
+          "end": 2736,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 567
+        },
+        {
+          "start": 2736,
+          "end": 2739,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 571
+        },
+        {
+          "start": 2739,
+          "end": 2742,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 572
+        },
+        {
+          "start": 2742,
+          "end": 2757,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 573
+        },
+        {
+          "start": 2757,
+          "end": 2764,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 568
+        },
+        {
+          "start": 2764,
+          "end": 2769,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 570
+        },
+        {
+          "start": 2769,
+          "end": 2772,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 569
+        },
+        {
+          "start": 2772,
+          "end": 2798,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 587
+        },
+        {
+          "start": 2798,
+          "end": 2800,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 577
+        },
+        {
+          "start": 2800,
+          "end": 2805,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 578
+        },
+        {
+          "start": 2808,
+          "end": 2812,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 579
+        },
+        {
+          "start": 2812,
+          "end": 2815,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 580
+        },
+        {
+          "start": 2818,
+          "end": 2822,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 581
+        },
+        {
+          "start": 2822,
+          "end": 2827,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 582
+        },
+        {
+          "start": 2830,
+          "end": 2834,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 583
+        },
+        {
+          "start": 2834,
+          "end": 2839,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 584
+        },
+        {
+          "start": 2842,
+          "end": 2860,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 590
+        },
+        {
+          "start": 2860,
+          "end": 2868,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 592
+        },
+        {
+          "start": 2868,
+          "end": 2913,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 593
+        },
+        {
+          "start": 2913,
+          "end": 2940,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 595
+        },
+        {
+          "start": 2940,
+          "end": 2963,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 596
+        },
+        {
+          "start": 2965,
+          "end": 2974,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 598
+        },
+        {
+          "start": 2974,
+          "end": 2976,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 601
+        },
+        {
+          "start": 2981,
+          "end": 3003,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 603
+        },
+        {
+          "start": 3003,
+          "end": 3026,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 604
+        },
+        {
+          "start": 3026,
+          "end": 3073,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 605
+        },
+        {
+          "start": 3073,
+          "end": 3100,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 607
+        },
+        {
+          "start": 3100,
+          "end": 3123,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 608
+        },
+        {
+          "start": 3125,
+          "end": 3131,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 610
+        },
+        {
+          "start": 3131,
+          "end": 3138,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 613
+        },
+        {
+          "start": 3138,
+          "end": 3140,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 615
+        },
+        {
+          "start": 3143,
+          "end": 3150,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 617
+        },
+        {
+          "start": 3150,
+          "end": 3154,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 621
+        },
+        {
+          "start": 3154,
+          "end": 3164,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 623
+        },
+        {
+          "start": 3167,
+          "end": 3174,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 627
+        },
+        {
+          "start": 3174,
+          "end": 3195,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 650
+        },
+        {
+          "start": 3195,
+          "end": 3199,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 657
+        },
+        {
+          "start": 3199,
+          "end": 3203,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 703
+        },
+        {
+          "start": 3203,
+          "end": 3210,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 707
+        },
+        {
+          "start": 3210,
+          "end": 3243,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 709
+        },
+        {
+          "start": 3246,
+          "end": 3299,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 705
+        },
+        {
+          "start": 3302,
+          "end": 3315,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 661
+        },
+        {
+          "start": 3315,
+          "end": 3349,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 659
+        },
+        {
+          "start": 3349,
+          "end": 3351,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 662
+        },
+        {
+          "start": 3351,
+          "end": 3358,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 664
+        },
+        {
+          "start": 3358,
+          "end": 3362,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 665
+        },
+        {
+          "start": 3365,
+          "end": 3370,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 668
+        },
+        {
+          "start": 3370,
+          "end": 3378,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 670
+        },
+        {
+          "start": 3378,
+          "end": 3389,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 673
+        },
+        {
+          "start": 3389,
+          "end": 3414,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 672
+        },
+        {
+          "start": 3416,
+          "end": 3424,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 677
+        },
+        {
+          "start": 3424,
+          "end": 3461,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 689
+        },
+        {
+          "start": 3461,
+          "end": 3500,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 690
+        },
+        {
+          "start": 3500,
+          "end": 3523,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 689
+        },
+        {
+          "start": 3523,
+          "end": 3531,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 694
+        },
+        {
+          "start": 3531,
+          "end": 3542,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 696
+        },
+        {
+          "start": 3542,
+          "end": 3553,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 699
+        },
+        {
+          "start": 3553,
+          "end": 3578,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 698
+        },
+        {
+          "start": 3580,
+          "end": 3585,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 679
+        },
+        {
+          "start": 3585,
+          "end": 3606,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 681
+        },
+        {
+          "start": 3606,
+          "end": 3611,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 682
+        },
+        {
+          "start": 3611,
+          "end": 3614,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 683
+        },
+        {
+          "start": 3614,
+          "end": 3627,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 685
+        },
+        {
+          "start": 3630,
+          "end": 3700,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 652
+        },
+        {
+          "start": 3700,
+          "end": 3716,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 653
+        },
+        {
+          "start": 3716,
+          "end": 3719,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 654
+        },
+        {
+          "start": 3721,
+          "end": 3725,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 654
+        },
+        {
+          "start": 3728,
+          "end": 3777,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 629
+        },
+        {
+          "start": 3777,
+          "end": 3792,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 630
+        },
+        {
+          "start": 3792,
+          "end": 3810,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 631
+        },
+        {
+          "start": 3810,
+          "end": 3832,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 633
+        },
+        {
+          "start": 3832,
+          "end": 3834,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 634
+        },
+        {
+          "start": 3834,
+          "end": 3841,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 636
+        },
+        {
+          "start": 3843,
+          "end": 3850,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 638
+        },
+        {
+          "start": 3850,
+          "end": 3857,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 642
+        },
+        {
+          "start": 3857,
+          "end": 3865,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 644
+        },
+        {
+          "start": 3865,
+          "end": 3871,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 645
+        },
+        {
+          "start": 3871,
+          "end": 3913,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 640
+        },
+        {
+          "start": 3913,
+          "end": 3922,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 550
+        },
+        {
+          "start": 3925,
+          "end": 3927,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 624
+        },
+        {
+          "start": 3927,
+          "end": 3988,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 619
+        },
+        {
+          "start": 3991,
+          "end": 3995,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 601
+        },
+        {
+          "start": 3995,
+          "end": 3999,
+          "source": "D:/Temp/oscar64/oscar64/include/stdio.c",
+          "line": 587
+        }
+      ],
+      "variables": [
+        {
+          "name": "buff",
+          "start": 26,
+          "end": 28,
+          "typeid": 13
+        },
+        {
+          "name": "si",
+          "start": 40912,
+          "end": 40920,
+          "enter": 548,
+          "leave": 738,
+          "typeid": 21
+        },
+        {
+          "name": "i",
+          "start": 40910,
+          "end": 40912,
+          "enter": 592,
+          "leave": 599,
+          "typeid": 22
+        },
+        {
+          "name": "i",
+          "start": 40908,
+          "end": 40910,
+          "enter": 603,
+          "leave": 611,
+          "typeid": 23
+        },
+        {
+          "name": "l",
+          "start": 40904,
+          "end": 40908,
+          "enter": 629,
+          "leave": 647,
+          "typeid": 24
+        }
+      ]
+    }
+  ],
+	"types": [
+
+		{"name": "sinfo", "typeid": 21, "size": 8, "type": "struct","members": [
+			{"name": "fill", "offset": 0, "typeid": 88},
+			{"name": "width", "offset": 1, "typeid": 89},
+			{"name": "precision", "offset": 2, "typeid": 89},
+			{"name": "base", "offset": 3, "typeid": 90},
+			{"name": "sign", "offset": 5, "typeid": 91},
+			{"name": "left", "offset": 6, "typeid": 91},
+			{"name": "prefix", "offset": 7, "typeid": 91}]},
+		{"name": "", "typeid": 22, "size": 2, "type": "int"},
+		{"name": "", "typeid": 23, "size": 2, "type": "int"},
+		{"name": "", "typeid": 24, "size": 4, "type": "int"},]}

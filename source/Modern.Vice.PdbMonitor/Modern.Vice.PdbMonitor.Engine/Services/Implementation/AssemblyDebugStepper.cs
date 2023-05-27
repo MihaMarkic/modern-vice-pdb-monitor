@@ -17,4 +17,8 @@ internal class AssemblyDebugStepper : DebugStepper, IDebugStepper
     public async Task StepIntoAsync(PdbLine? line, CancellationToken ct = default) => await AtomicStepIntoAsync(ct);
 
     public async Task StepOverAsync(PdbLine? line, CancellationToken ct = default) =>await AtomicStepOverAsync(ct);
+    public async override Task ContinueAsync(PdbLine? line, CancellationToken ct = default)
+    {
+        await ExitViceMonitorAsync();
+    }
 }

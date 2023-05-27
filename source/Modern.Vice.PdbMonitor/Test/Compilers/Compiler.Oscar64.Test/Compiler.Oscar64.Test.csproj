@@ -18,6 +18,9 @@
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Utils.Test\Modern.Vice.PdbMonitor.Engine.Test.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Samples\nested_variable.dbj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Samples\sprcoltut4.dbj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

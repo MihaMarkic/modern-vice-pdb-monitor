@@ -164,12 +164,12 @@ public class VariablesViewModel: NotifiableObject
     public async Task UpdateForLineAsync(PdbLine line, CancellationToken ct = default)
     {
         ClearVariables();
-        var functionVariables = line.Function?.Variables ?? ImmutableDictionary<string, PdbVariable>.Empty;
+        var lineVariables = line.Variables;
         var globalVariables = globals.Project?.DebugSymbols?.GlobalVariables ?? ImmutableDictionary<string, PdbVariable>.Empty;
-        if (!functionVariables.IsEmpty || !globalVariables.IsEmpty)
+        if (!lineVariables.IsEmpty || !globalVariables.IsEmpty)
         {
             var mapBuilder = ImmutableDictionary.CreateBuilder<PdbVariable, VariableSlot>();
-            foreach (var variable in functionVariables.Values)
+            foreach (var variable in lineVariables.Values)
             {
                 var slot = new VariableSlot(variable, isGlobal: false);
                 Items.Add(slot);
@@ -188,7 +188,8 @@ public class VariablesViewModel: NotifiableObject
     internal async Task<ushort> GetVariableBaseAddressAsync(ushort basePointerAddress, CancellationToken ct)
     {
         var command = viceBridge.EnqueueCommand(
-        new MemoryGetCommand(0, basePointerAddress, (ushort)(basePointerAddress + 1), MemSpace.MainMemory, 0));
+        new MemoryGetCommand(0, basePointerAddress, (ushort)(basePointerAddress + 1), MemSpace.MainMemory, 0),
+            true);
         var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
         using (var buffer = response?.Memory ?? throw new Exception("Failed to retrieve base address"))
         {
@@ -227,7 +228,8 @@ public class VariablesViewModel: NotifiableObject
             memoryEnd = (ushort)variable.End;
         }
         var command = viceBridge.EnqueueCommand(
-            new MemoryGetCommand(0, memoryStart, memoryEnd, MemSpace.MainMemory, 0));
+            new MemoryGetCommand(0, memoryStart, memoryEnd, MemSpace.MainMemory, 0),
+            resumeOnStopped: true);
         var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
         ct.ThrowIfCancellationRequested();
         var buffer = response?.Memory;

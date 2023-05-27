@@ -73,7 +73,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.2.3" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.15" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.15.5" />
    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />

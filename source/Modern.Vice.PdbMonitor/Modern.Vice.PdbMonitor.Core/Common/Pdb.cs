@@ -57,15 +57,18 @@ public sealed class PdbFileByPathEqualityComparer : IEqualityComparer<PdbFile>
 public record PdbLine(int LineNumber, string Text)
 {
     public ImmutableArray<AddressRange> Addresses { get; init; } = ImmutableArray<AddressRange>.Empty;
+    public ImmutableDictionary<string, PdbVariable> Variables { get; init; } = ImmutableDictionary<string, PdbVariable>.Empty;
     /// <summary>
     /// Owner function of this line.
     /// </summary>
     public PdbFunction? Function { get; set; }
-    public static PdbLine Create(int lineNumber, string text, AddressRange addressRange)
+    public static PdbLine Create(int lineNumber, string text, AddressRange addressRange, 
+        ImmutableDictionary<string, PdbVariable> variables)
     {
         return new PdbLine(lineNumber, text)
         {
             Addresses = ImmutableArray<AddressRange>.Empty.Add(addressRange),
+            Variables = variables,
         };
     }
     public static PdbLine Create(int lineNumber, ushort startAddress,
@@ -132,6 +135,19 @@ public class PdbValueType: PdbDefinedType
         VariableType = variableType;
     }
 }
+public class PdbEnumType: PdbValueType
+{
+    public ImmutableDictionary<object, string> ByKey { get; }
+    public ImmutableDictionary<string, object> ByValue { get; }
+    public PdbEnumType(int id, string name, int size, PdbVariableType variableType, 
+        IEnumerable<KeyValuePair<object, string>> values)
+        : base(id, name, size, variableType)
+    {
+        ByKey = values.ToImmutableDictionary(v => v.Key, v => v.Value);
+        ByValue = values.ToImmutableDictionary(v => v.Value, v => v.Key);
+    }
+
+}
 public class PdbArrayType: PdbDefinedType
 {
     public PdbDefinedType? ReferencedOfType { get; set; }
@@ -182,8 +198,7 @@ public enum PdbVariableType
     Float,
 }
 
-public record PdbFunction(string Name, PdbPath DefinitionFile, int Start, int End, int LineNumber, 
-    ImmutableDictionary<string, PdbVariable> Variables);
+public record PdbFunction(string Name, PdbPath DefinitionFile, int Start, int End, int LineNumber);
 
 public record PdbParseResult<T>(T ParsedData, ImmutableArray<PdbParseError> Errors);
 public static class PdbParseResultBuilder

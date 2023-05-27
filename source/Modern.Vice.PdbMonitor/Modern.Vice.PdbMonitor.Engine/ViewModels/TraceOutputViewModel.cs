@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -17,10 +17,8 @@ public class TraceOutputViewModel: NotifiableObject
     readonly Globals globals;
     readonly RegistersViewModel registersViewModel;
     readonly IDispatcher dispatcher;
-    readonly object sync = new object();
     internal uint? CheckpointNumber { get; private set; }
-    string? text;
-    public string? Text => text;
+    public string? Text { get; private set; }
     public RelayCommand ClearCommand { get; }
     public TraceOutputViewModel(ILogger<TraceOutputViewModel> logger, IViceBridge viceBridge,
         Globals globals, RegistersViewModel registersViewModel, IDispatcher dispatcher)
@@ -38,8 +36,9 @@ public class TraceOutputViewModel: NotifiableObject
         if (address is not null)
         {
             var checkpointSetCommand = viceBridge.EnqueueCommand(
-               new CheckpointSetCommand(address.Value, (ushort)(address.Value + 2), StopWhenHit: true,
-               Enabled: true, CpuOperation.Store, false));
+               new CheckpointSetCommand(address.Value, (ushort)(address.Value + 1), StopWhenHit: true,
+               Enabled: true, CpuOperation.Exec, false),
+               resumeOnStopped: true);
             var checkpointSetResponse = await checkpointSetCommand.Response
                 .AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointSetCommand, ct: ct);
             CheckpointNumber = checkpointSetResponse?.CheckpointNumber;
@@ -47,14 +46,15 @@ public class TraceOutputViewModel: NotifiableObject
     }
     void Clear()
     {
-        text = null;
+        Text = null;
         OnPropertyChanged(nameof(Text));
     }
     internal async Task ClearTraceCheckpointAsync(CancellationToken ct = default)
     {
         if (CheckpointNumber is not null)
         {
-            var checkpointDeleteCommand = viceBridge.EnqueueCommand(new CheckpointDeleteCommand(CheckpointNumber.Value));
+            var checkpointDeleteCommand = viceBridge.EnqueueCommand(new CheckpointDeleteCommand(CheckpointNumber.Value),
+                resumeOnStopped: true);
             var checkpointDeleteResponse = await checkpointDeleteCommand.Response
                 .AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointDeleteCommand, ct: ct);
             if (checkpointDeleteCommand is null)
@@ -67,55 +67,26 @@ public class TraceOutputViewModel: NotifiableObject
     //Stopwatch sw = Stopwatch.StartNew();
     //int count;
     bool isDelayingNotificaton;
-    internal void LoadTraceChar()
+    internal async Task LoadTraceLineAsync(CancellationToken ct)
     {
-        char? c = (char?)registersViewModel.Current.A;
-        if (c.HasValue)
+        var registers = registersViewModel.Current;
+        if (registers.A.HasValue && registers.X.HasValue && registers.Y.HasValue)
         {
-            //count++;
-            //if (count % 1000 == 0)
-            //{
-            //    double avg = sw.ElapsedMilliseconds / (double)count;
-            //    Debug.WriteLine($"Avg: {avg:#,##0.00}");
-            //}
-            // both 13 and 10 are valid line separators, but not together
-            bool isNewLine = c == 13 || c == 10;
-            if (text is null)
+            ushort startAddress = (ushort)((registers.X << 8) + registers.A);
+            ushort endAddress = (ushort)(startAddress + registers.Y);
+            var command = viceBridge.EnqueueCommand(
+                new MemoryGetCommand(0, startAddress, endAddress, MemSpace.MainMemory, 0));
+            var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
+            using (var buffer = response?.Memory ?? throw new Exception("Failed to retrieve base address"))
             {
-                if (isNewLine)
-                {
-                    text = Environment.NewLine;
-                }
-                else
-                {
-                    text = new string(c.Value, 1);
-                }
+                string line = ASCIIEncoding.ASCII.GetString(buffer.Data, 0, (int)buffer.Size);
+                Text = Text is null ? line : Text + Environment.NewLine + line;
             }
-            else
-            {
-                text += isNewLine ? Environment.NewLine : c;
-            }
-            if (!isDelayingNotificaton)
-            {
-                _ = NotifyTextChangedAsync();
-            }
+            viceBridge.EnqueueCommand(new ExitCommand(), resumeOnStopped: false);
         }
-    }
-    /// <summary>
-    /// Group notifications into a 10ms window to avoid overkill in UI refresh.
-    /// </summary>
-    /// <returns></returns>
-    async Task NotifyTextChangedAsync()
-    {
-        isDelayingNotificaton = true;
-        try
+        else
         {
-            await Task.Delay(10);
-            OnPropertyChanged(nameof(Text));
-        }
-        finally
-        {
-            isDelayingNotificaton = false;
+            logger.LogWarning("Got no registers on trace");
         }
     }
 }

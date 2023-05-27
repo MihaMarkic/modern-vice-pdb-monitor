@@ -21,6 +21,7 @@ public class RegistersViewModel: NotifiableObject
     readonly ILogger<RegistersViewModel> logger;
     readonly IViceBridge viceBridge;
     readonly RegistersMapping mapping;
+    readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly CommandsManager commandsManager;
     readonly IDispatcher dispatcher;
     readonly TaskFactory uiFactory;
@@ -29,11 +30,13 @@ public class RegistersViewModel: NotifiableObject
     public bool IsLoadingMappings { get; private set; }
     public bool IsLoadingRegisters { get; private set; }
     public RelayCommandAsync UpdateCommand { get; }
-    public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping, IDispatcher dispatcher)
+    public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping,
+        ExecutionStatusViewModel executionStatusViewModel, IDispatcher dispatcher)
     {
         this.logger = logger;
         this.viceBridge = viceBridge;
         this.mapping = mapping;
+        this.executionStatusViewModel = executionStatusViewModel;
         this.dispatcher = dispatcher;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
@@ -42,12 +45,14 @@ public class RegistersViewModel: NotifiableObject
     }
     public async Task InitAsync()
     {
-        var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory));
+        var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory),
+            resumeOnStopped: true);
         await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
     }
     async Task Update()
     {
-        var command = viceBridge.EnqueueCommand(new RegistersGetCommand(MemSpace.MainMemory));
+        var command = viceBridge.EnqueueCommand(new RegistersGetCommand(MemSpace.MainMemory),
+            resumeOnStopped: true);
         await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, UpdateRegistersFromResponseAsync);
     }
 
@@ -75,7 +80,8 @@ public class RegistersViewModel: NotifiableObject
             IsLoadingMappings = true;
             try
             {
-                var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory));
+                var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory),
+                    resumeOnStopped: true);
                 await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
             }
             finally
@@ -107,7 +113,8 @@ public class RegistersViewModel: NotifiableObject
             builder.Add(new RegisterItem(registerId.Value, i.Value));
         }
         var registers = builder.ToImmutable();
-        var command = viceBridge.EnqueueCommand(new RegistersSetCommand(MemSpace.MainMemory, registers));
+        var command = viceBridge.EnqueueCommand(new RegistersSetCommand(MemSpace.MainMemory, registers),
+            resumeOnStopped: true);
         var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
         bool success = response is not null;
         if (success)

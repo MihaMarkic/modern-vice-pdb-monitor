@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Services.Abstract;
+using Modern.Vice.PdbMonitor.Core.Services.Implementation;
 
 namespace Modern.Vice.PdbMonitor.Core;
 
@@ -19,5 +21,6 @@ public static class IoC
     public static void AddCore(this IServiceCollection services)
     {
         services.AddSingleton<EnumDisplayTextMapper>();
+        services.AddSingleton<IFileService, FileService>();
     }
 }

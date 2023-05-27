@@ -142,27 +142,29 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
     }
     async Task SaveAsync()
     {
-        try
-        {
-            await breakpoints.UpdateBreakpointAsync(Breakpoint);
-            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
-        }
-        catch (Exception ex)
-        {
-            SaveError = $"Failed saving breakpoint: {ex.Message}";
-        }
+        throw new NotImplementedException();
+        //try
+        //{
+        //    await breakpoints.UpdateBreakpointAsync(Breakpoint);
+        //    Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+        //}
+        //catch (Exception ex)
+        //{
+        //    SaveError = $"Failed saving breakpoint: {ex.Message}";
+        //}
     }
     async Task CreateAsync()
     {
-        try
-        {
-            await breakpoints.AddBreakpointAsync(Breakpoint);
-            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
-        }
-        catch (Exception ex)
-        {
-            SaveError = $"Failed creating breakpoint: {ex.Message}";
-        }
+        throw new NotImplementedException();
+        //try
+        //{
+        //    await breakpoints.AddBreakpointAsync(Breakpoint);
+        //    Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+        //}
+        //catch (Exception ex)
+        //{
+        //    SaveError = $"Failed creating breakpoint: {ex.Message}";
+        //}
     }
     void Cancel()
     {

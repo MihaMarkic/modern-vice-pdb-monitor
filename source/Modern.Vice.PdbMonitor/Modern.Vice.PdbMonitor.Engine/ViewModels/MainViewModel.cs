@@ -56,7 +56,7 @@ public class MainViewModel : NotifiableObject
     public RelayCommand ToggleErrorsVisibilityCommand { get; }
     public RelayCommandAsync RunCommand { get; }
     public RelayCommand PauseCommand { get; }
-    public RelayCommand StopCommand { get; }
+    public RelayCommandAsync StopCommand { get; }
     public RelayCommandAsync StepIntoCommand { get; }
     public RelayCommandAsync StepOverCommand { get; }
     public RelayCommandAsync UpdatePdbCommand { get; }
@@ -95,10 +95,6 @@ public class MainViewModel : NotifiableObject
     Process? viceProcess;
     CancellationTokenSource? startDebuggingCts;
     readonly TaskFactory uiFactory;
-    /// <summary>
-    /// When true the engine should reapply breakpoint upon debugging start. Typical reasons are connection lost or pdb refresh.
-    /// </summary>
-    bool requiresBreakpointsRefresh;
     public MainViewModel(ILogger<MainViewModel> logger, Globals globals, IDispatcher dispatcher,
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
@@ -139,7 +135,7 @@ public class MainViewModel : NotifiableObject
         ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
         RunCommand = commandsManager.CreateRelayCommandAsync(
             StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping));
-        StopCommand = commandsManager.CreateRelayCommand(StopDebugging, () => IsDebugging);
+        StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging);
         PauseCommand = commandsManager.CreateRelayCommand(
             PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping);
         StepIntoCommand = commandsManager.CreateRelayCommandAsync(
@@ -157,7 +153,6 @@ public class MainViewModel : NotifiableObject
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
         viceBridge.ViceResponse += ViceBridge_ViceResponse;
         viceBridge.Start();
-        requiresBreakpointsRefresh = true;
         if (!Directory.Exists(globals.Settings.VicePath))
         {
             SwitchOverlayContent<SettingsViewModel>();
@@ -193,18 +188,19 @@ public class MainViewModel : NotifiableObject
     void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
     {
         //Debug.WriteLine($"Got unbounded {e.Response.GetType().Name}");
-        uiFactory.StartNew(() =>
+
+        switch (e.Response)
         {
-            switch (e.Response)
-            {
-                case StoppedResponse:
+            case StoppedResponse:
+                executionStatusViewModel.IsViceStopped = true;
+                uiFactory.StartNew(() =>
+                {
                     if (executionStatusViewModel.IsDebugging)
                     {
                         if (traceCharAvailable)
                         {
                             traceCharAvailable = false;
-                            TraceOutputViewModel.LoadTraceChar();
-                            viceBridge.EnqueueCommand(new ExitCommand());
+                            _ = TraceOutputViewModel.LoadTraceLineAsync(CancellationToken.None);                           
                         }
                         else
                         {
@@ -218,8 +214,12 @@ public class MainViewModel : NotifiableObject
                         // when not debugging, stopping VICE is not desired. i.e. when a checkpoint is added
                         //viceBridge.EnqueueCommand(new ExitCommand());
                     }
-                    break;
-                case ResumedResponse:
+                });
+                break;
+            case ResumedResponse:
+                executionStatusViewModel.IsViceStopped = false;
+                uiFactory.StartNew(() =>
+                {
                     if (executionStatusViewModel.IsDebugging)
                     {
                         // when processing is disabled, enable it each time it hits Resume
@@ -234,16 +234,21 @@ public class MainViewModel : NotifiableObject
                             resumedExecution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                         }
                     }
-                    break;
-                case CheckpointInfoResponse checkpointInfoResponse:
+                });
+                break;
+            case CheckpointInfoResponse checkpointInfoResponse:
+                Debug.WriteLine($"CHECKPOINT: {checkpointInfoResponse.StartAddress:X4}");
+                uiFactory.StartNew(() =>
+                {
                     if (checkpointInfoResponse.CheckpointNumber == TraceOutputViewModel.CheckpointNumber)
                     {
                         executionStatusViewModel.IsProcessingDisabled = true;
                         traceCharAvailable = true;
                     }
-                    break;
-            }
-        });
+                });
+                break;
+        }
+
     }
 
     void PrgFileChanged(object sender, PrgFileChangedMessage message)
@@ -312,29 +317,26 @@ public class MainViewModel : NotifiableObject
     {
         uiFactory.StartNew(() =>
         {
-            if (!e.IsConnected)
-            {
-                requiresBreakpointsRefresh = true;
-            }
             IsViceConnected = e.IsConnected;
         });
     }
-    internal void StopDebugging()
+    internal async Task StopDebuggingAsync()
     {
-        _ = ClearAfterDebuggingAsync();
+        await BreakpointsViewModel.DisarmAllBreakpoints(CancellationToken.None);
+        await ClearAfterDebuggingAsync();
     }
     internal void PauseDebugging()
     {
         if (!IsDebuggingPaused)
         {
-            viceBridge.EnqueueCommand(new PingCommand());
+            viceBridge.EnqueueCommand(new PingCommand(), resumeOnStopped: false);
         }
     }
     internal async Task StartDebuggingAsync()
     {
         if (IsDebugging)
         {
-            await ExitViceMonitorAsync();
+            await DebuggerViewModel.ContinueAsync();
         }
         else
         {
@@ -366,23 +368,20 @@ public class MainViewModel : NotifiableObject
                 {
                     await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
                 }
-                if (requiresBreakpointsRefresh)
-                {
-                    await BreakpointsViewModel.ReapplyBreakpoints(hasPdbChanged, startDebuggingCts.Token);
-                    requiresBreakpointsRefresh = false;
-                }
+                await BreakpointsViewModel.RearmBreakpoints(hasPdbChanged, startDebuggingCts.Token);
                 await TraceOutputViewModel.CreateTraceCheckpointAsync(startDebuggingCts.Token);
                 // make sure vice isn't in paused state
                 if (IsDebuggingPaused)
                 {
-                    await ExitViceMonitorAsync();
+                    await DebuggerViewModel.ExitViceMonitorAsync();
                 }
                 await RegistersViewModel.InitAsync();
                 executionStatusViewModel.IsStartingDebugging = false;
 
                 var command = viceBridge.EnqueueCommand(
                     new AutoStartCommand(runAfterLoading: Globals.Project!.AutoStartMode == DebugAutoStartMode.Vice, 
-                        0, Globals.Project.FullPrgPath!));
+                        0, Globals.Project.FullPrgPath!),
+                    resumeOnStopped: false);
                 await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
                 await stoppedExecution.Task;
 
@@ -392,7 +391,8 @@ public class MainViewModel : NotifiableObject
                         && Globals.Project.DebugSymbols.Labels.TryGetValue(Globals.Project!.StopAtLabel, out var label))
                     {
                         var checkpoint = viceBridge.EnqueueCommand(
-                            new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true));
+                            new CheckpointSetCommand(label.Address, label.Address, true, true, CpuOperation.Exec, true),
+                            resumeOnStopped: true);
                         await checkpoint.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpoint);
                     }
                     else
@@ -427,26 +427,15 @@ public class MainViewModel : NotifiableObject
     }
     internal async Task ResetViceAsync(CancellationToken ct)
     {
-        var command = viceBridge.EnqueueCommand(new ResetCommand(ResetMode.Soft));
+        var command = viceBridge.EnqueueCommand(new ResetCommand(ResetMode.Soft), resumeOnStopped: false);
         await command.Response;
     }
-    internal async Task ExitViceMonitorAsync()
-    {
-        await EnqueueCommandAndWaitForResponseAsync(new ExitCommand());
-    }
-
-    internal async Task<TResponse?> EnqueueCommandAndWaitForResponseAsync<TResponse>(
-        ViceCommand<TResponse> command, TimeSpan? timeout = default, CancellationToken ct = default)
-        where TResponse: ViceResponse
-    {
-        viceBridge.EnqueueCommand(command);
-        return await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
-    }
+    
     void ViceProcess_Exited(object? sender, EventArgs e)
     {
         viceProcess!.Exited -= ViceProcess_Exited;
         viceProcess = null;
-        StopDebugging();
+        _ = StopDebuggingAsync();
     }
 
     internal async Task ClearAfterDebuggingAsync()
@@ -462,7 +451,7 @@ public class MainViewModel : NotifiableObject
             }
             else
             {
-                var command = viceBridge.EnqueueCommand(new ExitCommand());
+                var command = viceBridge.EnqueueCommand(new ExitCommand(),  resumeOnStopped: true);
                 await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
             }
         }
@@ -478,7 +467,7 @@ public class MainViewModel : NotifiableObject
         if (viceProcess is not null && viceBridge?.IsConnected == true)
         {
             logger.LogDebug("VICE process running and bridge is connected, will try Quit command");
-            var quitCommand = viceBridge.EnqueueCommand(new QuitCommand());
+            var quitCommand = viceBridge.EnqueueCommand(new QuitCommand(), resumeOnStopped: false);
             var result = await quitCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, quitCommand, TimeSpan.FromSeconds(10));
             if (result is not null)
             {
@@ -564,7 +553,7 @@ public class MainViewModel : NotifiableObject
     {
         if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
         {
-            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64dtv.exe");
+            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64sc.exe");
             try
             {
                 string arguments = $"-binarymonitor";
@@ -586,7 +575,7 @@ public class MainViewModel : NotifiableObject
     {
         if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
         {
-            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64dtv.exe");
+            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64sc.exe");
             var proc = Process.Start(path, "-binarymonitor");
         }
     }
@@ -710,16 +699,6 @@ public class MainViewModel : NotifiableObject
             }
         }
         return false;
-    }
-    protected override void OnPropertyChanged([CallerMemberName] string name = default!)
-    {
-        base.OnPropertyChanged(name);
-        switch (name)
-        {
-            case nameof(IsUpdatedPdbAvailable):
-                requiresBreakpointsRefresh = true;
-                break;
-        }
     }
 
     protected override void Dispose(bool disposing)

@@ -66,7 +66,7 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
             var actual = await Target.LoadContentAsync(content);
         }
         [Test]
-        public async Task GiveSampleType_WithMembers_ParsesMembersCorrectly()
+        public async Task GiveSampleStructType_WithMembers_ParsesMembersCorrectly()
         {
             const string source = """
                 {
@@ -81,7 +81,47 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
 
             var actual = await Target.LoadContentAsync(source);
 
-            Assert.That(actual!.Types.Single().Members.Length, Is.EqualTo(3));
+            var type = actual!.Types.Single();
+            Assert.That(type, Is.TypeOf<Oscar64StructType>());
+            var structType = (Oscar64StructType)type;
+            Assert.That(structType.Members.Length, Is.EqualTo(3));
+        }
+        [Test]
+        public async Task GiveSampleEnumType_WithMembers_ParsesMembersCorrectly()
+        {
+            const string source = """
+                {
+                    "types": [
+                        {"name": "IOCharMap", "typeid": 2, "size": 1, "type": "enum","members": [
+                            {"name": "IOCHM_PETSCII_1", "value": 2},
+                            {"name": "IOCHM_ASCII", "value": 1},
+                            {"name": "IOCHM_TRANSPARENT", "value": 0}]}
+                        ]
+                }
+                """;
+
+            var actual = await Target.LoadContentAsync(source);
+
+            var type = actual!.Types.Single();
+            Assert.That(type, Is.TypeOf<Oscar64EnumType>());
+            var structType = (Oscar64EnumType)type;
+            Assert.That(structType.Members.Length, Is.EqualTo(3));
+        }
+        [Test]
+        public async Task GiveSampleVoidType_ReturnsVoidType()
+        {
+            const string source = """
+        {
+            "types": [
+                {"name": "", "typeid": 1, "size": 0}
+            ]
+        }
+        """;
+
+            var actual = await Target.LoadContentAsync(source);
+
+            var type = actual!.Types.Single();
+            Assert.That(type, Is.TypeOf<Oscar64VoidType>());
         }
     }
 }

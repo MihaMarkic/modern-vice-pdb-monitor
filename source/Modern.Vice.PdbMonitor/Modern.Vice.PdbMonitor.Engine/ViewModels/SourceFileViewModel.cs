@@ -58,7 +58,7 @@ public class SourceFileViewModel : ScopedViewModel
         Lines = lines;
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
         AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
-           canExecute: l => l?.Address is not null && viceBridge.IsConnected);
+           canExecute: l => l?.Address is not null);
         var fileBreakpoints = breakpoints.Breakpoints.Where(b => b.File == file).ToImmutableArray();
         AddBreakpointsToLine(fileBreakpoints);
         breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
@@ -107,7 +107,7 @@ public class SourceFileViewModel : ScopedViewModel
                     {
                         if (newBreakpoint.File == file)
                         {
-                            var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
+                            var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, newBreakpoint.Line));
                             targetLine.RemoveBreakpoint(newBreakpoint);
                         }
                     }
@@ -130,10 +130,26 @@ public class SourceFileViewModel : ScopedViewModel
         {
             if (newBreakpoint.File == file)
             {
-                var targetLine = Lines.Single(l => l.SourceLine == newBreakpoint.Line);
+                var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, newBreakpoint.Line));
                 targetLine.AddBreakpoint(newBreakpoint);
             }
         }
+    }
+    /// <summary>
+    /// Simplifies lines matching to avoid unnecessary comparisions
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <returns></returns>
+    internal bool SourceLinesMatch(PdbLine a, PdbLine? b)
+    {
+        if (b is null)
+        {
+            return false;
+        }
+        return a.LineNumber == b.LineNumber
+            && a.Function?.Name == b.Function?.Name
+            && a.Function?.DefinitionFile == b.Function?.DefinitionFile;
     }
     public int? ExecutionRow
     {

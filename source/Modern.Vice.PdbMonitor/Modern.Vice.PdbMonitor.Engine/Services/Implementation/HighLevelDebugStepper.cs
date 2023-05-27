@@ -61,4 +61,27 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
             StartLine = null;
         }
     }
+    public override async Task ContinueAsync(PdbLine? line, CancellationToken ct = default)
+    {
+        StartLine = line;
+        executionStatusViewModel.IsSteppingOver = false;
+        executionStatusViewModel.IsSteppingInto = true;
+        IsActive = true;
+        try
+        {
+            while (IsActive)
+            {
+                ct.ThrowIfCancellationRequested();
+                PrepareForContinue();
+                await ExitViceMonitorAsync();
+                await ContinueTask!;
+            }
+        }
+        finally
+        {
+            executionStatusViewModel.IsSteppingInto = false;
+            IsActive = false;
+            StartLine = null;
+        }
+    }
 }

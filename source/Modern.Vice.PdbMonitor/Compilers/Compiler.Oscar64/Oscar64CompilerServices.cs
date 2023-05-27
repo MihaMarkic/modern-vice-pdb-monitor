@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using Compiler.Oscar64.Models;
 using Compiler.Oscar64.Services.Implementation;
-using Microsoft.Extensions.FileProviders;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Services.Abstract;
 
@@ -12,9 +11,11 @@ public class Oscar64CompilerServices : ICompilerServices
 {
     public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     readonly Oscar64DbjParser parser;
-    public Oscar64CompilerServices(Oscar64DbjParser parser)
+    readonly IFileService fileService;
+    public Oscar64CompilerServices(Oscar64DbjParser parser, IFileService fileService)
     {
         this.parser = parser;
+        this.fileService = fileService;
     }
     public async Task<(Pdb? Pdb, string? ErrorMessage)> ParseDebugSymbolsAsync(string projectDirectory, string prgPath, 
         CancellationToken ct)
@@ -36,7 +37,7 @@ public class Oscar64CompilerServices : ICompilerServices
         }
     }
 
-    private static (Pdb? Pdb, string? ErrorMessage) ParseDebugFile(string projectDirectory, DebugFile debugFile)
+    (Pdb? Pdb, string? ErrorMessage) ParseDebugFile(string projectDirectory, DebugFile debugFile)
     {
         var allLines = debugFile.Functions.SelectMany(f => f.Lines).ToImmutableArray();
         var uniqueFileNamesBuilder = ImmutableHashSet.CreateBuilder<string>();
@@ -77,6 +78,63 @@ public class Oscar64CompilerServices : ICompilerServices
         return (pdb, null);
     }
 
+    internal record VariableRange(int? Start, int? End)
+    {
+        public static VariableRange All = new VariableRange(null, null);
+        /// <summary>
+        /// Returns span between end and start. When All, it returns <see cref="int.MaxValue"/>, otherwise
+        /// difference.
+        /// </summary>
+        /// <remarks>Either range is All or both <see cref="Start"/> and <see cref="End"/> are not nul.</remarks>
+        public int Span {
+            get => this == All ? 
+                int.MaxValue
+                : (End ?? throw new Exception("End does not have a value")) 
+                    - (Start ?? throw new Exception("End does not have a value"));
+        }
+        public bool Contains(int Value)
+        {
+            return this == All ? true: Value >= Start && Value <= End;
+        }
+
+    }
+    internal record VariableWithRange(VariableRange Range, PdbVariable Variable);
+    /// <summary>
+    /// Sorts and arranges possibly nested variables.
+    /// </summary>
+    /// <param name="types"></param>
+    /// <param name="variables"></param>
+    /// <returns></returns>
+    /// <remarks>Nested range never overlaps outside parent.</remarks>
+    internal static ImmutableDictionary<string, ImmutableArray<VariableWithRange>> CreateLineVariables
+        (ImmutableDictionary<int, PdbType> types, ImmutableArray<Variable> variables)
+    {
+        if (variables.IsDefaultOrEmpty)
+        {
+            return ImmutableDictionary<string, ImmutableArray<VariableWithRange>>.Empty;
+        }
+
+        var query = from v in variables
+                    let pdb = ConvertVariableToPdb(v, types)
+                    where pdb is not null
+                    let p = new VariableWithRange(
+                        v.Enter is not null && v.Leave is not null
+                            ? new VariableRange(v.Enter.Value, v.Leave.Value) : VariableRange.All,
+                        pdb)
+                    group p by p.Variable.Name;
+        var map = query.ToImmutableDictionary(
+            g => g.Key,
+            g => g.OrderBy(r => r.Range.Start ?? -1).ToImmutableArray());
+
+        return map;
+    }
+
+    static PdbVariable? ConvertVariableToPdb(Variable v, ImmutableDictionary<int, PdbType> types)
+    {
+        var type = types[v.TypeId] as PdbDefinedType;
+        return type is not null ? new PdbVariable(v.Name, v.Start, v.End, v.Base, type) : null;
+    }
+
     internal static ImmutableDictionary<string, PdbVariable> CreateVariables(ImmutableDictionary<int, PdbType> types,
         ImmutableArray<Variable> variables)
     {
@@ -85,9 +143,9 @@ public class Oscar64CompilerServices : ICompilerServices
             return ImmutableDictionary<string, PdbVariable>.Empty;
         }
         var query = from v in variables
-                    let t = types[v.TypeId] as PdbDefinedType
-                    where t is not null
-                    select new PdbVariable(v.Name, v.Start, v.End, v.Base, t);
+                    let pdb = ConvertVariableToPdb(v, types)
+                    where pdb is not null
+                    select pdb;
 
         return query.ToImmutableDictionary(v => v.Name, v => v);
     }
@@ -97,21 +155,21 @@ public class Oscar64CompilerServices : ICompilerServices
         // first creates a map between typeid and Oscar64Type, PdbType
         // at this point members and array types are missing in PdbType
         var map = types
-            .Select(t => 
+            .Select(t =>
                 (
-                    Source: t, 
-                    Type: ParseVariableType(t.TypeId, t.Name, t.TypeName, t.Size)
+                    Source: t,
+                    Type: ParseVariableType(t)
                 )
             )
             .ToDictionary(t => t.Type.Id, t => t);
         // fill PdbType.Members using map
-        foreach (var p in map.Values)
+        foreach (var p in map.Values.Where(v => v.Type is PdbStructType))
         {
-            var source = p.Source;
-            var type = p.Type;
-            if (!source.Members.IsDefaultOrEmpty && type is PdbStructType structType)
+            var source = p.Source as Oscar64StructType;
+            var type = p.Type as PdbStructType;
+            if (type is not null && source?.Members.IsDefaultOrEmpty == false)
             {
-                structType.Members = source.Members 
+                type.Members = source.Members
                     .Select(m => new PdbTypeMember(m.Name, m.Offset, map[m.TypeId].Type))
                     .ToImmutableArray();
             }
@@ -121,7 +179,7 @@ public class Oscar64CompilerServices : ICompilerServices
         foreach (var p in map.Values.Where(t => t.Source.ElementTypeId is not null))
         {
             var nested = map[p.Source.ElementTypeId!.Value];
-            var nestedType = nested.Type as  PdbDefinedType;
+            var nestedType = nested.Type as PdbDefinedType;
             if (nestedType is not null)
             {
                 switch (p.Type)
@@ -138,28 +196,52 @@ public class Oscar64CompilerServices : ICompilerServices
         return map.ToImmutableDictionary(m => m.Key, m => m.Value.Type);
     }
 
-    internal static PdbType ParseVariableType(int typeId, string name, string? typeName, int size)
+    internal static PdbType ParseVariableType(Oscar64Type source)
     {
-        return typeName switch
+        return source switch
         {
-            null when size == 0 => new PdbVoidType { Id = typeId },
-            "uint" when size == 1 => new PdbValueType(typeId, name, size, PdbVariableType.UByte),
-            "int" when size == 1 => new PdbValueType(typeId, name, size, PdbVariableType.Byte),
-            "uint" when size == 2 => new PdbValueType(typeId, name, size, PdbVariableType.UInt16),
-            "int" when size == 2 => new PdbValueType(typeId, name, size, PdbVariableType.Int16),
-            "uint" when size == 4 => new PdbValueType(typeId, name, size, PdbVariableType.UInt32),
-            "int" when size == 4 => new PdbValueType(typeId, name, size, PdbVariableType.Int32),
-            "bool" when size == 1 => new PdbValueType(typeId, name, size, PdbVariableType.Bool),
-            "float" => new PdbValueType(typeId, name, size, PdbVariableType.Float),
-            "ptr" => new PdbPtrType(typeId, name, size),
-            "struct" => new PdbStructType(typeId, name, size),
-            "array" => new PdbArrayType(typeId, name, size),
-            _ => throw new ArgumentException($"Invalid variable type input parameters combination {typeName} and {size}")
+            Oscar64VoidType vt => new PdbVoidType { Id = source.TypeId },
+            Oscar64IntType it => it.Size switch
+            {
+                1 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UByte),
+                2 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt16),
+                4 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt32),
+                _ => throw new ArgumentException($"Invalid variable type input parameters combination int and {it.Size}")
+            },
+            Oscar64UIntType it => it.Size switch
+            {
+                1 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UByte),
+                2 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt16),
+                4 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt32),
+                _ => throw new ArgumentException($"Invalid variable type input parameters combination uint and {it.Size}")
+            },
+            Oscar64BoolType bt => bt.Size switch
+            {
+                1 => new PdbValueType(bt.TypeId, bt.Name, bt.Size, PdbVariableType.Bool),
+                _ => throw new ArgumentException($"Invalid variable type input parameters combination bool and {bt.Size}")
+            },
+            Oscar64FloatType ft => new PdbValueType(ft.TypeId, ft.Name, ft.Size, PdbVariableType.Float),
+            Oscar64PtrType pt => new PdbPtrType(pt.TypeId, pt.Name, pt.Size),
+            Oscar64StructType st => new PdbStructType(st.TypeId, st.Name, st.Size),
+            Oscar64ArrayType at => new PdbArrayType(at.TypeId, at.Name, at.Size),
+            Oscar64EnumType et => CreateEnumType(et),
+            _ => throw new ArgumentException($"Invalid variable type parameter {source.GetType().Name}"),
         };
     }
+    internal static PdbEnumType CreateEnumType(Oscar64EnumType source)
+    {
+        var variableType = source.Size switch
+        {
+            1 => PdbVariableType.UByte,
+            2 => PdbVariableType.UInt16,
+            4 => PdbVariableType.UInt32,
+            _ => throw new Exception($"Size {source.Size} is invalid for enum type member"),
+        };
+        var members = source.Members.Select(m => new KeyValuePair<object, string>(m.Value, m.Name));
+        return new PdbEnumType(source.TypeId, source.Name, source.Size, variableType, members);
+    }
 
-    internal static 
-        ImmutableDictionary<PdbFile, (ImmutableArray<PdbLine> Lines, ImmutableDictionary<string, PdbFunction> Functions)>
+    internal ImmutableDictionary<PdbFile, (ImmutableArray<PdbLine> Lines, ImmutableDictionary<string, PdbFunction> Functions)>
         CreatePdbLines(
             string projectDirectory,
             ImmutableArray<Function> functions, 
@@ -172,7 +254,7 @@ public class Oscar64CompilerServices : ICompilerServices
         {
             var pdbPath = f.Key;
             string absolutePath = pdbPath.IsRelative ? Path.Combine(projectDirectory, pdbPath.Path) : pdbPath.Path;
-            string[] textLines = File.ReadAllLines(absolutePath);
+            var textLines = fileService.ReadAllLines(absolutePath);
             return new { File = f.Value, Text = textLines };
         }).ToImmutableDictionary(r => r.File, r => r.Text);
 
@@ -190,17 +272,37 @@ public class Oscar64CompilerServices : ICompilerServices
             var file = files[path];
             // keep track of generated lines
             var linesBuilder = new List<PdbLine>(f.Lines.Length);
+            var slots = linesMap[file];
+            // first creates nested map of variables
+            var lineVariablesMap = CreateLineVariables(types, f.Variables);
+            // then checks if it has any nested variable
+            bool hasNestedVariables = lineVariablesMap.Values
+                .Any(l => l.Any(v => v.Range != VariableRange.All));
+            // when no nesting, variables are the same for each line
+            ImmutableDictionary<string, PdbVariable> allLinesVariables;
+            if (!hasNestedVariables)
+            {
+                allLinesVariables = lineVariablesMap
+                    .SelectMany(lv => lv.Value)
+                    .ToImmutableDictionary(v => v.Variable.Name, v => v.Variable);
+            }
+            else
+            {
+                allLinesVariables = ImmutableDictionary<string, PdbVariable>.Empty;
+            }
             foreach (var line in f.Lines)
             {
-                var slots = linesMap[file];
                 var fileWithText = filesWithAllText[file];
                 int lineNumber = line.LineNumber - 1;
                 PdbLine pdbLine;
                 if (slots[lineNumber] is null)
                 {
-                    //var pdbLine = new PdbLine(lineNumber, line.Start, null, (ushort)(line.End - line.Start), null,
-                    //    fileWithText[lineNumber]);
-                    pdbLine = new PdbLine(lineNumber, fileWithText[lineNumber]);
+                    // when pdb line is created, also assign it variables
+                    pdbLine = new PdbLine(lineNumber, fileWithText[lineNumber])
+                    {
+                        Variables = hasNestedVariables ? GetLineVariables(lineNumber, lineVariablesMap)
+                                        : allLinesVariables,
+                    };
                 }
                 else
                 {
@@ -213,9 +315,8 @@ public class Oscar64CompilerServices : ICompilerServices
                 slots[lineNumber] = pdbLine;
                 linesBuilder.Add(pdbLine);
             }
-            var variables = CreateVariables(types, f.Variables);
             var definitionPath = paths[f.Source];
-            var pdbFunction = new PdbFunction(f.Name, definitionPath, f.Start, f.End, f.LineNumber, variables);
+            var pdbFunction = new PdbFunction(f.Name, definitionPath, f.Start, f.End, f.LineNumber);
             functionsMap[file].Add(pdbFunction);
             // assign function to all generated PdbLines
             foreach (var l in linesBuilder)
@@ -242,6 +343,28 @@ public class Oscar64CompilerServices : ICompilerServices
         //var pdbLine = new PdbLine(l.Line, l.Start, null, (ushort)(l.End - l.Start), null, "xxx");
         var linesResult = linesMap.ToImmutableDictionary(f => f.Key, f => f.Value.ToImmutableArray());
         return files.Values.ToImmutableDictionary(f => f, f => (linesResult[f], functionsResult[f]));
+    }
+    internal ImmutableDictionary<string, PdbVariable> GetLineVariables(int lineNumber,
+        ImmutableDictionary<string, ImmutableArray<VariableWithRange>> variablesMap)
+    {
+        var query = from vm in variablesMap
+                    let variable = GetLineVariable(lineNumber, vm.Value)
+                    where variable is not null
+                    select (Name: vm.Key, Variable: variable);
+        return query.ToImmutableDictionary(g => g.Name, g => g.Variable);
+    }
+
+    /// <summary>
+    /// Returns inner most range variable determined by minimum range's span
+    /// </summary>
+    /// <param name="lineNumber"></param>
+    /// <param name="ranges"></param>
+    /// <returns></returns>
+    internal static PdbVariable? GetLineVariable(int lineNumber, ImmutableArray<VariableWithRange> ranges)
+    {
+        return ranges
+            .Where(r => r.Range.Contains(lineNumber))
+            .OrderBy(r => r.Range.Span).FirstOrDefault()?.Variable;
     }
     /// <summary>
     /// 

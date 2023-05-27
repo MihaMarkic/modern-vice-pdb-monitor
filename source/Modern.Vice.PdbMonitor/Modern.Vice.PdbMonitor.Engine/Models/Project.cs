@@ -35,8 +35,8 @@ public class Project : NotifiableObject
             File = file,
             CompilerType = compilerType,
             SourceLanguage = sourceLanguage,
-            // d4fc is the default address to listen on
-            DebugOutputAddress = 0xd4fc,
+            // 03ff is the default address to listen on
+            DebugOutputAddress = 0x03ff,
         };
     }
     public ProjectConfiguration ToConfiguration() => new ProjectConfiguration

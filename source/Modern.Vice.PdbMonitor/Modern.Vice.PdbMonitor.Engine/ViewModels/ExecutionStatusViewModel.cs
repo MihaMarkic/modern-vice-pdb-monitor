@@ -1,4 +1,5 @@
-﻿using Modern.Vice.PdbMonitor.Core;
+﻿using System.Threading;
+using Modern.Vice.PdbMonitor.Core;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -35,6 +36,11 @@ public class ExecutionStatusViewModel : NotifiableObject
                 }
             }
         }
+    }
+    long isViceStopped;
+    public bool IsViceStopped {
+        get => Interlocked.Read(ref isViceStopped) == 1;
+        internal set => Interlocked.Exchange(ref isViceStopped, value ? 1 : 0);
     }
     public bool IsStartingDebugging { get; internal set; }
     public bool IsDebugging { get; internal set; }

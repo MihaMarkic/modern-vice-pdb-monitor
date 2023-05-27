@@ -50,6 +50,12 @@ public abstract class DebugStepper: DisposableObject
         var command = viceBridge.EnqueueCommand(new AdvanceInstructionCommand(StepOverSubroutine: true, instructionsNumber));
         await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
     }
+    public abstract Task ContinueAsync(PdbLine? line, CancellationToken ct = default);
+    public async Task ExitViceMonitorAsync()
+    {
+        var command = viceBridge.EnqueueCommand(new ExitCommand(), resumeOnStopped: false);
+        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command);
+    }
     protected void PrepareForContinue()
     {
         continueTcs = new TaskCompletionSource();

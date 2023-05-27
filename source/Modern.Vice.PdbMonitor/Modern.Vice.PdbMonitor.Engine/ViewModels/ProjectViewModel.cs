@@ -1,21 +1,20 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Modern.Vice.PdbMonitor.Core;
+using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.BindingValidators;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
-using Righthand.MessageBus;
-using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Core;
-using Modern.Vice.PdbMonitor.Engine.BindingValidators;
-using System.ComponentModel;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using PropertyChanged;
+using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 

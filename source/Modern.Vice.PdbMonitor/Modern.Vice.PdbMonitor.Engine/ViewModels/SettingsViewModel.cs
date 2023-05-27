@@ -53,7 +53,7 @@ public sealed class SettingsViewModel: OverlayContentViewModel
         }
         try
         {
-            IsVicePathGood = Directory.GetFiles(path, "x64dtv.exe").Any();
+            IsVicePathGood = Directory.GetFiles(path, "x64sc.exe").Any();
         }
         catch (Exception ex)
         {

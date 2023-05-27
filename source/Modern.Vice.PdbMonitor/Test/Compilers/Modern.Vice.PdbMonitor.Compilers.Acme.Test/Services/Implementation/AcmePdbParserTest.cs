@@ -100,8 +100,10 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         public void WhenFirstLineHasMoreData_ItsDataLengthIsSetCorrectly()
         {
             var source = new PdbLine[] {
-                PdbLine.Create(default,  default, new AddressRange(0x0000,0, default, true)),
-                PdbLine.Create(default,  default, new AddressRange(0x0010,0, default, false)),
+                PdbLine.Create(default,  default, new AddressRange(0x0000,0, default, true), 
+                    ImmutableDictionary<string, PdbVariable>.Empty),
+                PdbLine.Create(default,  default, new AddressRange(0x0010,0, default, false), 
+                    ImmutableDictionary<string, PdbVariable>.Empty),
             };
             var builder = PdbFile.CreateLineToFileMapBuilder();
             foreach (var line in source)

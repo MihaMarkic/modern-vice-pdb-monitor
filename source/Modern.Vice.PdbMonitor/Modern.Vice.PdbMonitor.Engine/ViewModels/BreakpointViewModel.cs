@@ -7,7 +7,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 public class BreakpointViewModel : NotifiableObject, ICloneable
 {
-    public uint CheckpointNumber { get; }
+    public uint? CheckpointNumber { get; set; }
     public bool IsCurrentlyHit { get; set; }
     public bool StopWhenHit { get; set; }
     public bool IsEnabled { get; set; }
@@ -24,13 +24,10 @@ public class BreakpointViewModel : NotifiableObject, ICloneable
     public int? LineNumber { get; set; }
     public BreakpointViewModel()
     {
-        // checkpoint gets assigned upon save, mark it as unset
-        CheckpointNumber = uint.MaxValue;
     }
-    public BreakpointViewModel(uint checkpointNumber, bool stopWhenHit, bool isEnabled, BreakpointMode mode,
+    public BreakpointViewModel(bool stopWhenHit, bool isEnabled, BreakpointMode mode,
         PdbLine? line, int? lineNumber, PdbFile? file, PdbLabel? label, ushort startAddress, ushort endAddress, string? condition)
     {
-        CheckpointNumber = checkpointNumber;
         StopWhenHit = stopWhenHit;
         IsEnabled = isEnabled;
         Mode = mode;
