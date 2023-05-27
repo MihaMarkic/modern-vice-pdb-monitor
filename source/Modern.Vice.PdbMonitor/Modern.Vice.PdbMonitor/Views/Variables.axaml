@@ -46,6 +46,8 @@
                 IsVisible="{Binding IsHexRepresentation}" />
               <TextBlock Text="{Binding VariableValue, StringFormat=\'{0}\', Converter={StaticResource ByteToCharConverter}, Mode=OneWay}"
                 IsVisible="{Binding CanBeChar}" Foreground="Gray" Margin="4,0" />
+              <TextBlock Text="{Binding EnumValue, StringFormat=({0}), Mode=OneWay}"
+                IsVisible="{Binding IsEnum}" Foreground="Gray" Margin="4,0" />
               <ProgressBar IsIndeterminate="True" IsVisible="{Binding !HasValue}" Margin="4,0" MinWidth="80" />
             </StackPanel>
           </DataTemplate>

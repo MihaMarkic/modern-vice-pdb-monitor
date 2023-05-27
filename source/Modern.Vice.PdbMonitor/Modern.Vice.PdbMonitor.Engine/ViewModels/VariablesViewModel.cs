@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ using Modern.Vice.PdbMonitor.Engine.Extensions;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using Righthand.ViceMonitor.Bridge.Shared;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public class VariablesViewModel: NotifiableObject
@@ -346,19 +348,44 @@ public class VariableSlot: NotifiableObject
     public bool HasValue => Value is not null;
     public bool IsDefaultRepresentation => HasValue && !IsHexRepresentation;
     public bool IsHexRepresentation => HasValue && Source.Type is PdbPtrType;
-    public bool CanBeChar => HasValue && Source.Type is PdbValueType valueType && valueType.VariableType == PdbVariableType.UByte;
+    public bool CanBeChar => HasValue 
+        && Source.Type is PdbValueType valueType 
+        && valueType.VariableType == PdbVariableType.UByte
+        && !IsEnum;
     public bool IsGlobal { get; }
-    public  int Level { get; }
+    public int Level { get; }
+    public bool IsEnum { get; }
+    public string? EnumValue { get; internal set; }
+    readonly PdbEnumType? enumType;
     public VariableSlot(PdbVariable source, bool isGlobal, int level = 0)
     {
         Source = source;
         IsGlobal = isGlobal;
         Level = level;
+        if (source.Type is PdbEnumType et)
+        {
+            IsEnum = true;
+            enumType = et;
+        }
     }
     public object? VariableValue => Value?.CoreValue;
     public ushort? Address => Value?.Address;
     public ImmutableArray<byte>? Data => Value?.Data;
-    public string ValueType => Source.Type.ValueType;
+    public string ValueType => IsEnum ? $"enum({Source.Type.ValueType})" : Source.Type.ValueType;
+    protected override void OnPropertyChanged([CallerMemberName]string? name = null)
+    {
+        switch (name)
+        {
+            case nameof(Value):
+                if (IsEnum && enumType is not null && Value?.CoreValue is not null)
+                {
+                    uint key = Convert.ToUInt32(Value.CoreValue);
+                    EnumValue = enumType.ByKey.TryGetValue(key, out string? text) ? text: string.Empty;
+                }
+                break;
+        }
+        base.OnPropertyChanged(name!);
+    }
 }
 
 public abstract class VariableValue
