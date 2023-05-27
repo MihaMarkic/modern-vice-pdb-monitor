@@ -530,11 +530,15 @@ public class BreakpointsViewModel: NotifiableObject
                     isEnabled, mode,
                         line, lineNumber + 1, file, label,
                         range.StartAddress, range.EndAddress, condition);
-            Breakpoints.Add(breakpoint);
-            if (executionStatusViewModel.IsDebugging)
-            {
-                await ArmBreakpointAsync(breakpoint, ct);
-            }
+            await AddBreakpointAsync(breakpoint, ct);
+        }
+    }
+    internal async Task AddBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct)
+    {
+        Breakpoints.Add(breakpoint);
+        if (executionStatusViewModel.IsDebugging)
+        {
+            await ArmBreakpointAsync(breakpoint, ct);
         }
     }
     public async Task ArmBreakpointAsync(BreakpointViewModel breakpoint, CancellationToken ct)

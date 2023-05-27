@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -142,29 +143,27 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
     }
     async Task SaveAsync()
     {
-        throw new NotImplementedException();
-        //try
-        //{
-        //    await breakpoints.UpdateBreakpointAsync(Breakpoint);
-        //    Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
-        //}
-        //catch (Exception ex)
-        //{
-        //    SaveError = $"Failed saving breakpoint: {ex.Message}";
-        //}
+        try
+        {
+            await breakpoints.UpdateBreakpointAsync(Breakpoint);
+            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+        }
+        catch (Exception ex)
+        {
+            SaveError = $"Failed saving breakpoint: {ex.Message}";
+        }
     }
     async Task CreateAsync()
     {
-        throw new NotImplementedException();
-        //try
-        //{
-        //    await breakpoints.AddBreakpointAsync(Breakpoint);
-        //    Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
-        //}
-        //catch (Exception ex)
-        //{
-        //    SaveError = $"Failed creating breakpoint: {ex.Message}";
-        //}
+        try
+        {
+            await breakpoints.AddBreakpointAsync(Breakpoint, CancellationToken.None);
+            Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
+        }
+        catch (Exception ex)
+        {
+            SaveError = $"Failed creating breakpoint: {ex.Message}";
+        }
     }
     void Cancel()
     {
