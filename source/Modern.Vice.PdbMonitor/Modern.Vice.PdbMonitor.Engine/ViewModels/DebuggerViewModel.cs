@@ -205,6 +205,11 @@ public class DebuggerViewModel : ScopedViewModel
         }
     }
 
+    public void CloseProject()
+    {
+        SourceFileViewerViewModel.CloseAll();
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

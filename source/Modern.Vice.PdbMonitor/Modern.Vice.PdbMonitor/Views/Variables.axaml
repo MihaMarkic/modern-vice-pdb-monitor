@@ -3,13 +3,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             xmlns:cve="clr-namespace:Modern.Vice.PdbMonitor.Controls.ValueEditors"
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              x:DataType="vm:VariablesViewModel"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="120"
              x:Class="Modern.Vice.PdbMonitor.Views.Variables">
-  <DataGrid Name="Grid" Items="{Binding Items}" FontFamily="{StaticResource CodeFont}">
+  <DataGrid Name="Grid" ItemsSource="{Binding Items}" FontFamily="{StaticResource CodeFont}">
     <DataGrid.Styles>
       <Style Selector="TextBlock">
         <Setter Property="FontSize" Value="12" />
@@ -18,11 +19,14 @@
     <DataGrid.Resources>
       <c:HexAddressConverter x:Key="HexAddressConverter" />
       <c:HexAddressConverter x:Key="HexAddressConverterWithTrim" TrimToByte="True" />
+      <c:HexAddressConverter x:Key="HexAddressConverterForEdit" TrimToByte="True" Prefix="" />
       <c:HexValueConverter x:Key="HexValueConverter" />
       <c:ByteArrayToTextConverter x:Key="ByteArrayToTextConverter" />
       <c:LevelToMarginConverter x:Key="LevelToMarginConverter" />
       <c:BoolToStringConverter x:Key="ExpandedToStringConverter" OnTrue="-" OnFalse="+" />
       <c:ByteToCharConverter x:Key="ByteToCharConverter" />
+      <!-- edit converters -->
+      <c:Uint16ValueEditConverter x:Key="Uint16ValueEditConverter" />
     </DataGrid.Resources>
     <DataGrid.Columns>
       <DataGridTemplateColumn Header="Name" Width="200">
@@ -33,7 +37,7 @@
                 Command="{Binding #Grid.DataContext.ToggleVariableExpansionCommand}" CommandParameter="{Binding}"
                 Content="{Binding IsExpanded, Converter={StaticResource ExpandedToStringConverter}}" />
               <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-            </StackPanel>
+            </StackPanel> 
           </DataTemplate>
         </DataGridTemplateColumn.CellTemplate>
       </DataGridTemplateColumn>
@@ -52,6 +56,21 @@
             </StackPanel>
           </DataTemplate>
         </DataGridTemplateColumn.CellTemplate>
+        <DataGridTemplateColumn.CellEditingTemplate>
+          <v:VariableEditTemplateSelector>
+            <v:VariableEditTemplateSelector.Templates>
+              <DataTemplate x:Key="ValueType">
+                <cve:NumericVariableEditor ViewModel="{Binding #Grid.DataContext}" />
+              </DataTemplate>
+              <DataTemplate x:Key="Bool">
+                <cve:BoolVariableEditor ViewModel="{Binding #Grid.DataContext}" />
+              </DataTemplate>
+              <DataTemplate x:Key="Enum">
+                <cve:EnumVariableEditor ViewModel="{Binding #Grid.DataContext}" />
+              </DataTemplate>
+            </v:VariableEditTemplateSelector.Templates>
+          </v:VariableEditTemplateSelector>
+        </DataGridTemplateColumn.CellEditingTemplate>
       </DataGridTemplateColumn>
       <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneWay}"
           IsReadOnly="True" Width="80" />

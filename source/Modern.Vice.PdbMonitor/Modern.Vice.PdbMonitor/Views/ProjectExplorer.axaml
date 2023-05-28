@@ -18,7 +18,7 @@
     <cnv:PassthroughConverter x:Key="PassthroughConverter" />
     <cnv:BoolToFontWeightConverter x:Key="RelativePathToBoldConverter" OnTrue="Bold" OnFalse="Normal" />
   </UserControl.Resources>
-  <TreeView x:Name="Tree" Items="{Binding Nodes}">
+  <TreeView x:Name="Tree" ItemsSource="{Binding Nodes}">
     <i:Interaction.Behaviors>
       <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Tree}">
         <ia:InvokeCommandAction Command="{Binding OpenSourceFileCommand}" CommandParameter="{Binding #Tree.SelectedItem}"/>

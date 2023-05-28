@@ -17,7 +17,7 @@
       <c:BoolToColorConverter x:Key="ExecutionRowToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
       <c:BoolToColorConverter x:Key="BreakpointIconBackgroundConverter" OnTrue="Red" OnFalse="Transparent" />
     </ScrollViewer.Resources>
-    <ItemsRepeater x:Name="lines" Items="{Binding Lines}">
+    <ItemsRepeater x:Name="lines" ItemsSource="{Binding Lines}">
       <ItemsRepeater.ItemTemplate>
         <DataTemplate DataType="vm:LineViewModel">
           <StackPanel Orientation="Horizontal" Height="18" Background="{Binding IsExecution, Converter={StaticResource ExecutionRowToBackgroundConverter}}">

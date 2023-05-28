@@ -547,6 +547,7 @@ public class MainViewModel : NotifiableObject
     }
     internal void CloseProject()
     {
+        DebuggerViewModel.CloseProject();
         Globals.Project = null;
     }
     internal Process? StartVice()
@@ -583,6 +584,7 @@ public class MainViewModel : NotifiableObject
     {
         // runs async because it manipulates most recent list
         await Task.Delay(1);
+        CloseProject();
         await OpenProjectFromPathInternalAsync(path);
     }
     internal async Task<bool> OpenProjectFromPathInternalAsync(string? path, CancellationToken ct = default)

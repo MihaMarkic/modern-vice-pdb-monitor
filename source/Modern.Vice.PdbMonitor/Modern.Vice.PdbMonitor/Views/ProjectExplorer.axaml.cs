@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using System;
+using Avalonia.Controls;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
@@ -7,5 +8,9 @@ partial class ProjectExplorer : UserControl
     public ProjectExplorer()
     {
         InitializeComponent();
+    }
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Linq;
 using Avalonia;
@@ -6,7 +7,6 @@ using Avalonia.Collections;
 using Dock.Model.Avalonia.Controls;
 using Dock.Model.Core;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Modern.Vice.PdbMonitor.Controls;
 /// <summary>
@@ -109,38 +109,53 @@ public class ModernDocumentDock : DocumentDock
 
     void Documents_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Add)
+        switch (e.Action)
         {
-            if (DocumentTemplate?.Content is null)
-            {
-                return;
-            }
+            case NotifyCollectionChangedAction.Add:
+                {
+                    if (DocumentTemplate?.Content is null)
+                    {
+                        return;
+                    }
 
-            var data = e.NewItems?.Count == 1 ? e.NewItems[0]: null;
-            if (data is not null)
-            {
-                var document = new DockDocumentViewModel(data);
-                if (data is SourceFileViewModel source)
-                {
-                    document.Title = source.Path.FileName;
+                    var data = e.NewItems?.Count == 1 ? e.NewItems[0] : null;
+                    if (data is not null)
+                    {
+                        var document = new DockDocumentViewModel(data);
+                        if (data is SourceFileViewModel source)
+                        {
+                            document.Title = source.Path.FileName;
+                        }
+                        document.Content = DocumentTemplate.Content;
+                        Factory?.AddDockable(this, document);
+                        Factory?.SetActiveDockable(document);
+                        Factory?.SetFocusedDockable(this, document);
+                    }
                 }
-                document.Content = DocumentTemplate.Content;
-                Factory?.AddDockable(this, document);
-                Factory?.SetActiveDockable(document);
-                Factory?.SetFocusedDockable(this, document);
-            }
-        }
-        else if (e.Action == NotifyCollectionChangedAction.Remove)
-        {
-            var data = e.OldItems?.Count == 1 ? e.OldItems[0]: null;
-            if (data is not null)
-            {
-                var document = VisibleDockables?.Cast<DockDocumentViewModel>().Where(d => ReferenceEquals(d, data)).FirstOrDefault();
-                if (document is not null)
+                break;
+            case NotifyCollectionChangedAction.Remove:
                 {
-                    Owner!.Factory!.CloseDockable(document);
+                    var data = e.OldItems?.Count == 1 ? e.OldItems[0] : null;
+                    if (data is not null)
+                    {
+                        var document = VisibleDockables?.Cast<DockDocumentViewModel>().Where(d => ReferenceEquals(d, data)).FirstOrDefault();
+                        if (document is not null)
+                        {
+                            Owner!.Factory!.CloseDockable(document);
+                        }
+                    }
                 }
-            }
+                break;
+            case NotifyCollectionChangedAction.Reset:
+                var documents = VisibleDockables?.Cast<DockDocumentViewModel>().ToImmutableArray();
+                if (documents is not null)
+                {
+                    foreach (var document in documents)
+                    {
+                        Owner!.Factory!.CloseDockable(document);
+                    }
+                }
+                break;
         }
     }
 }

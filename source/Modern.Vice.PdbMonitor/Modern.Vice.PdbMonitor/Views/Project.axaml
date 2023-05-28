@@ -55,7 +55,7 @@
       </ComboBox>
 
       <TextBlock Grid.Row="5" Classes="label">Stop at label</TextBlock>
-      <ComboBox Grid.Row="5" Grid.Column="2" Margin="0,4,0,0" MinWidth="350" SelectedItem="{Binding StopAtLabel}" Items="{Binding AllLabels}"/>
+      <ComboBox Grid.Row="5" Grid.Column="2" Margin="0,4,0,0" MinWidth="350" SelectedItem="{Binding StopAtLabel}" ItemsSource="{Binding AllLabels}"/>
 
       <TextBlock Grid.Row="6" Classes="label">Output address</TextBlock>
       <TextBox Grid.Row="6" Grid.Column="2" Text="{Binding DebugOutputAddress}" Width="100" HorizontalAlignment="Left" />

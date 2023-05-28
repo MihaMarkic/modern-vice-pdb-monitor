@@ -7,7 +7,7 @@
              x:Class="Modern.Vice.PdbMonitor.Views.ErrorMessages"
              x:DataType="vm:ErrorMessagesViewModel"
              Background="Yellow">
-  <ListBox Items="{Binding Messages}">
+  <ListBox ItemsSource="{Binding Messages}">
     <ListBox.ItemTemplate>
       <DataTemplate>
         <TextBlock Text="{Binding}"/>

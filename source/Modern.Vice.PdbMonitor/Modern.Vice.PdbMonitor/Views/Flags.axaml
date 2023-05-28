@@ -13,7 +13,7 @@
     <c:BoolToFontWeightConverter x:Key="FlagFontWeightConverter" OnTrue="Bold" OnFalse="Normal" />
   </UserControl.Resources>
   <StackPanel Orientation="Vertical">
-    <ItemsRepeater Items="{Binding $parent[v:Flags].Value, Converter={StaticResource FlagsConverter}}">
+    <ItemsRepeater ItemsSource="{Binding $parent[v:Flags].Value, Converter={StaticResource FlagsConverter}}">
       <ItemsRepeater.Layout>
         <StackLayout Orientation="Horizontal" Spacing="0" />
       </ItemsRepeater.Layout>

@@ -68,7 +68,7 @@
         <MenuItem Header="Settings..." Command="{Binding ShowSettingsCommand}" />
         <MenuItem Header="Project Settings..." Command="{Binding ShowProjectCommand}" />
         <Separator/>
-        <MenuItem Classes="parent" Header="Recent" Items="{Binding RecentProjects}">
+        <MenuItem Classes="parent" Header="Recent" ItemsSource="{Binding RecentProjects}">
           <MenuItem.Styles>
             <Style Selector="MenuItem:not(.parent)">
               <Setter Property="Header" Value="{Binding}" />

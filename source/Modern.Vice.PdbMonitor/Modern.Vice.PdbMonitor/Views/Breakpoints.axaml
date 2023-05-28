@@ -32,7 +32,7 @@
       </Button>
       <Button Margin="4" Command="{Binding CreateBreakpointCommand}">Create</Button>
     </StackPanel>
-      <DataGrid Name="Grid" Items="{Binding Breakpoints}" AutoGenerateColumns="False">
+      <DataGrid Name="Grid" ItemsSource="{Binding Breakpoints}" AutoGenerateColumns="False">
         <i:Interaction.Behaviors>
           <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
             <ia:InvokeCommandAction Command="{Binding ShowBreakpointPropertiesCommand}" CommandParameter="{Binding #Grid.SelectedItem}"/>

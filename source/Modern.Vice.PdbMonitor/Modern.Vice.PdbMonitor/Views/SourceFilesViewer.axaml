@@ -15,7 +15,7 @@
     <c:ArrayToTextConverter x:Key="ArrayToTextConverter" />
   </UserControl.Resources>
 
-  <TabControl x:Name="files" Items="{Binding Files}" SelectedItem="{Binding Selected}">
+  <TabControl x:Name="files" ItemsSource="{Binding Files}" SelectedItem="{Binding Selected}">
     <TabControl.ItemTemplate>
       <DataTemplate>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

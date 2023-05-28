@@ -112,6 +112,10 @@ public class SourceFileViewerViewModel : NotifiableObject
             Files.Remove(sourceFile);
         }
     }
+    public void CloseAll()
+    {
+        Files.Clear();
+    }
     protected override void Dispose(bool disposing)
     {
         if (disposing)

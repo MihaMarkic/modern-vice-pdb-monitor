@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -12,6 +13,7 @@ using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Extensions;
 using Righthand.MessageBus;
+using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 using Righthand.ViceMonitor.Bridge.Shared;
@@ -249,6 +251,72 @@ public class VariablesViewModel: NotifiableObject
         }
     }
 
+    public async Task UpdateVariableValueAsync(VariableSlot slot, object value, CancellationToken ct)
+    {
+        if (slot.Value is not null)
+        {
+            byte[] bytes;
+            object correctedValue;
+            if (slot.Source.Type is PdbEnumType enumType)
+            {
+                correctedValue = enumType.VariableType switch
+                {
+                    PdbVariableType.UByte => (object)Convert.ToByte(value),
+                    PdbVariableType.UInt16 => (object)Convert.ToUInt16(value),
+                    PdbVariableType.UInt32 => (object)Convert.ToUInt32(value),
+                    _ => throw new ArgumentException($"Type {enumType.VariableType} is not supported"),
+                };
+                bytes = enumType.VariableType switch
+                {
+                    PdbVariableType.UByte => new byte[] { (byte)correctedValue },
+                    PdbVariableType.UInt16 => BitConverter.GetBytes((UInt16)correctedValue),
+                    PdbVariableType.UInt32 => BitConverter.GetBytes((UInt32)correctedValue),
+                    _ => throw new ArgumentException($"Type {enumType.VariableType} is not supported"),
+                };
+            }
+            else if (slot.Source.Type is PdbValueType valueType)
+            {
+                bytes = GetValueBytes(valueType.VariableType, value);
+                correctedValue = value;
+            }
+            else
+            {
+                throw new ArgumentException($"Type {slot.Source.Type.GetType().Name} is not supported");
+            }
+
+            using (var buffer = BufferManager.GetBuffer((uint)bytes.Length))
+            {
+                Buffer.BlockCopy(bytes, 0, buffer.Data, 0, bytes.Length);
+                var command = viceBridge.EnqueueCommand(new MemorySetCommand(0, slot.Value.Address, MemSpace.MainMemory, 0, buffer));
+                var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
+                if (response?.ErrorCode == ErrorCode.OK)
+                {
+                    slot.Value = CreateNumericVariable((PdbValueType)slot.Source.Type, slot.Value.Address, bytes.AsSpan());
+                }
+                else
+                {
+                    logger.LogError("Failed updating variable at address {Address}", slot.Value.Address.ToString("X4"));
+                }
+            }
+        }
+    }
+
+    internal byte[] GetValueBytes(PdbVariableType variableType, object value)
+    {
+        return variableType switch
+        {
+            PdbVariableType.Bool => BitConverter.GetBytes((bool)value),
+            PdbVariableType.Byte => new byte[] { unchecked((byte)value) },
+            PdbVariableType.UByte => new byte[] { (byte)value },
+            PdbVariableType.Int16 => BitConverter.GetBytes((Int16)value),
+            PdbVariableType.UInt16 => BitConverter.GetBytes((UInt16)value),
+            PdbVariableType.Int32 => BitConverter.GetBytes((Int32)value),
+            PdbVariableType.UInt32 => BitConverter.GetBytes((UInt32)value),
+            PdbVariableType.Float => BitConverter.GetBytes((float)value),
+            _ => throw new ArgumentException($"Type {variableType} is not supported"),
+        };
+    }
+
     void FillVariableValue(VariableSlot slot, PdbVariable variable, ReadOnlySpan<byte> data)
     {
         var variableValue = CreateVariableValue(variable.Type, (ushort)variable.Start, data);
@@ -344,7 +412,7 @@ public class VariableSlot: NotifiableObject
     public string Name => Source.Name;
     public int Size => Source.Type.Size;
     public ushort? Base => Source.Base;
-    public VariableValue? Value { get; internal set; }
+    public VariableValue? Value { get; set; }
     public bool HasValue => Value is not null;
     public bool IsDefaultRepresentation => HasValue && !IsHexRepresentation;
     public bool IsHexRepresentation => HasValue && Source.Type is PdbPtrType;
@@ -356,6 +424,7 @@ public class VariableSlot: NotifiableObject
     public int Level { get; }
     public bool IsEnum { get; }
     public string? EnumValue { get; internal set; }
+    public bool IsEditable => Source.Type is PdbValueType;
     readonly PdbEnumType? enumType;
     public VariableSlot(PdbVariable source, bool isGlobal, int level = 0)
     {
@@ -398,13 +467,13 @@ public abstract class VariableValue
         Data = data;
     }
     public abstract object? CoreValue { get; }
-    
+
 }
 
 public class NumericVariableValue<T>: VariableValue
     where T: struct
 {
-    public T Value { get; }
+    public T Value { get; private set; }
 
     public override object? CoreValue => Value;
 
