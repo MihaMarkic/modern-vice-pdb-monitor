@@ -203,9 +203,9 @@ public class Oscar64CompilerServices : ICompilerServices
             Oscar64VoidType vt => new PdbVoidType { Id = source.TypeId },
             Oscar64IntType it => it.Size switch
             {
-                1 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UByte),
-                2 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt16),
-                4 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.UInt32),
+                1 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.Byte),
+                2 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.Int16),
+                4 => new PdbValueType(it.TypeId, it.Name, it.Size, PdbVariableType.Int32),
                 _ => throw new ArgumentException($"Invalid variable type input parameters combination int and {it.Size}")
             },
             Oscar64UIntType it => it.Size switch
