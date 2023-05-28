@@ -123,14 +123,15 @@ public class VariablesViewModel: NotifiableObject
                         break;
                     case PdbStructType structType:
                         var structVariableValue = (StructVariableValue?)variableSlot.Value!;
-                        for (int i=0; i<structType.Members.Length; i++)
+                        var sortedMembers = structType.Members.OrderBy(m => m.Name).ToImmutableArray();
+                        for (int i = 0; i < sortedMembers.Length; i++)
                         {
                             var variableValue = structVariableValue.Items[i];
                             var member = structType.Members[i];
                             var memberType = (PdbDefinedType)member.Type;
                             int memberStart = start + member.Offset;
                             var memberVariable = new PdbVariable(
-                                member.Name, 
+                                member.Name,
                                 memberStart, memberStart + variableValue.Data.Length,
                                 baseAddress,
                                 memberType);
@@ -173,17 +174,22 @@ public class VariablesViewModel: NotifiableObject
         if (!lineVariables.IsEmpty || !globalVariables.IsEmpty)
         {
             var mapBuilder = ImmutableDictionary.CreateBuilder<PdbVariable, VariableSlot>();
+            var slots = new List<VariableSlot>();
             foreach (var variable in lineVariables.Values)
             {
                 var slot = new VariableSlot(variable, isGlobal: false);
-                Items.Add(slot);
+                slots.Add(slot);
                 mapBuilder.Add(variable, slot);
             }
             foreach (var variable in globalVariables)
             {
                 var slot = new VariableSlot(variable.Value, isGlobal: true);
-                Items.Add(slot);
+                slots.Add(slot);
                 mapBuilder.Add(variable.Value, slot);
+            }
+            foreach (var slot in slots.OrderBy(s => s.Name))
+            {
+                Items.Add(slot);
             }
             var map = mapBuilder.ToImmutable();
             await FillVariableValuesAsync(map, ct);
