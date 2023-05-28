@@ -167,7 +167,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
     }
 
     [TestFixture]
-    public class VariableRangeTest
+    public class VariableRangeTest : Oscar64CompilerServicesTest
     {
         [TestFixture]
         public class Contains: VariableRangeTest
@@ -182,6 +182,27 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
             {
                 return new VariableRange(start, end).Contains(value);
             }
+        }
+    }
+    [TestFixture]
+    public class CreateEnumType : Oscar64CompilerServicesTest
+    {
+        [Test]
+        public void WhenDuplicateEnumValues_GroupsThem()
+        {
+            var source = new Oscar64EnumType("WithDuplicates", 0, 1, null,
+                ImmutableArray<Oscar64EnumMember>.Empty
+                    .Add(new Oscar64EnumMember("One", 1))
+                    .Add(new Oscar64EnumMember("Two", 2))
+                    .Add(new Oscar64EnumMember("AnotherOne", 1)));
+
+            var actual = Oscar64CompilerServices.CreateEnumType(source);
+
+            Assert.That(actual.ByKey, Is.EquivalentTo(
+                new Dictionary<object, string> {
+                    { 1, "One, AnotherOne" },
+                    { 2, "Two" }
+                }));
         }
     }
 }

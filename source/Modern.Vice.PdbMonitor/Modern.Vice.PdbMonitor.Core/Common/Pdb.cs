@@ -143,8 +143,10 @@ public class PdbEnumType: PdbValueType
         IEnumerable<KeyValuePair<object, string>> values)
         : base(id, name, size, variableType)
     {
-        ByKey = values.ToImmutableDictionary(v => v.Key, v => v.Value);
-        ByValue = values.ToImmutableDictionary(v => v.Value, v => v.Key);
+        var grouped = values.GroupBy(p => p.Key, g => g.Value, (key, g) => new { Key = key, Values = g.ToImmutableArray() })
+            .ToImmutableArray();
+        ByKey = grouped.ToImmutableDictionary(v => v.Key, v => string.Join(", ", v.Values));
+        ByValue = grouped.ToImmutableDictionary(v => string.Join(", ", v.Values), v => v.Key);
     }
 
 }
