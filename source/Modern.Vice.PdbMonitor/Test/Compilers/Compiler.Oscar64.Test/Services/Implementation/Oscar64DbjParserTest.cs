@@ -1,7 +1,7 @@
 ﻿using Compiler.Oscar64.Models;
 using Compiler.Oscar64.Services.Implementation;
-using Modern.Vice.PdbMonitor.Utils.Test;
 using NUnit.Framework;
+using TestsBase;
 
 namespace Compiler.Oscar64.Test.Services.Implementation;
 internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>

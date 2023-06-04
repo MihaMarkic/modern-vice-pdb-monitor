@@ -3,13 +3,13 @@ using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using NUnit.Framework;
 
-namespace Modern.Vice.PdbMonitor.Test;
+namespace TestsBase;
 
 public abstract class BaseTest<T>
     where T : class
 {
-    protected Fixture fixture;
-    T target;
+    protected Fixture fixture = default!;
+    T target = default!;
     public T Target
     {
         [DebuggerStepThrough]
@@ -32,6 +32,6 @@ public abstract class BaseTest<T>
     [TearDown]
     public void TearDown()
     {
-        target = null;
+        target = null!;
     }
 }

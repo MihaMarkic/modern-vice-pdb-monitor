@@ -2,8 +2,8 @@
 using System.Linq;
 using Modern.Vice.PdbMonitor.Compilers.Acme.Services.Implementation;
 using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Utils.Test;
 using NUnit.Framework;
+using TestsBase;
 
 namespace Modern.Vice.PdbMonitor.Compilers.Acme.Test.Services.Implementation;
 

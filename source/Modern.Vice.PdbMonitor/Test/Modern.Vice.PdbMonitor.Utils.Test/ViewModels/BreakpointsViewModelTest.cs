@@ -1,10 +1,10 @@
-﻿using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Engine.ViewModels;
-using Modern.Vice.PdbMonitor.Utils.Test;
-using NUnit.Framework;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using TestsBase;
+using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using NUnit.Framework;
 
 namespace Modern.Vice.PdbMonitor.Engine.Test.ViewModels;
 

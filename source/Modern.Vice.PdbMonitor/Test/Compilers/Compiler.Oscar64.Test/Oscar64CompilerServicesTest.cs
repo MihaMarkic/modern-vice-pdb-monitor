@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
+using TestsBase;
 using Compiler.Oscar64.Models;
 using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Utils.Test;
 using NUnit.Framework;
 using static Compiler.Oscar64.Oscar64CompilerServices;
 

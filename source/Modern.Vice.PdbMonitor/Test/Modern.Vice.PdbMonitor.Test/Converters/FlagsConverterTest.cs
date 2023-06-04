@@ -3,6 +3,7 @@ using System.Globalization;
 using Modern.Vice.PdbMonitor.Converters;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using NUnit.Framework;
+using TestsBase;
 
 namespace Modern.Vice.PdbMonitor.Test.Converters;
 

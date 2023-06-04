@@ -1,10 +1,8 @@
 ﻿using System.Collections.Immutable;
-using System.Drawing;
 using System.Globalization;
-using AvaloniaEdit;
+using TestsBase;
 using CC65.DebugDataParser.Models.CA65;
 using CC65.DebugDataParser.Services.Implementation;
-using Modern.Vice.PdbMonitor.Test;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using static CC65.DebugDataParser.Services.Implementation.CA65ListingParser;

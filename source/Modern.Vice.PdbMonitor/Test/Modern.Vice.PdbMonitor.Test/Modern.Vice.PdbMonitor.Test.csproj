@@ -3,6 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Converters\FlagsConverterTest1.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture.AutoNSubstitute" Version="4.18.0" />
     <PackageReference Include="AutoFixture.Community.ImmutableCollections" Version="1.0.0" />
@@ -13,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor\Modern.Vice.PdbMonitor.csproj" />
+    <ProjectReference Include="..\TestsBase\TestsBase.csproj" />
   </ItemGroup>
 
 </Project>

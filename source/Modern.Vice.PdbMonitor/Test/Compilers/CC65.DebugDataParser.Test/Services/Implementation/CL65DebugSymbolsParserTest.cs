@@ -1,8 +1,8 @@
 ﻿using System.Collections.Immutable;
 using System.Drawing;
+using TestsBase;
 using CC65.DebugDataParser.Models.CL65;
 using CC65.DebugDataParser.Services.Implementation;
-using Modern.Vice.PdbMonitor.Test;
 using NUnit.Framework;
 using static System.Net.Mime.MediaTypeNames;
 

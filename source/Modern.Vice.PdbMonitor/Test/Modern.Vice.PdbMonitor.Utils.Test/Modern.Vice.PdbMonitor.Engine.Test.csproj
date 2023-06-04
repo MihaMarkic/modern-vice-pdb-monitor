@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\Compilers\Modern.Vice.PdbMonitor.Compilers.Acme\Modern.Vice.PdbMonitor.Compilers.Acme.csproj" />
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
     <ProjectReference Include="..\..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
+    <ProjectReference Include="..\TestsBase\TestsBase.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Samples\macedit.lbl">
