@@ -10,7 +10,8 @@
              x:DataType="vm:VariablesViewModel"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="120"
              x:Class="Modern.Vice.PdbMonitor.Views.Variables">
-  <DataGrid Name="Grid" ItemsSource="{Binding Items}" FontFamily="{StaticResource CodeFont}">
+  <DataGrid Name="Grid" ItemsSource="{Binding Items}" FontFamily="{StaticResource CodeFont}"
+    CanUserSortColumns="False">
     <DataGrid.Styles>
       <Style Selector="TextBlock">
         <Setter Property="FontSize" Value="12" />
