@@ -20,6 +20,7 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
         StartLine = line;
         executionStatusViewModel.IsSteppingOver = false;
         executionStatusViewModel.IsSteppingInto = true;
+        SteppingStart = DateTimeOffset.Now;
         IsActive = true;
         try
         {
@@ -34,6 +35,7 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
         finally
         {
             executionStatusViewModel.IsSteppingInto = false;
+            SteppingStart = null;
             IsActive = false;
             StartLine = null;
         }
@@ -44,6 +46,7 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
         executionStatusViewModel.IsSteppingOver = true;
         executionStatusViewModel.IsSteppingInto = false;
         IsActive = true;
+        SteppingStart = DateTimeOffset.Now;
         try
         {
             while (IsActive)
@@ -57,6 +60,7 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
         finally
         {
             executionStatusViewModel.IsSteppingOver = false;
+            SteppingStart = null;
             IsActive = false;
             StartLine = null;
         }

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -17,6 +18,8 @@ public abstract class DebugStepper: DisposableObject
     protected readonly ExecutionStatusViewModel executionStatusViewModel;
     public bool IsActive { get; protected set; }
     public PdbLine? StartLine { get; protected set; }
+    /// <inheritdoc/>
+    public DateTimeOffset? SteppingStart { get; protected set; }
     TaskCompletionSource? continueTcs;
     public DebugStepper(IViceBridge viceBridge, ILogger logger, IDispatcher dispatcher, ExecutionStatusViewModel executionStatusViewModel)
     {
@@ -26,7 +29,10 @@ public abstract class DebugStepper: DisposableObject
         this.executionStatusViewModel = executionStatusViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
     }
-
+    public bool IsTimeout(DateTimeOffset current)
+    {
+        return SteppingStart.HasValue && (current - SteppingStart.Value) > TimeSpan.FromSeconds(1);
+    }
     void ExecutionStatusViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)

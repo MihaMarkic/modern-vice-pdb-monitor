@@ -42,6 +42,15 @@ public class ExecutionStatusViewModel : NotifiableObject
         get => Interlocked.Read(ref isViceStopped) == 1;
         internal set => Interlocked.Exchange(ref isViceStopped, value ? 1 : 0);
     }
+    public void InitializeForDebugging()
+    {
+        IsStartingDebugging = false;
+        IsDebugging = false;
+        IsDebuggingPaused = false;
+        IsSteppingInto = false;
+        IsSteppingOver = false;
+        IsProcessingDisabled = false;
+    }
     public bool IsStartingDebugging { get; internal set; }
     public bool IsDebugging { get; internal set; }
     public bool IsDebuggingPaused { get; internal set; }

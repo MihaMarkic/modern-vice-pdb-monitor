@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -164,7 +165,8 @@ public class DebuggerViewModel : ScopedViewModel
                 // don't do anything when DebugStepper is active as it takes control
                 if (DebugStepper?.IsActive == true)
                 {
-                    if (matchingLine == DebugStepper.StartLine)
+                    bool isTimeout = DebugStepper.IsTimeout(DateTimeOffset.Now);
+                    if (!isTimeout && matchingLine == DebugStepper.StartLine)
                     {
                         DebugStepper.Continue();
                         return;
@@ -188,6 +190,15 @@ public class DebuggerViewModel : ScopedViewModel
                 );
                 _ = Variables.StartUpdateForLineAsync(matchingLine);
                 return;
+            }
+            else if (DebugStepper?.IsActive == true)
+            {
+                bool isTimeout = DebugStepper.IsTimeout(DateTimeOffset.Now);
+                if (isTimeout)
+                {
+                    logger.LogWarning("Timeout while stepping. Stepping will stop.");
+                    DebugStepper.Stop();
+                }
             }
         }
         Variables.CancelUpdateForLine();

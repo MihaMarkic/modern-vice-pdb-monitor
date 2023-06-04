@@ -354,6 +354,7 @@ public class MainViewModel : NotifiableObject
                     viceProcess.Exited += ViceProcess_Exited;
                 }
             }
+            executionStatusViewModel.InitializeForDebugging();
             executionStatusViewModel.IsStartingDebugging = true;
             executionStatusViewModel.IsDebugging = true;
             try
