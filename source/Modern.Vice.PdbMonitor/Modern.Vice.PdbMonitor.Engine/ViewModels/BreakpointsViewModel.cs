@@ -664,19 +664,29 @@ public class BreakpointsViewModel: NotifiableObject
                 {
                     if (debug.Files.TryGetValue(b.FilePath, out var file) && b.LineNumber is not null && b.Text is not null)
                     {
-                        var line = b.LineNumber.HasValue ? file.Lines[b.LineNumber.Value - 1] : null;
-                        breakpoint = new BreakpointViewModel
+                        var criteria = new LineSearchCriteria(b.LineNumber.Value, b.Text);
+                        var match = FindMatchingLine(globals.Project?.DebugSymbols, file, criteria);
+                        if (match is not null)
                         {
-                            StopWhenHit = b.StopWhenHit,
-                            IsEnabled = b.IsEnabled,
-                            Mode = b.Mode,
-                            StartAddress = b.StartAddress,
-                            EndAddress = b.EndAddress,
-                            Condition = b.Condition,
-                            File = file,
-                            Line = line,
-                            LineNumber = b.LineNumber,
-                        };
+                            breakpoint = new BreakpointViewModel
+                            {
+                                StopWhenHit = b.StopWhenHit,
+                                IsEnabled = b.IsEnabled,
+                                Mode = b.Mode,
+                                StartAddress = b.StartAddress,
+                                EndAddress = b.EndAddress,
+                                Condition = b.Condition,
+                                File = match.Value.File,
+                                Line = match.Value.Line,
+                                LineNumber = b.LineNumber,
+                            };
+                        }
+                        else
+                        {
+                            logger.Log(LogLevel.Information,
+                                "Breakpoint at line {Line} and with Text {Text} has not been applied because source code is too different",
+                                b.LineNumber.Value, b.Text);
+                        }
                     }
                 }
                 else if (b.Label is not null)
