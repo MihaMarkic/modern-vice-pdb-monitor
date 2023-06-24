@@ -57,4 +57,8 @@ public class ExecutionStatusViewModel : NotifiableObject
     public bool IsSteppingInto { get; internal set; }
     public bool IsSteppingOver { get; internal set; }
     public bool IsStepping => IsSteppingInto || IsSteppingOver;
+    /// <summary>
+    /// Signals that project is being open.
+    /// </summary>
+    public bool IsOpeningProject { get; internal set; }
 }

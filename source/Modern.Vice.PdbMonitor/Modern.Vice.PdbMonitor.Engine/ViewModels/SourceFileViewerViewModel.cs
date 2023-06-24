@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -15,10 +18,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public class SourceFileViewerViewModel : NotifiableObject
 {
     readonly ILogger<SourceFileViewerViewModel> logger;
-    readonly Subscription openSourceFileSubscription;
+    readonly ISubscription openSourceFileSubscription;
     readonly Globals globals;
     readonly IServiceProvider serviceProvider;
     readonly ExecutionStatusViewModel executionStatusViewModel;
+    readonly ISubscription debugDataChangedSubscription;
     public ObservableCollection<SourceFileViewModel> Files { get; }
     public SourceFileViewModel? Selected { get; set; }
     public RelayCommand<SourceFileViewModel> CloseSourceFileCommand { get; }
@@ -34,6 +38,7 @@ public class SourceFileViewerViewModel : NotifiableObject
         Files = new();
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(OnDebugDataChanged);
     }
     protected override void OnPropertyChanged([CallerMemberName] string? name = null)
     {
@@ -52,7 +57,11 @@ public class SourceFileViewerViewModel : NotifiableObject
                 break;
         }
     }
-
+    Task OnDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
+    {
+        RefreshSourceFiles();
+        return Task.CompletedTask;
+    }
     void ExecutionStatusViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -70,16 +79,51 @@ public class SourceFileViewerViewModel : NotifiableObject
             file.ClearExecutionRow();
         }
     }
-    internal void OpenSourceFile(object sender, OpenSourceFileMessage? message)
+    /// <summary>
+    /// This has to be called when PDB changes
+    /// It should reload all open files
+    /// </summary>
+    /// <remarks>App shouldn't be debugging when it happens.</remarks>
+    internal void RefreshSourceFiles()
+    {
+        var oldFiles = Files.ToImmutableArray();
+        var filesToDelete = new List<int>();
+        for (int i = 0; i < oldFiles.Length; i++)
+        {
+            var oldFile = Files[i];
+            var newFile = globals.Project?.DebugSymbols?.Files[oldFile.Path];
+            if (newFile is null)
+            {
+                filesToDelete.Add(i);
+            }
+            else
+            {
+                var item = CreateSourceFileViewModel(newFile);
+                Files[i] = item;
+            }
+            oldFile.Scope!.Dispose();
+        }
+        filesToDelete.Reverse();
+        foreach (int fileIndexToDelete in filesToDelete)
+        {
+            Files.RemoveAt(fileIndexToDelete);
+        }
+    }
+    internal SourceFileViewModel CreateSourceFileViewModel(PdbFile file)
+    {
+        var content = file.Lines
+            .Select((l, i) => new LineViewModel(l, l.LineNumber, l.Text))
+            .ToImmutableArray();
+        var item = serviceProvider.CreateScopedSourceFileViewModel(file, content);
+        return item;
+    }
+    internal void OpenSourceFile(OpenSourceFileMessage? message)
     {
         var pdbFile = message!.File;
         var item = Files.FirstOrDefault(f => f.Path == pdbFile.Path);
         if (item is null)
         {
-            var content = pdbFile.Lines
-                .Select((l, i) => new LineViewModel(l, l.LineNumber, l.Text))
-                .ToImmutableArray();
-            item = serviceProvider.CreateScopedSourceFileViewModel(pdbFile, content);
+            item = CreateSourceFileViewModel(pdbFile);
             Files.Add(item);
         }
         if (item is not null)
@@ -127,6 +171,7 @@ public class SourceFileViewerViewModel : NotifiableObject
                 file.Scope!.Dispose();
             }
             openSourceFileSubscription.Dispose();
+            debugDataChangedSubscription.Dispose();
         }
         base.Dispose(disposing);
     }

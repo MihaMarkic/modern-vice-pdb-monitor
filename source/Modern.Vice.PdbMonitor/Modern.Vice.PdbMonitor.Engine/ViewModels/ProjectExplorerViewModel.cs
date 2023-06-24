@@ -1,5 +1,7 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -24,10 +26,12 @@ public class ProjectExplorerViewModel : NotifiableObject
     IPdbManager? pdbManager;
     public string? ProjectName => Path.GetFileName(globals.Project?.PrgPath);
     public Project? Project => globals.Project;
-    public ImmutableArray<object> Nodes { get; private set; }
+    public ObservableCollection<object> Nodes { get; } = new ();
     public RelayCommand<object> OpenSourceFileCommand { get; }
     public RelayCommandAsync<PdbLabel> AddBreakpointOnLabelCommand { get; }
     ImmutableArray<PdbFile> files = ImmutableArray<PdbFile>.Empty;
+    ProjectExplorerHeaderNode? filesNode;
+    ProjectExplorerHeaderNode? labelsNode;
     public ProjectExplorerViewModel(IDispatcher dispatcher, ILogger<ProjectExplorerViewModel> logger, Globals globals,
         BreakpointsViewModel breakpoints, IProjectFactory projectFactory)
     {
@@ -116,17 +120,31 @@ public class ProjectExplorerViewModel : NotifiableObject
     }
     internal void UpdateNodes()
     {
+        Nodes.Clear();
+        // TODO this section could be refreshed once .NET 8 drops (ImmutableArray<T> IList.IndexOf handling)
+        // and items preservation
         if (Project is not null)
         {
             files = globals.Project?.DebugSymbols?.Files.Values.OrderBy(f => f.Path.FileName).ToImmutableArray() ?? ImmutableArray<PdbFile>.Empty;
-            Nodes = ImmutableArray<object>.Empty
-                .Add(new ProjectExplorerHeaderNode("Files", files))
-                .Add(new ProjectExplorerHeaderNode("Labels", globals.Project?.DebugSymbols?.Labels.Values.ToImmutableArray() ?? ImmutableArray<PdbLabel>.Empty));
+            if (filesNode is null)
+            {
+                filesNode = new ProjectExplorerHeaderNode("Files", files.ToArray());
+            } 
+            else
+            {
+                filesNode.Items = files;
+            }
+            Nodes.Add(filesNode);
+            var labels = globals.Project?.DebugSymbols?.Labels.Values.ToImmutableArray() ?? ImmutableArray<PdbLabel>.Empty;
+            labelsNode = labelsNode ?? new ProjectExplorerHeaderNode("Labels", labels.ToArray());
+            Nodes.Add(labelsNode);
         }
         else
         {
-            Nodes = Nodes.Clear();
+
             files = ImmutableArray<PdbFile>.Empty;
+            filesNode = null;
+            labelsNode = null;
         }
     }
 
@@ -140,4 +158,13 @@ public class ProjectExplorerViewModel : NotifiableObject
     }
 }
 
-public record ProjectExplorerHeaderNode(string Name, IList Items);
+public class ProjectExplorerHeaderNode
+{
+    public string Name { get; init; }
+    public IList Items { get; set; }
+    public ProjectExplorerHeaderNode(string name, IList items)
+    {
+        Name = name;
+        Items = items;
+    }
+}

@@ -112,6 +112,22 @@
         <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" />
         <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" />
       </MenuItem>
+      <MenuItem Header="_Project">
+        <MenuItem Header="_Update" Command="{Binding UpdatePdbCommand}">
+          <MenuItem.Icon>
+            <Image>
+              <Image.Source>
+                <svg:SvgImage Source="/Assets/Icons/sync.svg"/>
+              </Image.Source>
+            </Image>
+          </MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="_Auto Update" Command="{Binding ToggleIsAutoUpdateEnabledCommand}">
+          <MenuItem.Icon>
+            <CheckBox BorderThickness="0" IsHitTestVisible="False" IsChecked="{Binding IsAutoUpdateEnabled, Mode=OneWay}" />
+          </MenuItem.Icon>
+        </MenuItem>
+      </MenuItem>
       <!--<MenuItem Header="_View">
         <MenuItem Header="Errors">
             <MenuItem.Icon>
@@ -181,14 +197,15 @@
       <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Over</TextBlock>
       </Button>
-      <Button ToolTip.Tip="Update PDB" Command="{Binding UpdatePdbCommand}">
+      <Button ToolTip.Tip="Update Project Debug Data" Command="{Binding UpdatePdbCommand}" 
+        IsVisible="{Binding !IsAutoUpdateEnabled}">
         <StackPanel Orientation="Horizontal">
           <Image>
             <Image.Source>
               <svg:SvgImage Source="/Assets/Icons/sync.svg"/>
             </Image.Source>
           </Image>
-          <TextBlock Margin="4,0,0,0">PDB</TextBlock>
+          <TextBlock Margin="4,0,0,0">Update</TextBlock>
         </StackPanel>
       </Button>
       <!-- busy spinner -->
@@ -196,15 +213,19 @@
       <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
         <Image Source="{Binding IsViceConnected, Converter={StaticResource IsConnectedToSvgImageConverter}}" />
         <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Connection status to VICE"
-          Foreground="{Binding IsViceConnected, Converter={StaticResource IsConnectedToForegroundConverter}}">VICE</TextBlock>
+          Foreground="{Binding IsViceConnected, Converter={StaticResource IsConnectedToForegroundConverter}}">
+          VICE
+        </TextBlock>
       </StackPanel>
-      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
+      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0" IsVisible="{Binding !IsAutoUpdateEnabled}">
         <Image Source="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsUpdatedPdbAvailableConverter}}" />
         <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="4,0,0,0"
-          Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">PDB sync</TextBlock>
+          Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">
+          Sync
+        </TextBlock>
       </StackPanel>
     </DockPanel>
-    <DockControl x:Name="Dock" Grid.Row="1" InitializeLayout="True" InitializeFactory="True" 
+    <DockControl x:Name="Dock" Grid.Row="1" InitializeLayout="True" InitializeFactory="True"
       IsVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNull}}">
       <DockControl.Factory>
         <Factory />

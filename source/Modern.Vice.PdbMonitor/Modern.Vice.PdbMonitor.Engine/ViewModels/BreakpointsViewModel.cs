@@ -5,11 +5,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using FuzzySharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -40,6 +37,7 @@ public class BreakpointsViewModel: NotifiableObject
     readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
     IPdbManager? pdbManager;
     readonly TaskFactory uiFactory;
+    readonly ISubscription debugDataChangedSubscription;
     public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> ShowBreakpointPropertiesCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> RemoveBreakpointCommand { get; }
@@ -75,12 +73,18 @@ public class BreakpointsViewModel: NotifiableObject
         viceBridge.ViceResponse += ViceBridge_ViceResponse;
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(OnDebugDataChanged);
         UpdatePdbManager();
     }
 
     void Breakpoints_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         SaveLocalSettings();
+    }
+
+    async Task OnDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
+    {
+        await ApplyOriginalBreakpointsOnNewPdbAsync(CancellationToken.None);
     }
 
     void UpdatePdbManager()
@@ -109,6 +113,12 @@ public class BreakpointsViewModel: NotifiableObject
             case nameof(Globals.Project):
                 _ = RemoveAllBreakpointsAsync(false);
                 UpdatePdbManager();
+                break;
+            case nameof(Globals.ProjectDebugSymbols):
+                if (!executionStatusViewModel.IsOpeningProject)
+                {
+                    _ = ApplyOriginalBreakpointsOnNewPdbAsync(CancellationToken.None);
+                }
                 break;
         }
     }
@@ -225,7 +235,7 @@ public class BreakpointsViewModel: NotifiableObject
             // reapply breakpoints
             if (hasPdbChanged)
             {
-                ApplyOriginalBreakpointsOnNewPdb();
+                await ApplyOriginalBreakpointsOnNewPdbAsync(ct);
             }
             foreach (var breakpoint in Breakpoints)
             {
@@ -241,15 +251,17 @@ public class BreakpointsViewModel: NotifiableObject
     }
     public async Task DisarmAllBreakpoints(CancellationToken ct)
     {
+        // collects all applied check points in VICE
         var checkpointsListCommand = viceBridge.EnqueueCommand(new CheckpointListCommand(), resumeOnStopped: true);
         var checkpointsList = await checkpointsListCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointsListCommand, ct: ct);
         if (checkpointsList is not null)
         {
             foreach (var ci in checkpointsList.Info)
             {
-                await DeleteCheckpointAsync(ci.CheckpointNumber, ct);
                 if (breakpointsMap.TryGetValue(ci.CheckpointNumber, out var breakpoint))
                 {
+                    // deletes only those that are part of breakpoints
+                    await DeleteCheckpointAsync(ci.CheckpointNumber, ct);
                     breakpoint.CheckpointNumber = null;
                 }
             }
@@ -263,14 +275,16 @@ public class BreakpointsViewModel: NotifiableObject
     /// <param name="breakpoints"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    internal void ApplyOriginalBreakpointsOnNewPdb()
+    internal async Task ApplyOriginalBreakpointsOnNewPdbAsync(CancellationToken ct)
     {
         if (pdbManager is null)
         {
             return;
         }
         bool anyRemoved = false;
-        foreach (var breakpoint in Breakpoints.ToImmutableArray())
+        var originalBreakpoints = Breakpoints.ToImmutableArray();
+        Breakpoints.Clear();
+        foreach (var breakpoint in originalBreakpoints)
         {
             // first reapply breakpoints bound to a label
             if (breakpoint.Label is not null)
@@ -290,10 +304,9 @@ public class BreakpointsViewModel: NotifiableObject
             {
                 var criteria = new LineSearchCriteria(breakpoint.Line.LineNumber, breakpoint.Line.Text);
                 var match = FindMatchingLine(globals.Project?.DebugSymbols, breakpoint.File, criteria);
-                if (match is not null)
+                if (match?.Line?.Addresses.IsDefaultOrEmpty == false)
                 {
-                    breakpoint.Line = match.Value.Line;
-                    breakpoint.File = match.Value.File;
+                    await AddBreakpointAsync(match.Value.File, match.Value.Line, match.Value.Line.LineNumber, null, null, ct);
                 }
                 else
                 {
@@ -720,6 +733,7 @@ public class BreakpointsViewModel: NotifiableObject
         {
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+            debugDataChangedSubscription.Dispose();
         }
         base.Dispose(disposing);
     }

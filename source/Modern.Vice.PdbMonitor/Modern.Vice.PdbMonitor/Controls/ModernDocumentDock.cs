@@ -138,7 +138,7 @@ public class ModernDocumentDock : DocumentDock
                     var data = e.OldItems?.Count == 1 ? e.OldItems[0] : null;
                     if (data is not null)
                     {
-                        var document = VisibleDockables?.Cast<DockDocumentViewModel>().Where(d => ReferenceEquals(d, data)).FirstOrDefault();
+                        var document = VisibleDockables?.Cast<DockDocumentViewModel>().Where(d => ReferenceEquals(d.Data, data)).FirstOrDefault();
                         if (document is not null)
                         {
                             Owner!.Factory!.CloseDockable(document);
@@ -153,6 +153,18 @@ public class ModernDocumentDock : DocumentDock
                     foreach (var document in documents)
                     {
                         Owner!.Factory!.CloseDockable(document);
+                    }
+                }
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                {
+                    var existing = e.OldItems?.Count == 1 ? e.OldItems[0] : null;
+                    var document = VisibleDockables?.Cast<DockDocumentViewModel>().Where(d => ReferenceEquals(d.Data, existing))
+                        .FirstOrDefault();
+                    var newItem = e.NewItems?.Count == 1 ? e.NewItems[0] : null;
+                    if (document is not null)
+                    {
+                        document.Data = newItem;
                     }
                 }
                 break;

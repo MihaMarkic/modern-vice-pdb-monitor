@@ -25,7 +25,9 @@ public partial class SourceFileViewer : UserControl
     LineColorizer lineColorizer = default!;
     static readonly RegistryOptions registryOptions;
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
-    SourceFileViewModel? oldDataContext;
+    SourceFileViewModel? oldTypedDataContext;
+    DockDocumentViewModel? oldDataContext;
+
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
     static SourceFileViewer()
@@ -40,15 +42,39 @@ public partial class SourceFileViewer : UserControl
         DataContextChanged += SourceFileViewer_DataContextChanged;
     }
     ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(Editor);
-    public new SourceFileViewModel? DataContext => (SourceFileViewModel?)((DockDocumentViewModel?)base.DataContext)?.Data;
+    internal DockDocumentViewModel? DockDocumentViewModel => (DockDocumentViewModel?)base.DataContext;
+    public SourceFileViewModel? TypedDataContext => (SourceFileViewModel?)DockDocumentViewModel?.Data;
     void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
+    {
+        if (oldDataContext is not null)
+        {
+            oldDataContext.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
+        }
+        UpdateContent();
+        var dataContext = DockDocumentViewModel;
+        if (dataContext is not null)
+        {
+            oldDataContext = dataContext;
+            dataContext.PropertyChanged += DockDocumentViewModel_PropertyChanged;
+        }
+    }
+
+    void DockDocumentViewModel_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == DockDocumentViewModel.DataProperty)
+        {
+            UpdateContent();
+        }
+    }
+
+    void UpdateContent()
     {
         var leftMargins = Editor.TextArea.LeftMargins;
         var lineTransformers = Editor.TextArea.TextView.LineTransformers;
         DisconnectOldViewModel(leftMargins, lineTransformers);
         Editor.Text = "";
         Editor.CaretOffset = 0;
-        var viewModel = DataContext;
+        var viewModel = TypedDataContext;
         if (viewModel is not null)
         {
             lineColorizer = new(viewModel);
@@ -87,7 +113,7 @@ public partial class SourceFileViewer : UserControl
                 }
             }
         }
-        oldDataContext = viewModel;
+        oldTypedDataContext = viewModel;
     }
 
     void ViewModel_BreakpointsChanged(object? sender, EventArgs e)
@@ -97,11 +123,11 @@ public partial class SourceFileViewer : UserControl
 
     void DisconnectOldViewModel(ObservableCollection<Control> leftMargins, IList<IVisualLineTransformer> lineTransformers)
     {
-        if (oldDataContext is not null)
+        if (oldTypedDataContext is not null)
         {
-            oldDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
-            oldDataContext.PropertyChanged -= ViewModel_PropertyChanged;
-            oldDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
+            oldTypedDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
+            oldTypedDataContext.PropertyChanged -= ViewModel_PropertyChanged;
+            oldTypedDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
 
             foreach (var lm in leftMargins.ToImmutableArray())
             {
@@ -124,7 +150,7 @@ public partial class SourceFileViewer : UserControl
     private void ViewModel_ExecutionRowChanged(object? sender, EventArgs e)
     {
         Editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
-        lineColorizer.LineNumber = DataContext!.ExecutionRow + 1;
+        lineColorizer.LineNumber = TypedDataContext!.ExecutionRow + 1;
         Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
     }
 
@@ -132,12 +158,12 @@ public partial class SourceFileViewer : UserControl
     {
         switch (e.PropertyName)
         {
-            case nameof(DataContext.ExecutionRow):
+            case nameof(TypedDataContext.ExecutionRow):
                 break;
-            case nameof(DataContext.Elements):
+            case nameof(TypedDataContext.Elements):
                 if (useLineColorizerForElements)
                 {
-                    lineColorizer.Elements = DataContext!.Elements;
+                    lineColorizer.Elements = TypedDataContext!.Elements;
                     Editor.TextArea.TextView.Redraw();
                 }
                 break;
@@ -146,7 +172,7 @@ public partial class SourceFileViewer : UserControl
 
     void ViewModel_ShowCursorRow(object? sender, EventArgs e)
     {
-        _ = CursorRowChanged(DataContext!.CursorRow);
+        _ = CursorRowChanged(TypedDataContext!.CursorRow);
     }
 
     CancellationTokenSource? cts;
@@ -258,6 +284,10 @@ public partial class SourceFileViewer : UserControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         textMateInstallation.Dispose();
+        if (DockDocumentViewModel is not null)
+        {
+            DockDocumentViewModel.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
+        }
         base.OnDetachedFromVisualTree(e);
     }
 }

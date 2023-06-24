@@ -9,6 +9,7 @@ public class Settings : NotifiableObject
     public const int MaxRecentProjects = 10;
     public string? VicePath { get; set; }
     public bool ResetOnStop { get; set; }
+    public bool IsAutoUpdateEnabled { get; set; }
     public ObservableCollection<string> RecentProjects { get; } = new ObservableCollection<string>();
     [JsonIgnore]
     public string? LastAccessedDirectory => RecentProjects.Count > 0 ? RecentProjects[0] : null;

@@ -108,8 +108,8 @@ partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        Bootstrap.Close();
         scope.Dispose();
+        Bootstrap.Close();
         base.OnClosed(e);
     }
 }

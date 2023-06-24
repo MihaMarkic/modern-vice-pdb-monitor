@@ -4,10 +4,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -16,7 +14,6 @@ using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
-using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Righthand.MessageBus;
@@ -39,10 +36,10 @@ public class MainViewModel : NotifiableObject
     readonly CommandsManager commandsManager;
     readonly ExecutionStatusViewModel executionStatusViewModel;
     public Globals Globals { get; }
-    readonly Subscription closeOverlaySubscription;
-    readonly Subscription prgFileChangedSubscription;
-    readonly Subscription prgFilePathChangedSubscription;
-    readonly Subscription showModalDialogMessageSubscription;
+    readonly ISubscription closeOverlaySubscription;
+    readonly ISubscription prgFileChangedSubscription;
+    readonly ISubscription prgFilePathChangedSubscription;
+    readonly ISubscription showModalDialogMessageSubscription;
     public bool IsProjectOpen => Globals.Project is not null;
     public ObservableCollection<string> RecentProjects => Globals.Settings.RecentProjects;
     public RelayCommand ShowSettingsCommand { get; }
@@ -60,6 +57,11 @@ public class MainViewModel : NotifiableObject
     public RelayCommandAsync StepIntoCommand { get; }
     public RelayCommandAsync StepOverCommand { get; }
     public RelayCommandAsync UpdatePdbCommand { get; }
+    public RelayCommand ToggleIsAutoUpdateEnabledCommand { get; }
+    /// <summary>
+    /// When true, <see cref="UpdatePdbCommand"/> is called automatically upon detected changes.
+    /// </summary>
+    public bool IsAutoUpdateEnabled { get; set; }
     public Func<OpenFileDialogModel, CancellationToken, Task<string?>>? ShowCreateProjectFileDialogAsync { get; set; }
     public Func<OpenFileDialogModel, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
     public Action<ShowModalDialogMessageCore>? ShowModalDialog { get; set; }
@@ -67,9 +69,8 @@ public class MainViewModel : NotifiableObject
     public bool IsShowingSettings => OverlayContent is SettingsViewModel;
     public bool IsShowingProject => OverlayContent is ProjectViewModel;
     public bool IsShowingErrors { get; set; }
-    public bool IsOpeningProject { get; private set; }
     public bool IsParsingPdb { get; private set; }
-    public bool IsBusy => IsOpeningProject || executionStatusViewModel.IsStartingDebugging || IsParsingPdb;
+    public bool IsBusy => executionStatusViewModel.IsOpeningProject || executionStatusViewModel.IsStartingDebugging || IsParsingPdb;
     public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
@@ -99,7 +100,8 @@ public class MainViewModel : NotifiableObject
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
-        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel, TraceOutputViewModel traceOutputViewModel)
+        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel, 
+        TraceOutputViewModel traceOutputViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -142,12 +144,15 @@ public class MainViewModel : NotifiableObject
             StepIntoAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
         StepOverCommand = commandsManager.CreateRelayCommandAsync(
             StepOverAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
-        UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(UpdatePdbAsync, () => !IsBusy && IsDebugging);
+        UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(
+            UpdatePdbAsync, () => !IsBusy && !IsDebugging && IsUpdatedPdbAvailable);
+        ToggleIsAutoUpdateEnabledCommand = commandsManager.CreateRelayCommand(ToggleIsAutoUpdateEnabled, () => true);
         // by default opens most recent project
         if (globals.Settings.RecentProjects.Count > 0)
         {
             OpenProjectFromPath(globals.Settings.RecentProjects[0]);
         }
+        IsAutoUpdateEnabled = globals.Settings.IsAutoUpdateEnabled;
         stoppedExecution = new TaskCompletionSource();
         resumedExecution = new TaskCompletionSource();
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
@@ -251,15 +256,22 @@ public class MainViewModel : NotifiableObject
 
     }
 
-    void PrgFileChanged(object sender, PrgFileChangedMessage message)
+    void PrgFileChanged(PrgFileChangedMessage message)
     {
-        _ = uiFactory.StartNew(() => IsUpdatedPdbAvailable = true);
+        _ = uiFactory.StartNew(async () =>
+        {
+            IsUpdatedPdbAvailable = true;
+            if (IsAutoUpdateEnabled)
+            {
+                await UpdatePdbAsync();
+            }
+        });
     }
-    void PrgFilePathChanged(object sender, PrgFilePathChangedMessage message)
+    void PrgFilePathChanged(PrgFilePathChangedMessage message)
     {
         _ = UpdatePdbAsync();
     }
-    void OnShowModalDialog(object sender, ShowModalDialogMessageCore message)
+    void OnShowModalDialog(ShowModalDialogMessageCore message)
     {
         ShowModalDialog?.Invoke(message);
     }
@@ -273,7 +285,11 @@ public class MainViewModel : NotifiableObject
                 IsParsingPdb = true;
                 try
                 {
-                    await ParseDebugSymbolsAsync(Globals.Project);
+                    bool newDebuggingIsApplied = await ParseDebugSymbolsAsync(Globals.Project);
+                    if (newDebuggingIsApplied)
+                    {
+                        await dispatcher.DispatchAsync(new DebugDataChangedMessage());
+                    }
                 }
                 finally
                 {
@@ -284,6 +300,7 @@ public class MainViewModel : NotifiableObject
             else
             {
                 Globals.Project.DebugSymbols = null;
+                await dispatcher.DispatchAsync(new DebugDataChangedMessage());
             }
         }
         finally
@@ -295,8 +312,8 @@ public class MainViewModel : NotifiableObject
     /// Creates, uses and disposes correct parser based on project's CompilerType.
     /// </summary>
     /// <param name="project"></param>
-    /// <returns></returns>
-    async Task ParseDebugSymbolsAsync(Project project)
+    /// <returns>True when new debugging data is applied, false otherwise</returns>
+    async Task<bool> ParseDebugSymbolsAsync(Project project)
     {
         using (var scope = serviceProvider.CreateScope())
         {
@@ -306,11 +323,13 @@ public class MainViewModel : NotifiableObject
             if (pdb is not null)
             {
                 project.DebugSymbols = pdb;
+                return true;
             }
             else
             {
                 dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, "Failed parsing", errorMessage ?? ""));
             }
+            return false;
         }
     }
     void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
@@ -319,6 +338,10 @@ public class MainViewModel : NotifiableObject
         {
             IsViceConnected = e.IsConnected;
         });
+    }
+    internal void ToggleIsAutoUpdateEnabled()
+    {
+        IsAutoUpdateEnabled = !IsAutoUpdateEnabled;
     }
     internal async Task StopDebuggingAsync()
     {
@@ -484,7 +507,7 @@ public class MainViewModel : NotifiableObject
         }
     }
 
-    internal void CloseOverlay(object sender, CloseOverlayMessage message)
+    internal void CloseOverlay(CloseOverlayMessage message)
     {
         if (OverlayContent is not null)
         {
@@ -595,7 +618,7 @@ public class MainViewModel : NotifiableObject
         {
             return false;
         }
-        IsOpeningProject = true;
+        executionStatusViewModel.IsOpeningProject = true;
         try
         {
             if (!File.Exists(path))
@@ -616,6 +639,7 @@ public class MainViewModel : NotifiableObject
             {
                 await ParseDebugSymbolsAsync(project);
                 await LoadBreakpointsAsync(ct);
+                UpdateDirectoryChangesTracker();
             }
             Globals.Settings.AddRecentProject(path);
         }
@@ -625,7 +649,7 @@ public class MainViewModel : NotifiableObject
         }
         finally
         {
-            IsOpeningProject = false;
+            executionStatusViewModel.IsOpeningProject = false;
         }
         return false;
     }
@@ -708,6 +732,7 @@ public class MainViewModel : NotifiableObject
     {
         if (disposing)
         {
+            Globals.Settings.IsAutoUpdateEnabled = IsAutoUpdateEnabled;
             viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;

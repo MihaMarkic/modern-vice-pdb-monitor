@@ -8,12 +8,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public class ErrorMessagesViewModel: NotifiableObject
 {
     public ObservableCollection<ErrorMessage> Messages { get; } = new ObservableCollection<ErrorMessage>();
-    public Subscription messagesSubscription;
+    public ISubscription messagesSubscription;
     public ErrorMessagesViewModel(IDispatcher dispatcher)
     {
         messagesSubscription = dispatcher.Subscribe<ErrorMessage>(OnErrorMessage);
     }
-    void OnErrorMessage(object sender, ErrorMessage message)
+    void OnErrorMessage(ErrorMessage message)
     {
         Messages.Add(message);
     }
