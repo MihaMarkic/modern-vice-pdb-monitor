@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>1.0.0-alpha.2</Version>
+    <Version>1.0.0-alpha.3</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\Fonts\C64_Pro_Mono-STYLE.ttf" />
