@@ -152,7 +152,7 @@ public class Oscar64CompilerServices : ICompilerServices
 
     internal static ImmutableDictionary<int, PdbType> CreatePdbTypes(ImmutableArray<Oscar64Type> types)
     {
-        // first creates a map between typeid and Oscar64Type, PdbType
+        // first creates a map between typeId and Oscar64Type, PdbType
         // at this point members and array types are missing in PdbType
         var map = types
             .Select(t =>
@@ -316,7 +316,7 @@ public class Oscar64CompilerServices : ICompilerServices
                 linesBuilder.Add(pdbLine);
             }
             var definitionPath = paths[f.Source];
-            var pdbFunction = new PdbFunction(f.Name, definitionPath, f.Start, f.End, f.LineNumber);
+            var pdbFunction = new PdbFunction(f.Name, f.XName, definitionPath, f.Start, f.End, f.LineNumber);
             functionsMap[file].Add(pdbFunction);
             // assign function to all generated PdbLines
             foreach (var l in linesBuilder)
@@ -339,8 +339,7 @@ public class Oscar64CompilerServices : ICompilerServices
         }
         var functionsResult = functionsMap.ToImmutableDictionary(
             f => f.Key,
-            f => f.Value.ToImmutableDictionary(d => d.Name, d => d));
-        //var pdbLine = new PdbLine(l.Line, l.Start, null, (ushort)(l.End - l.Start), null, "xxx");
+            f => f.Value.ToImmutableDictionary(d => d.XName, d => d));
         var linesResult = linesMap.ToImmutableDictionary(f => f.Key, f => f.Value.ToImmutableArray());
         return files.Values.ToImmutableDictionary(f => f, f => (linesResult[f], functionsResult[f]));
     }

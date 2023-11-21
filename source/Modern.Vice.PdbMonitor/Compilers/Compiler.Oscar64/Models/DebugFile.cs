@@ -16,9 +16,9 @@ public enum MemoryBlockType
     Start,
     End
 }
-public record MemoryBlock(string Name, ushort Start, ushort End, string Type, string Source, [JsonProperty("line")] int LineNumber);
+public record MemoryBlock(string Name, string XName, ushort Start, ushort End, string Type, string Source, [JsonProperty("line")] int LineNumber);
 public record Variable(string Name, ushort Start, ushort End, ushort? Base, int? Enter, int? Leave, int TypeId);
-public  record Function(string Name, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber, 
+public  record Function(string Name, string XName, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber, 
     ImmutableArray<FunctionLine> Lines, ImmutableArray<Variable> Variables);
 public record FunctionLine(ushort Start, ushort End, string Source, [JsonProperty("Line")]int LineNumber);
 

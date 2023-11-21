@@ -21,6 +21,7 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
                     "memory": [
                 	    {
                 		    "name": "startup",
+                            "xname": "xstartup",
                 		    "start": 2049,
                 		    "end": 2134,
                 		    "type": "NATIVE_CODE",
@@ -29,6 +30,7 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
                 	    },
                 	    {
                 		    "name": "spentry",
+                            "xname": "xspentry",
                 		    "start": 3354,
                 		    "end": 3355,
                 		    "type": "DATA",
@@ -37,6 +39,7 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
                 	    },
                 	    {
                 		    "name": "BSSStart",
+                            "xname": "xBSSStart",
                 		    "start": 3476,
                 		    "end": 3476,
                 		    "type": "START",
@@ -52,9 +55,9 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
             var memory = actual?.Memory;
             Assert.That(memory, Is.EquivalentTo(
                 new MemoryBlock[] {
-                    new MemoryBlock("startup", 2049, 2134, "NATIVE_CODE", "E:/Projects/C64Repo/oscar64/include/crt.c", 65),
-                    new MemoryBlock("spentry", 3354, 3355, "DATA", "E:/Projects/C64Repo/oscar64/include/crt.h", 4),
-                    new MemoryBlock("BSSStart", 3476, 3476, "START", "E:/Projects/C64Repo/oscar64/include/crt.c", 17)
+                    new MemoryBlock("startup","xstartup", 2049, 2134, "NATIVE_CODE", "E:/Projects/C64Repo/oscar64/include/crt.c", 65),
+                    new MemoryBlock("spentry", "xspentry", 3354, 3355, "DATA", "E:/Projects/C64Repo/oscar64/include/crt.h", 4),
+                    new MemoryBlock("BSSStart", "xBSSStart", 3476, 3476, "START", "E:/Projects/C64Repo/oscar64/include/crt.c", 17)
                 }
                 ));
         }

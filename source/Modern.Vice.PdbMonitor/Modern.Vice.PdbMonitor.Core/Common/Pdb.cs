@@ -200,7 +200,7 @@ public enum PdbVariableType
     Float,
 }
 
-public record PdbFunction(string Name, PdbPath DefinitionFile, int Start, int End, int LineNumber);
+public record PdbFunction(string Name, string XName, PdbPath DefinitionFile, int Start, int End, int LineNumber);
 
 public record PdbParseResult<T>(T ParsedData, ImmutableArray<PdbParseError> Errors);
 public static class PdbParseResultBuilder
