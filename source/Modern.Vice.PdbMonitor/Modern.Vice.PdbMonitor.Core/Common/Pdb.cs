@@ -30,6 +30,11 @@ public sealed record PdbFile(PdbPath Path, ImmutableDictionary<string, PdbFuncti
 {
     public static readonly PdbFile Empty = 
         new PdbFile(PdbPath.Empty, ImmutableDictionary<string, PdbFunction>.Empty, ImmutableArray<PdbLine>.Empty);
+    /// <summary>
+    /// Creates an empty PdbFile with just <see cref="PdbFile.Path"/> set.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
     public static PdbFile CreateWithNoContent(PdbPath path) => 
         new PdbFile(path, ImmutableDictionary<string, PdbFunction>.Empty, ImmutableArray<PdbLine>.Empty);
     public static ImmutableDictionary<PdbLine, PdbFile>.Builder CreateLineToFileMapBuilder()
@@ -54,7 +59,7 @@ public sealed class PdbFileByPathEqualityComparer : IEqualityComparer<PdbFile>
 /// <summary>
 /// DataLength might be longer than data where there are more than 8 bytes (ACME report omits next bytes)
 /// </summary>
-public record PdbLine(int LineNumber, string Text)
+public record PdbLine(PdbPath path, int LineNumber, string Text)
 {
     public ImmutableArray<AddressRange> Addresses { get; init; } = ImmutableArray<AddressRange>.Empty;
     public ImmutableDictionary<string, PdbVariable> Variables { get; init; } = ImmutableDictionary<string, PdbVariable>.Empty;
@@ -62,19 +67,19 @@ public record PdbLine(int LineNumber, string Text)
     /// Owner function of this line.
     /// </summary>
     public PdbFunction? Function { get; set; }
-    public static PdbLine Create(int lineNumber, string text, AddressRange addressRange, 
+    public static PdbLine Create(PdbPath path, int lineNumber, string text, AddressRange addressRange, 
         ImmutableDictionary<string, PdbVariable> variables)
     {
-        return new PdbLine(lineNumber, text)
+        return new PdbLine(path, lineNumber, text)
         {
             Addresses = ImmutableArray<AddressRange>.Empty.Add(addressRange),
             Variables = variables,
         };
     }
-    public static PdbLine Create(int lineNumber, ushort startAddress,
+    public static PdbLine Create(PdbPath path, int lineNumber, ushort startAddress,
         ImmutableArray<byte> data, ushort dataLength, bool hasMoreData, string text)
     {
-        return new PdbLine(lineNumber, text)
+        return new PdbLine(path, lineNumber, text)
         {
             Addresses = ImmutableArray<AddressRange>.Empty.Add(new AddressRange(startAddress, dataLength, data, hasMoreData)),
         };

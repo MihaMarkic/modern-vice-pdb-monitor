@@ -1,0 +1,46 @@
+{
+ "functions": [
+  {
+    "name": "Character::+Character",
+    "xname": "Character::+Character(const struct Character*,u8,u8,u8,u8)->void",
+    "start": 14818,
+    "end": 14875,
+    "typeid": 293,
+    "source": "D:\\ROOT\\character.h",
+    "line": 8,
+    "lines": [
+      {
+        "start": 14818,
+        "end": 14851,
+        "source": "D:\\ROOT\\character.cpp",
+        "line": 3
+      },
+      {
+        "start": 14851,
+        "end": 14857,
+        "source": "D:\\ROOT\\character.h",
+        "line": 8
+      },
+      {
+        "start": 14857,
+        "end": 14874,
+        "source": "D:\\ROOT\\character.cpp",
+        "line": 6
+      },
+      {
+        "start": 14874,
+        "end": 14875,
+        "source": "D:\\ROOT\\character.h",
+        "line": 8
+      }
+    ]
+  }
+  ],
+  "types": [
+    {
+      "name": "",
+      "typeid": 293,
+      "size": 0
+    }
+  ]
+}

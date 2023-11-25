@@ -100,9 +100,9 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         public void WhenFirstLineHasMoreData_ItsDataLengthIsSetCorrectly()
         {
             var source = new PdbLine[] {
-                PdbLine.Create(default,  default, new AddressRange(0x0000,0, default, true), 
+                PdbLine.Create(PdbPath.Empty, default,  default, new AddressRange(0x0000,0, default, true), 
                     ImmutableDictionary<string, PdbVariable>.Empty),
-                PdbLine.Create(default,  default, new AddressRange(0x0010,0, default, false), 
+                PdbLine.Create(PdbPath.Empty,default,  default, new AddressRange(0x0010,0, default, false), 
                     ImmutableDictionary<string, PdbVariable>.Empty),
             };
             var builder = PdbFile.CreateLineToFileMapBuilder();
@@ -120,10 +120,10 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         public void WhenNextLineHasAlsoMoreData_ItsDataLengthIsSetCorrectly()
         {
             var source = new PdbLine[] {
-                PdbLine.Create(default, 0x0000, default, 0, true, default),
-                PdbLine.Create(default, 0x0010, default, 0, true, default),
-                PdbLine.Create(default, 0x0025, default, 0, true, default),
-                PdbLine.Create(default, 0x0010, default, 0, false, default),
+                PdbLine.Create(PdbPath.Empty, default, 0x0000, default, 0, true, default),
+                PdbLine.Create(PdbPath.Empty, default, 0x0010, default, 0, true, default),
+                PdbLine.Create(PdbPath.Empty, default, 0x0025, default, 0, true, default),
+                PdbLine.Create(PdbPath.Empty, default, 0x0010, default, 0, false, default),
             };
             var builder = PdbFile.CreateLineToFileMapBuilder();
             foreach (var line in source)
@@ -140,7 +140,7 @@ class AcmePdbParserTest: BaseTest<AcmePdbParser>
         {
             var data = Enumerable.Range(0, 8).Select(i => (byte)i).ToImmutableArray();
             var source = new PdbLine[] {
-                PdbLine.Create(default, 0x0000, data, 0, true, default),
+                PdbLine.Create(PdbPath.Empty, default, 0x0000, data, 0, true, default),
             };
             var builder = PdbFile.CreateLineToFileMapBuilder();
             builder.Add(source.Single(), PdbFile.Empty);

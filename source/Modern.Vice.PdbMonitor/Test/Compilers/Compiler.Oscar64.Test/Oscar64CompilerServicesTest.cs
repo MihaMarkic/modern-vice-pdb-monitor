@@ -1,13 +1,40 @@
 ﻿using System.Collections.Immutable;
-using TestsBase;
+using AutoFixture;
 using Compiler.Oscar64.Models;
+using Compiler.Oscar64.Services.Implementation;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Core.Services.Abstract;
+using NSubstitute;
 using NUnit.Framework;
+using TestsBase;
 using static Compiler.Oscar64.Oscar64CompilerServices;
 
 namespace Compiler.Oscar64.Test;
 internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
 {
+    async Task<DebugFile> LoadSampleAsync(string path, string name)
+    {
+        string fileName = Path.Combine("Samples", path, $"{name}.dbj");
+        return await LoadSampleFromFileAsync(fileName);
+    }
+    async Task<DebugFile> LoadSampleAsync(string name)
+    {
+        string fileName = Path.Combine("Samples", $"{name}.dbj");
+        return await LoadSampleFromFileAsync(fileName);
+    }
+    async Task<DebugFile> LoadSampleFromFileAsync(string fileName)
+    {
+        string content = File.ReadAllText(fileName);
+        var parser = new Oscar64DbjParser(fixture.Create<ILogger<Oscar64DbjParser>>());
+        return await parser.LoadContentAsync(content) ?? throw new NullReferenceException($"Failed to parse file {fileName}");
+    }
+    ImmutableArray<string> LoadLines(string path, string name)
+    {
+        string fileName = Path.Combine("Samples", path, name);
+        return File.ReadAllLines(fileName).ToImmutableArray();
+    }
+
     [TestFixture]
     public class CreateLineVariables : Oscar64CompilerServicesTest
     {
@@ -32,50 +59,50 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
     [TestFixture]
     public class CreatePdbLines : Oscar64CompilerServicesTest
     {
-        //const string File = "file.c";
-        //protected int[] lineNumbers = default!;
-        //DebugFile CreateSample()
-        //{
-        //    var variables = ImmutableArray<Variable>.Empty
-        //        .Add(new Variable("global", 0, 0, null, null, null, 0))
-        //        .Add(new Variable("ranged", 0, 0, null, 2, 6, 0))
-        //        .Add(new Variable("outer_i", 0, 0, null, 2, 9, 0))
-        //        .Add(new Variable("inner_i", 0, 0, null, 4, 7, 0))
-        //        .Add(new Variable("global_2", 0, 0, null, null, null, 0))
-        //        .Add(new Variable("nested_global_2", 0, 0, null, 2, 7, 0));
-        //    lineNumbers = new int[] { 1, 2, 4, 6, 7, 9, 10 };
-        //    var lines = lineNumbers.Select(n => new FunctionLine(0, 0, File, n)).ToImmutableArray();
-        //    var functions = ImmutableArray<Function>.Empty
-        //        .Add(new Function("test", 0, 0, 0, File, 0, lines, variables));
-        //    var types = ImmutableArray<Oscar64Type>.Empty
-        //        .Add(new Oscar64UIntType("type", 0, 2, null));
-        //    return new DebugFile(ImmutableArray<MemoryBlock>.Empty, ImmutableArray<Variable>.Empty, functions, types);
-        //}
-        //[Test]
-        //public void WhenNestedVariables_LineWithGlobalVariableHasGlobal()
-        //{
-        //    var sample = CreateSample();
+        const string RootDirectory = @"D:\ROOT";
+        record Arguments(ImmutableArray<Function> Functions, ImmutableDictionary<PdbPath, PdbFile> EmptyPdbFiles, 
+            ImmutableDictionary<string, PdbPath> Paths, ImmutableDictionary<int, PdbType> PdbTypes);
 
-        //    var pdbTypes = ImmutableDictionary<int, PdbType>.Empty
-        //        .Add(0, new PdbValueType(0, "type", 2, PdbVariableType.UInt16));
-        //    var types = sample.Types.ToImmutableDictionary(t => t.TypeId, t => t);
-        //    var path = PdbPath.CreateRelative(File);
-        //    var paths = ImmutableDictionary<PdbPath, PdbFile>.Empty
-        //        .Add(path, new PdbFile(path, ImmutableDictionary<string, PdbFunction>.Empty, ImmutableArray<PdbLine>.Empty));
-        //    var fileService = fixture.Freeze<IFileService>();
-        //    fileService.ReadAllLines(default!).ReturnsForAnyArgs(
-        //        Enumerable.Range(0, lineNumbers.Max()).Select(n => $"Line {n+1}").ToImmutableArray()
-        //        );
+        /// <summary>
+        /// From main.dbj and source files placed in <paramref name="sampleSubdirectory"/> directory creates
+        /// all necessary arguments for Oscar64CompilerServices.CreatePdbLines method.
+        /// </summary>
+        /// <param name="projectDirectory"></param>
+        /// <param name="sampleSubdirectory"></param>
+        /// <param name="sourceFiles"></param>
+        /// <returns></returns>
+        async Task<Arguments> CreateArguments(string sampleSubdirectory, params string[] sourceFiles)
+        {
+            var dbj = await LoadSampleAsync(sampleSubdirectory, "main");
 
-        //    var actual = Target.CreatePdbLines("", 
-        //        sample.Functions, 
-        //        ImmutableDictionary<PdbPath, PdbFile>.Empty
-        //            .Add(path, PdbFile.CreateFromRelativePath(File)),
-        //        ImmutableDictionary<string, PdbPath>.Empty
-        //            .Add(File, path), 
-        //        pdbTypes);
+            var fileService = fixture.Freeze<IFileService>();
+            var uniqueFileNames = ImmutableHashSet<string>.Empty;
+            foreach (string sourceFile in sourceFiles)
+            {
+                string path = Path.Combine(RootDirectory, sourceFile);
+                string file = sourceFile;
+                fileService.ReadAllLines(path).Returns(LoadLines(sampleSubdirectory, file));
+                uniqueFileNames = uniqueFileNames.Add(path);
+            }
 
-        //}
+            var paths = uniqueFileNames.Select(n => new { Original = n, Path = PdbPath.Create(RootDirectory, n) })
+                .ToImmutableDictionary(i => i.Original, i => i.Path);
+            var emptyPdbFiles = uniqueFileNames.Select(n => PdbFile.CreateWithNoContent(paths[n]))
+                .ToImmutableDictionary(f => f.Path, f => f);
+
+            var pdbTypes = CreatePdbTypes(dbj.Types);
+
+            return new Arguments(dbj.Functions, emptyPdbFiles, paths, pdbTypes);
+        }
+        [Test]
+        public async Task WhenFunctionIsSplitBetweenTwoFiles_ParsesProperly()
+        {
+            var args = await CreateArguments("TestFunctionsSplitBetweenFiles", "character.cpp", "character.h");
+
+            var actual = Target.CreatePdbLines(RootDirectory, args.Functions, args.EmptyPdbFiles, args.Paths, args.PdbTypes);
+
+            Assert.That(actual.Count, Is.EqualTo(2));
+        }
     }
     [TestFixture]
     public class GetLineVariables : Oscar64CompilerServicesTest

@@ -25,7 +25,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
     protected PdbFile CreateSourceFile(string source, PdbPath path)
     {
         var lines = source.Split("\n")
-            .Select((l, i) => PdbLine.Create(i + 1, default, default, 0, default, l))
+            .Select((l, i) => PdbLine.Create(path, i + 1, default, default, 0, default, l))
             .ToImmutableArray();
         var file = new PdbFile(path, default, lines);
         return file;
@@ -54,7 +54,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
         public void WhenLineContentIsEqual_ReturnsNewLine()
         {
             const string text = "		beq +			; enter loop";
-            var sourceLine = PdbLine.Create(1, default, default, 0, default, text);
+            var sourceLine = PdbLine.Create(PdbPath.Empty, 1, default, default, 0, default, text);
             var sourceFile = new PdbFile(PdbPath.CreateRelative("file.a"), default, ImmutableArray<PdbLine>.Empty.Add(sourceLine));
             // duplicates data
             //var newLine = sourceLine with { DataLength = 0 };
@@ -73,7 +73,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
         {
             const string text = "		beq +			; enter loop";
             var linesToFileMap = ImmutableDictionary.CreateBuilder<PdbLine, PdbFile>(ReferenceEqualityComparer.Instance);
-            var sourceLine = PdbLine.Create(1, default, default, 0, default, text);
+            var sourceLine = PdbLine.Create(PdbPath.Empty, 1, default, default, 0, default, text);
             var sourceFile = new PdbFile(PdbPath.CreateRelative("file.a"), default, ImmutableArray<PdbLine>.Empty.Add(sourceLine));
             linesToFileMap.Add(sourceLine, sourceFile);
             // duplicates data

@@ -39,7 +39,6 @@ public class Oscar64CompilerServices : ICompilerServices
 
     (Pdb? Pdb, string? ErrorMessage) ParseDebugFile(string projectDirectory, DebugFile debugFile)
     {
-        var allLines = debugFile.Functions.SelectMany(f => f.Lines).ToImmutableArray();
         var uniqueFileNamesBuilder = ImmutableHashSet.CreateBuilder<string>();
         foreach (var f in debugFile.Functions)
         {
@@ -259,20 +258,20 @@ public class Oscar64CompilerServices : ICompilerServices
         }).ToImmutableDictionary(r => r.File, r => r.Text);
 
         // prepares slots for resulting PdbLines
+        // Dictionary of file -> pdb lines array per each source line
         var linesMap = filesWithAllText.ToDictionary(f => f.Key, f => new PdbLine[f.Value.Length]);
+        // Dictionary of file -> pdb functions list
         var functionsMap = files.Values.ToDictionary(f => f, f => new List<PdbFunction>());
 
+        // contains files where function is implemented
+        var filesWithFunctionCode = new HashSet<PdbFile>();
         // populate all lines from metadata first
         // ignore empty functions
         foreach (var f in functions.Where(f => f.Lines.Length > 0))
         {
-            // functions are placed in implementation files, their definition file is ignored, at least for now
-            var firstLineSourcePath = f.Lines.First().Source;
-            var path = paths[firstLineSourcePath];
-            var file = files[path];
+            filesWithFunctionCode.Clear();
             // keep track of generated lines
             var linesBuilder = new List<PdbLine>(f.Lines.Length);
-            var slots = linesMap[file];
             // first creates nested map of variables
             var lineVariablesMap = CreateLineVariables(types, f.Variables);
             // then checks if it has any nested variable
@@ -292,13 +291,20 @@ public class Oscar64CompilerServices : ICompilerServices
             }
             foreach (var line in f.Lines)
             {
+                // functions are placed in implementation files, their definition file is ignored, at least for now
+                var path = paths[line.Source];
+                var file = files[path];
+                filesWithFunctionCode.Add(file);
+
+                var slots = linesMap[file];
+
                 var fileWithText = filesWithAllText[file];
                 int lineNumber = line.LineNumber - 1;
                 PdbLine pdbLine;
                 if (slots[lineNumber] is null)
                 {
                     // when pdb line is created, also assign it variables
-                    pdbLine = new PdbLine(lineNumber, fileWithText[lineNumber])
+                    pdbLine = new PdbLine(path, lineNumber, fileWithText[lineNumber])
                     {
                         Variables = hasNestedVariables ? GetLineVariables(lineNumber, lineVariablesMap)
                                         : allLinesVariables,
@@ -317,7 +323,11 @@ public class Oscar64CompilerServices : ICompilerServices
             }
             var definitionPath = paths[f.Source];
             var pdbFunction = new PdbFunction(f.Name, f.XName, definitionPath, f.Start, f.End, f.LineNumber);
-            functionsMap[file].Add(pdbFunction);
+            // stores all function to all files where it has code
+            foreach (var fileWithFunctionCode in filesWithFunctionCode)
+            {
+                functionsMap[fileWithFunctionCode].Add(pdbFunction);
+            }
             // assign function to all generated PdbLines
             foreach (var l in linesBuilder)
             {
@@ -333,7 +343,7 @@ public class Oscar64CompilerServices : ICompilerServices
             {
                 if (slots[i] is null)
                 {
-                    slots[i] = new PdbLine(i, textLines[i]);
+                    slots[i] = new PdbLine(file.Path, i, textLines[i]);
                 }
             }
         }

@@ -96,12 +96,12 @@ public class AcmePdbParser : IAcmePdbParser
                         PdbLine line;
                         if (reportCodeLine.StartAddress is not null && reportCodeLine.IsMoreData is not null)
                         {
-                            line = PdbLine.Create(reportCodeLine.LineNumber, reportCodeLine.StartAddress.Value,
+                            line = PdbLine.Create(file.Path, reportCodeLine.LineNumber, reportCodeLine.StartAddress.Value,
                                 reportCodeLine.Data, dataLength, reportCodeLine.IsMoreData.Value, reportCodeLine.Text);
                         }
                         else
                         {
-                            line = new PdbLine(reportCodeLine.LineNumber, reportCodeLine.Text);
+                            line = new PdbLine(file.Path, reportCodeLine.LineNumber, reportCodeLine.Text);
                         }
                         lineToFileMapBuilder.Add(line, file);
                         linesBuilder.Add(line);
