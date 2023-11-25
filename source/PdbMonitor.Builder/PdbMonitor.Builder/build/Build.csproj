@@ -4,9 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <RunWorkingDirectory>$(MSBuildProjectDirectory)</RunWorkingDirectory>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Cake.Frosting" Version="3.0.0" />
+    <PackageReference Include="Cake.Incubator" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Cake.Common" />
@@ -17,5 +19,6 @@
     <Using Include="Cake.Core" />
     <Using Include="Cake.Core.IO" />
     <Using Include="Cake.Frosting" />
+    <Using Include="System.Xml.Linq" />
   </ItemGroup>
 </Project>

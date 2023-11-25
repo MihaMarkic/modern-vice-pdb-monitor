@@ -8,6 +8,7 @@ public class UnitTest : FrostingTask<BuildContext>
         var settings = new DotNetTestSettings
         {
             Configuration = context.BuildConfiguration,
+            NoRestore = true,
         };
         var path = context.MakeAbsolute(context.SolutionDirectory + context.File("**/*.Test.csproj")).FullPath;
         var projects = context.GetFiles(path);

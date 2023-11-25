@@ -137,6 +137,7 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+temp/
 
 # Publish Web Output
 *.[Pp]ublish.xml
@@ -271,6 +272,5 @@ __pycache__/
 /tools
 /distribution
 nogit.config
-!/src/Globus.Kiosk/Binaries/*.dll
 nuget.config
 /samples/out

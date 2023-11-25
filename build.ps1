@@ -23,7 +23,7 @@ https://cakebuild.net
 
 [CmdletBinding()]
 Param(
-	[ValidateSet("Default", "Clean", "Build", "UnitTest")]
+	[ValidateSet("Default", "Clean", "Build", "UnitTest", "PublishStandalone", "Publish", "GetProjectVersion")]
     [string]$Target,
     [string]$SolutionDirectory,
     [ValidateSet("Quiet", "Minimal", "Normal", "Verbose", "Diagnostic")]
