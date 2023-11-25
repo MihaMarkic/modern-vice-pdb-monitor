@@ -38,7 +38,7 @@ public class SourceFileViewerViewModel : NotifiableObject
         Files = new();
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
-        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(OnDebugDataChanged);
+        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(SubscriptionDebugDataChanged);
     }
     protected override void OnPropertyChanged([CallerMemberName] string? name = null)
     {
@@ -57,7 +57,7 @@ public class SourceFileViewerViewModel : NotifiableObject
                 break;
         }
     }
-    Task OnDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
+    Task SubscriptionDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
     {
         RefreshSourceFiles();
         return Task.CompletedTask;

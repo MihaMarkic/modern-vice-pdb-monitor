@@ -73,7 +73,7 @@ public class BreakpointsViewModel: NotifiableObject
         viceBridge.ViceResponse += ViceBridge_ViceResponse;
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
-        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(OnDebugDataChanged);
+        debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(SubscriptionDebugDataChanged);
         UpdatePdbManager();
     }
 
@@ -82,7 +82,7 @@ public class BreakpointsViewModel: NotifiableObject
         SaveLocalSettings();
     }
 
-    async Task OnDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
+    async Task SubscriptionDebugDataChanged(DebugDataChangedMessage message, CancellationToken ct)
     {
         await ApplyOriginalBreakpointsOnNewPdbAsync(CancellationToken.None);
     }

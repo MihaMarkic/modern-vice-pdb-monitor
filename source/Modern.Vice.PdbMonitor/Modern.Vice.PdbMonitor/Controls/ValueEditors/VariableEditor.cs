@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -13,8 +12,6 @@ public abstract class VariableEditor : UserControl
     public static readonly DirectProperty<VariableEditor, VariablesViewModel?> ViewModelProperty =
         AvaloniaProperty.RegisterDirect<VariableEditor, VariablesViewModel?>(nameof(VariableSlot),
             o => o.ViewModel, (o, v) => o.ViewModel = v);
-    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
-    bool isValid;
     VariablesViewModel? viewModel;
     public VariablesViewModel? ViewModel
     {

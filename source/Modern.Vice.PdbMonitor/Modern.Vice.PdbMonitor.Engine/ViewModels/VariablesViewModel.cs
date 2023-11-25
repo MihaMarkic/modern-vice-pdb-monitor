@@ -74,7 +74,7 @@ public class VariablesViewModel: NotifiableObject
         {
             // ignore cancellations
         }
-        catch (Exception ex)
+        catch
         {
 
         }
