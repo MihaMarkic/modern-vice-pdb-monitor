@@ -30,7 +30,7 @@
       <c:Uint16ValueEditConverter x:Key="Uint16ValueEditConverter" />
     </DataGrid.Resources>
     <DataGrid.Columns>
-      <DataGridTemplateColumn Header="Name" Width="200">
+      <DataGridTemplateColumn Header="Name" Width="400">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate DataType="vm:VariableSlot">
             <StackPanel Orientation="Horizontal" Margin="{Binding Level, Converter={StaticResource LevelToMarginConverter}}">
@@ -74,9 +74,9 @@
         </DataGridTemplateColumn.CellEditingTemplate>
       </DataGridTemplateColumn>
       <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneWay}"
-          IsReadOnly="True" Width="80" />
+          IsReadOnly="True" Width="100" />
       <DataGridTextColumn Header="Base" Binding="{Binding Base, Converter={StaticResource HexAddressConverterWithTrim}, Mode=OneWay}"
-        IsReadOnly="True" Width="60" />
+        IsReadOnly="True" Width="80" />
       <DataGridTextColumn Header="Size" Binding="{Binding Size}" IsReadOnly="True" Width="40" />
       <DataGridTextColumn Header="Type" Binding="{Binding ValueType}" IsReadOnly="True" Width="90" />
       <DataGridCheckBoxColumn Header="Global" Binding="{Binding IsGlobal}" IsReadOnly="True" />
