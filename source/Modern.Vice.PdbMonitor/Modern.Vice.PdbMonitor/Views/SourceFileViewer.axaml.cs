@@ -151,6 +151,10 @@ public partial class SourceFileViewer : UserControl
     {
         Editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
         lineColorizer.LineNumber = TypedDataContext!.ExecutionRow + 1;
+        if (lineColorizer.LineNumber is not null)
+        {
+            Editor.ScrollTo(lineColorizer.LineNumber.Value, 0);
+        }
         Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
     }
 
