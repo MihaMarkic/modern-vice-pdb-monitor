@@ -1,5 +1,6 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls">
     <Style Selector="TextBlock.h1">
         <Setter Property="FontSize" Value="24"/>
         <Setter Property="FontWeight" Value="Bold"/>
@@ -41,4 +42,29 @@
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="Foreground" Value="Red" />
     </Style>
+    <Style Selector="ctl|DockTool">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border BorderBrush="Black" BorderThickness=".5">
+            <DockPanel>
+              <TextBlock Name="PART_Title" Text="{TemplateBinding Title}" DockPanel.Dock="Top" Background="LightBlue" 
+                Margin="2" Padding="2" TextTrimming="CharacterEllipsis" />
+              <ContentPresenter Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Content="{TemplateBinding Content}"
+                              Padding="{TemplateBinding Padding}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+            </DockPanel>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+  <Style Selector="ctl|DockSizer">
+    <Setter Property="Background" Value="LightGray" />
+  </Style>
 </Styles>

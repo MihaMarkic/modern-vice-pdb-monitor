@@ -13,7 +13,6 @@ using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
-using Modern.Vice.PdbMonitor.Controls;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using TextMateSharp.Grammars;
@@ -26,7 +25,7 @@ public partial class SourceFileViewer : UserControl
     static readonly RegistryOptions registryOptions;
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
     SourceFileViewModel? oldTypedDataContext;
-    DockDocumentViewModel? oldDataContext;
+    SourceFileViewModel? oldDataContext;
 
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
@@ -42,30 +41,29 @@ public partial class SourceFileViewer : UserControl
         DataContextChanged += SourceFileViewer_DataContextChanged;
     }
     ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(Editor);
-    internal DockDocumentViewModel? DockDocumentViewModel => (DockDocumentViewModel?)base.DataContext;
-    public SourceFileViewModel? TypedDataContext => (SourceFileViewModel?)DockDocumentViewModel?.Data;
+    internal SourceFileViewModel? ViewModel => (SourceFileViewModel?)base.DataContext;
     void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
     {
-        if (oldDataContext is not null)
-        {
-            oldDataContext.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
-        }
+        //    if (oldDataContext is not null)
+        //    {
+        //        oldDataContext.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
+        //    }
         UpdateContent();
-        var dataContext = DockDocumentViewModel;
-        if (dataContext is not null)
-        {
-            oldDataContext = dataContext;
-            dataContext.PropertyChanged += DockDocumentViewModel_PropertyChanged;
-        }
+        //    var dataContext = DockDocumentViewModel;
+        //    if (dataContext is not null)
+        //    {
+        //        oldDataContext = dataContext;
+        //        dataContext.PropertyChanged += DockDocumentViewModel_PropertyChanged;
+        //    }
     }
 
-    void DockDocumentViewModel_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.Property == DockDocumentViewModel.DataProperty)
-        {
-            UpdateContent();
-        }
-    }
+    //void DockDocumentViewModel_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    //{
+    //    if (e.Property == DockDocumentViewModel.DataProperty)
+    //    {
+    //        UpdateContent();
+    //    }
+    //}
 
     void UpdateContent()
     {
@@ -74,7 +72,7 @@ public partial class SourceFileViewer : UserControl
         DisconnectOldViewModel(leftMargins, lineTransformers);
         Editor.Text = "";
         Editor.CaretOffset = 0;
-        var viewModel = TypedDataContext;
+        var viewModel = ViewModel;
         if (viewModel is not null)
         {
             lineColorizer = new(viewModel);
@@ -150,7 +148,7 @@ public partial class SourceFileViewer : UserControl
     private void ViewModel_ExecutionRowChanged(object? sender, EventArgs e)
     {
         Editor.TextArea.TextView.LineTransformers.Remove(lineColorizer);
-        lineColorizer.LineNumber = TypedDataContext!.ExecutionRow + 1;
+        lineColorizer.LineNumber = ViewModel!.ExecutionRow + 1;
         if (lineColorizer.LineNumber is not null)
         {
             Editor.ScrollTo(lineColorizer.LineNumber.Value, 0);
@@ -162,12 +160,12 @@ public partial class SourceFileViewer : UserControl
     {
         switch (e.PropertyName)
         {
-            case nameof(TypedDataContext.ExecutionRow):
+            case nameof(ViewModel.ExecutionRow):
                 break;
-            case nameof(TypedDataContext.Elements):
+            case nameof(ViewModel.Elements):
                 if (useLineColorizerForElements)
                 {
-                    lineColorizer.Elements = TypedDataContext!.Elements;
+                    lineColorizer.Elements = ViewModel!.Elements;
                     Editor.TextArea.TextView.Redraw();
                 }
                 break;
@@ -176,7 +174,7 @@ public partial class SourceFileViewer : UserControl
 
     void ViewModel_ShowCursorRow(object? sender, EventArgs e)
     {
-        _ = CursorRowChanged(TypedDataContext!.CursorRow);
+        _ = CursorRowChanged(ViewModel!.CursorRow);
     }
 
     CancellationTokenSource? cts;
@@ -288,10 +286,10 @@ public partial class SourceFileViewer : UserControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         textMateInstallation.Dispose();
-        if (DockDocumentViewModel is not null)
-        {
-            DockDocumentViewModel.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
-        }
+        //if (DockDocumentViewModel is not null)
+        //{
+        //    DockDocumentViewModel.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
+        //}
         base.OnDetachedFromVisualTree(e);
     }
 }

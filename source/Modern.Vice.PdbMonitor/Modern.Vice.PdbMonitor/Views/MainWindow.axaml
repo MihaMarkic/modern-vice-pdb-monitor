@@ -225,52 +225,47 @@
         </TextBlock>
       </StackPanel>
     </DockPanel>
-    <DockControl x:Name="Dock" Grid.Row="1" InitializeLayout="True" InitializeFactory="True"
-      IsVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNull}}">
-      <DockControl.Factory>
-        <Factory />
-      </DockControl.Factory>
-      <RootDock x:Name="Root" Id="Root" IsCollapsable="False" DefaultDockable="{Binding #MainLayout}">
-        <ProportionalDock x:Name="MainLayout" Id="MainLayout" Orientation="Vertical">
-          <ProportionalDock x:Name="TopPane" Id="TopPane" Orientation="Horizontal">
-            <ToolDock x:Name="LeftPane" Id="LeftPane" Proportion="0.25" Alignment="Left" IsCollapsable="True">
-              <Tool x:Name="ProjectExplorer" Id="ProjectExplorer" Title="Project Explorer" CanClose="False">
-                <v:ProjectExplorer DataContext="{Binding #Source.DataContext.DebuggerViewModel.ProjectExplorer}" />
-              </Tool>
-            </ToolDock>
-            <ProportionalDockSplitter x:Name="LeftSplitter" Id="LeftSplitter" />
-            <ctl:ModernDocumentDock x:Name="DocumentsPane" Id="DocumentsPane" CanCreateDocument="False"
-              Documents="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Files}"
-              SelectedDocument="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel.Selected, Mode=TwoWay}"
-              IsCollapsable="False">
-              <ctl:ModernDocumentDock.DocumentTemplate>
-                <DocumentTemplate>
-                  <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
-                </DocumentTemplate>
-              </ctl:ModernDocumentDock.DocumentTemplate>
-            </ctl:ModernDocumentDock>
-          </ProportionalDock>
-          <ProportionalDockSplitter x:Name="BottomSplitter" Id="BottomSplitter" />
-          <ToolDock x:Name="BottomPane" Id="BottomPane" Proportion="0.3" Alignment="Bottom" ActiveDockable="Errors">
-            <Tool x:Name="Errors" Id="Errors" Title="Errors" x:DataType="Tool" CanClose="False">
-              <v:ErrorMessages DataContext="{Binding #Source.DataContext.ErrorMessagesViewModel}" />
-            </Tool>
-            <Tool x:Name="Registers" Id="Registers" Title="Registers" x:DataType="Tool" CanClose="False">
-              <v:Registers DataContext="{Binding #Source.DataContext.RegistersViewModel}" />
-            </Tool>
-            <Tool x:Name="Breakpoints" Id="Breakpoints" Title="Breakpoints" x:DataType="Tool" CanClose="False">
-              <v:Breakpoints DataContext="{Binding #Source.DataContext.BreakpointsViewModel}" />
-            </Tool>
-            <Tool x:Name="Variables" Id="Variables" Title="Variables" x:DataType="Tool" CanClose="False">
-              <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
-            </Tool>
-            <Tool x:Name="Trace" Id="Trace" Title="Trace" x:DataType="Tool" CanClose="False">
-              <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
-            </Tool>
-          </ToolDock>
-        </ProportionalDock>
-      </RootDock>
-    </DockControl>
+    <Grid>
+      <DockPanel IsVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNull}}">
+      <ctl:DockTool DockPanel.Dock="Bottom" Height="200" Title="{Binding #BottomTabs.SelectedItem.Header}" HorizontalContentAlignment="Stretch">
+        <TabControl x:Name="BottomTabs" TabStripPlacement="Bottom">
+          <TabItem Header="Errors">
+            <v:ErrorMessages DataContext="{Binding #Source.DataContext.ErrorMessagesViewModel}" />
+          </TabItem>
+          <TabItem Header="Registers">
+            <v:Registers DataContext="{Binding #Source.DataContext.RegistersViewModel}" />
+          </TabItem>
+          <TabItem Header="Breakpoints">
+            <v:Breakpoints DataContext="{Binding #Source.DataContext.BreakpointsViewModel}" />
+          </TabItem>
+          <TabItem Header="Variables">
+            <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
+          </TabItem>
+          <TabItem Header="Trace">
+            <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
+          </TabItem>
+        </TabControl>
+      </ctl:DockTool>
+      <ctl:DockSizer Height="5" Margin="0,2" DockPanel.Dock="Bottom" Orientation="Horizontal" />
+      <ctl:DockTool DockPanel.Dock="Left" Width="300" Title="Project Explorer">
+        <v:ProjectExplorer DataContext="{Binding #Source.DataContext.DebuggerViewModel.ProjectExplorer}" />
+      </ctl:DockTool>
+      <ctl:DockSizer Width="5" Margin="2,0" DockPanel.Dock="Left" Orientation="Vertical" />
+      <TabControl DataContext="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel}" ItemsSource="{Binding Files}"
+        SelectedItem="{Binding Selected}">
+        <TabControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Path.FileName}" />
+          </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+          <DataTemplate>
+            <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
+          </DataTemplate>
+        </TabControl.ContentTemplate>
+      </TabControl>
+    </DockPanel>
     <ContentControl Content="{Binding OverlayContent}" />
+    </Grid>
   </DockPanel>
 </Window>
