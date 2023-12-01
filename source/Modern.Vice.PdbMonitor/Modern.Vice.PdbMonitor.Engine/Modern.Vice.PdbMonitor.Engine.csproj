@@ -26,4 +26,8 @@
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\Debugging\" />
+  </ItemGroup>
+
 </Project>
