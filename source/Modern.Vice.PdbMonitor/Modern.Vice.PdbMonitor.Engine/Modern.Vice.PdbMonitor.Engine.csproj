@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
@@ -17,7 +18,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="All" />
     <PackageReference Include="Righthand.MessageBus" Version="2.0.0-beta.4" />
-    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.17" />
+    <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.18" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +29,11 @@
 
   <ItemGroup>
     <Folder Include="Models\Debugging\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Collections.Immutable" />
+    <Using Include="System.Collections.ObjectModel" />
   </ItemGroup>
 
 </Project>

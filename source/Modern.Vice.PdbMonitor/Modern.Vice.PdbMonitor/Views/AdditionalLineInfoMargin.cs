@@ -1,8 +1,6 @@
 ﻿using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
-using System;
-using System.Globalization;
 
 namespace Modern.Vice.PdbMonitor.Views;
 

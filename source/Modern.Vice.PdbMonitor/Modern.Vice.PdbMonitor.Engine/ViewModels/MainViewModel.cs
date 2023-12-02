@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -58,6 +53,7 @@ public class MainViewModel : NotifiableObject
     public RelayCommandAsync StepOverCommand { get; }
     public RelayCommandAsync UpdatePdbCommand { get; }
     public RelayCommand ToggleIsAutoUpdateEnabledCommand { get; }
+    public RelayCommand ShowMessagesHistoryCommand { get; }
     /// <summary>
     /// When true, <see cref="UpdatePdbCommand"/> is called automatically upon detected changes.
     /// </summary>
@@ -66,6 +62,7 @@ public class MainViewModel : NotifiableObject
     public Func<OpenFileDialogModel, CancellationToken, Task<string?>>? ShowOpenProjectFileDialogAsync { get; set; }
     public Action<ShowModalDialogMessageCore>? ShowModalDialog { get; set; }
     public Action? CloseApp { get; set; }
+    public Action? ShowMessagesHistoryContent { get; set; }
     public bool IsShowingSettings => OverlayContent is SettingsViewModel;
     public bool IsShowingProject => OverlayContent is ProjectViewModel;
     public bool IsShowingErrors { get; set; }
@@ -90,6 +87,7 @@ public class MainViewModel : NotifiableObject
     public VariablesViewModel VariablesViewModel { get; }
     public DebuggerViewModel DebuggerViewModel { get; }
     public TraceOutputViewModel TraceOutputViewModel { get; }
+    public MessagesHistoryViewModel MessagesHistoryViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -101,7 +99,7 @@ public class MainViewModel : NotifiableObject
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
         VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel, 
-        TraceOutputViewModel traceOutputViewModel)
+        TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -117,6 +115,7 @@ public class MainViewModel : NotifiableObject
         VariablesViewModel = variablesViewModel;
         DebuggerViewModel = debuggerViewModel;
         TraceOutputViewModel = traceOutputViewModel;
+        MessagesHistoryViewModel = messagesHistoryViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -152,6 +151,7 @@ public class MainViewModel : NotifiableObject
         {
             OpenProjectFromPath(globals.Settings.RecentProjects[0]);
         }
+        ShowMessagesHistoryCommand = commandsManager.CreateRelayCommand(ShowMessagesHistory, () => MessagesHistoryViewModel.IsAvailable);
         IsAutoUpdateEnabled = globals.Settings.IsAutoUpdateEnabled;
         stoppedExecution = new TaskCompletionSource();
         resumedExecution = new TaskCompletionSource();
@@ -363,6 +363,8 @@ public class MainViewModel : NotifiableObject
         }
         else
         {
+            MessagesHistoryViewModel.Clear();
+            MessagesHistoryViewModel.Start();
             const string title = "Start debugging";
             if (!IsViceConnected)
             {
@@ -596,6 +598,8 @@ public class MainViewModel : NotifiableObject
             return null;
         }
     }
+
+    void ShowMessagesHistory() => ShowMessagesHistoryContent?.Invoke();
     void Test()
     {
         if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))

@@ -104,6 +104,21 @@ The actual app starts at *start* label while the code in front makes it accessib
 
     ![breakpoint-details](docs/breakpoint-details.png)
 
+## Enabling diagnostics
+
+To enable diagnostics, place appsettings.json file in output directory where binaries are with content like this:
+```json
+{
+  "Application": {
+    "MessagesHistory":  true
+  }
+}
+
+```
+
+Currently there is a single diagnostics helper. 
+* Messages History shows communication with VICE.
+
 ## Features
 
 * Auto starts VICE if required

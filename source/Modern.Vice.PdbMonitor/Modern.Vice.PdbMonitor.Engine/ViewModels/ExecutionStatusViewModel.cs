@@ -1,5 +1,4 @@
-﻿using System.Threading;
-using Modern.Vice.PdbMonitor.Core;
+﻿using Modern.Vice.PdbMonitor.Core;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 

@@ -1,4 +1,3 @@
-using System;
 using Avalonia;
 using Microsoft.Extensions.Hosting;
 using NLog;

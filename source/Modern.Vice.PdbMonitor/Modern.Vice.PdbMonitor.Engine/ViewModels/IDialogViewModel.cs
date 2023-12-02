@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
+﻿namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 public interface IDialogViewModel<TResult>
 {

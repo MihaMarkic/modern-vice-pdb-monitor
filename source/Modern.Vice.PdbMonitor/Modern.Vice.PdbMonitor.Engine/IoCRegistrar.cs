@@ -4,12 +4,13 @@ using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
 namespace Modern.Vice.PdbMonitor.Engine;
 
 public static class IoCRegistrar
 {
-    public static void AddEngine(this IServiceCollection services)
+    public static void AddEngine(this IServiceCollection services, bool messagesHistoryEnabled)
     {
         services.AddScoped<MainViewModel>()
             .AddScoped<SettingsViewModel>()
@@ -18,6 +19,7 @@ public static class IoCRegistrar
             .AddScoped<ProjectExplorerViewModel>()
             .AddScoped<ProjectViewModel>()
             .AddScoped<SourceFileViewerViewModel>()
+            .AddScoped<MessagesHistoryViewModel>()
             .AddSingleton<RegistersViewModel>()
             .AddSingleton<VariablesViewModel>()
             .AddSingleton<RegistersMapping>()
@@ -35,5 +37,9 @@ public static class IoCRegistrar
             .AddSingleton<AssemblyDebugStepper>()
             .AddSingleton<HighLevelDebugStepper>()
             .AddViceBridge();
+        if (messagesHistoryEnabled)
+        {
+            services.AddSingleton<IMessagesHistory, MessagesHistory>();
+        }
     }
 }

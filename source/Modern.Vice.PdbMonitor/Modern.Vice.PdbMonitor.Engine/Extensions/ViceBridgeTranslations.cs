@@ -1,6 +1,5 @@
 ﻿using Modern.Vice.PdbMonitor.Engine.Models;
 using Righthand.ViceMonitor.Bridge.Commands;
-using System;
 
 namespace Righthand.ViceMonitor.Bridge.Services.Abstract;
 

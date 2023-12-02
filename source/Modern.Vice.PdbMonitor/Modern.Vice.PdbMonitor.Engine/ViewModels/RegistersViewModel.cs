@@ -1,7 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
@@ -29,6 +26,7 @@ public class RegistersViewModel: NotifiableObject
     public Registers6510 Previous { get; private set; } = Registers6510.Empty;
     public bool IsLoadingMappings { get; private set; }
     public bool IsLoadingRegisters { get; private set; }
+    public byte? PCRegisterId { get; private set; }
     public RelayCommandAsync UpdateCommand { get; }
     public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping,
         ExecutionStatusViewModel executionStatusViewModel, IDispatcher dispatcher)
@@ -48,6 +46,7 @@ public class RegistersViewModel: NotifiableObject
         var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory),
             resumeOnStopped: true);
         await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
+        PCRegisterId = mapping.GetRegisterId(Register6510.PC);
     }
     async Task Update()
     {

@@ -1,5 +1,4 @@
-﻿using System;
-using Avalonia;
+﻿using Avalonia;
 using AvaloniaEdit;
 
 namespace Modern.Vice.PdbMonitor.Behaviors;

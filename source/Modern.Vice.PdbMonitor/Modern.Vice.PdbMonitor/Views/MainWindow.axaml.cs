@@ -1,13 +1,10 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Modern.Vice.PdbMonitor.Controls;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using Modern.Vice.PdbMonitor.Engine.Common;
@@ -19,6 +16,7 @@ namespace Modern.Vice.PdbMonitor.Views;
 partial class MainWindow : Window
 {
     readonly IServiceScope scope;
+    ToolWindow? messagesHistoryWindow;
     public MainWindow()
     {
         InitializeComponent();
@@ -31,6 +29,7 @@ partial class MainWindow : Window
         DataContext = viewModel;
         viewModel.ShowCreateProjectFileDialogAsync = ShowCreateProjectFileDialogAsync;
         viewModel.ShowOpenProjectFileDialogAsync = ShowOpenProjectFileDialogAsync;
+        ViewModel.ShowMessagesHistoryContent = ShowMessagesHistory;
         viewModel.CloseApp = Close;
         viewModel.ShowModalDialog = ShowModalDialog;
     }
@@ -104,10 +103,31 @@ partial class MainWindow : Window
         return null;
     }
 
+    internal void ShowMessagesHistory()
+    {
+        if (messagesHistoryWindow is null)
+        {
+            messagesHistoryWindow = new ToolWindow
+            {
+                DataContext = ViewModel.MessagesHistoryViewModel,
+            };
+            messagesHistoryWindow.Closed += (_, _) =>
+            {
+                messagesHistoryWindow = null;
+            };
+            messagesHistoryWindow.Show();
+        }
+        else
+        {
+            messagesHistoryWindow.WindowState = WindowState.Normal;
+        }
+    }
+
     public MainViewModel ViewModel => (MainViewModel)DataContext!;
 
     protected override void OnClosed(EventArgs e)
     {
+        messagesHistoryWindow?.Close();
         scope.Dispose();
         Bootstrap.Close();
         base.OnClosed(e);

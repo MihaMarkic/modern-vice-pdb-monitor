@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Immutable;
-
-namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;
+﻿namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;
 
 public interface IBindingValidator
 {

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-
-namespace Modern.Vice.PdbMonitor.Converters;
+﻿namespace Modern.Vice.PdbMonitor.Converters;
 public class ByteArrayToTextConverter : ParameterlessValueConverter<IEnumerable<byte>, string>
 {
     public override string? Convert(IEnumerable<byte>? data, Type targetType, CultureInfo culture)

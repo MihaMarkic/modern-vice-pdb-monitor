@@ -1,6 +1,4 @@
 ﻿using Avalonia.Data.Converters;
-using System;
-using System.Globalization;
 
 namespace Modern.Vice.PdbMonitor.Converters;
 

@@ -1,69 +1,69 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls">
-    <Style Selector="TextBlock.h1">
-        <Setter Property="FontSize" Value="24"/>
-        <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="Margin" Value="0,0,0,4" />
-    </Style>
-    <Style Selector="TextBlock.label">
-        <Setter Property="FontSize" Value="16"/>
-        <Setter Property="FontWeight" Value="Normal"/>
-        <Setter Property="Margin" Value="0,0,0,2" />
-        <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="HorizontalAlignment" Value="Right" />
-    </Style>
-    <Style Selector="TextBlock.info">
-      <Setter Property="FontSize" Value="12"/>
-      <Setter Property="FontWeight" Value="Normal"/>
-      <Setter Property="Foreground" Value="Gray" />
-    </Style>
-    <Style Selector="TabItem">
-        <Setter Property="FontSize" Value="15"/>
-        <Setter Property="Padding" Value="4,0" />
-        <Setter Property="MinHeight" Value="24" />
-    </Style>
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontSize" Value="24"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Margin" Value="0,0,0,4" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Margin" Value="0,0,0,2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+  </Style>
+  <Style Selector="TextBlock.info">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="Gray" />
+  </Style>
+  <Style Selector="TabItem">
+    <Setter Property="FontSize" Value="15"/>
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
 
-    <Style Selector="TextBlock.register_label">
-        <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
-        <Setter Property="Foreground" Value="Gray" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="HorizontalAlignment" Value="Center" />
-    </Style>
-    <Style Selector="TextBlock.register_value">
-        <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
-        <Setter Property="HorizontalAlignment" Value="Center" />
-    </Style>
-    <Style Selector="TreeViewItem">
-        <Setter Property="MinHeight" Value="0" />
-    </Style>
+  <Style Selector="TextBlock.register_label">
+    <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+    <Setter Property="Foreground" Value="Gray" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.register_value">
+    <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TreeViewItem">
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
 
-    <Style Selector="TextBlock.error">
-        <Setter Property="FontSize" Value="16"/>
-        <Setter Property="Foreground" Value="Red" />
-    </Style>
-    <Style Selector="ctl|DockTool">
-      <Setter Property="Template">
-        <ControlTemplate>
-          <Border BorderBrush="Black" BorderThickness=".5">
-            <DockPanel>
-              <TextBlock Name="PART_Title" Text="{TemplateBinding Title}" DockPanel.Dock="Top" Background="LightBlue" 
-                Margin="2" Padding="2" TextTrimming="CharacterEllipsis" />
-              <ContentPresenter Name="PART_ContentPresenter"
-                              Background="{TemplateBinding Background}"
-                              BorderBrush="{TemplateBinding BorderBrush}"
-                              BorderThickness="{TemplateBinding BorderThickness}"
-                              CornerRadius="{TemplateBinding CornerRadius}"
-                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                              Content="{TemplateBinding Content}"
-                              Padding="{TemplateBinding Padding}"
-                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
-            </DockPanel>
-          </Border>
-        </ControlTemplate>
-      </Setter>
-    </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="Foreground" Value="Red" />
+  </Style>
+  <Style Selector="ctl|DockTool">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border BorderBrush="Black" BorderThickness=".5">
+          <DockPanel>
+            <TextBlock Name="PART_Title" Text="{TemplateBinding Title}" DockPanel.Dock="Top" Background="LightBlue"
+              Margin="2" Padding="2" TextTrimming="CharacterEllipsis" />
+            <ContentPresenter Name="PART_ContentPresenter"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Content="{TemplateBinding Content}"
+                            Padding="{TemplateBinding Padding}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+          </DockPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
   <Style Selector="ctl|DockSizer">
     <Setter Property="Background" Value="LightGray" />
   </Style>

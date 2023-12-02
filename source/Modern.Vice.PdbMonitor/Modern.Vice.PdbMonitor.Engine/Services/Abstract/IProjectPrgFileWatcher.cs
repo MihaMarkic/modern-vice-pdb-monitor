@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Modern.Vice.PdbMonitor.Engine.Services.Abstract;
+﻿namespace Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 
 public interface IProjectPrgFileWatcher
 {

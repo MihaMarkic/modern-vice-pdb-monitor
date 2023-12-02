@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Immutable;
-using Modern.Vice.PdbMonitor.Core;
+﻿using Modern.Vice.PdbMonitor.Core;
 using PropertyChanged;
 
 namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;

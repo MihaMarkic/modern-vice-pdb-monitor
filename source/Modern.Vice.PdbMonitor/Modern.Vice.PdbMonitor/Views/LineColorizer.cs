@@ -1,7 +1,4 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Immutable;
-using Avalonia.Media;
+﻿using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;

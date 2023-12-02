@@ -1,8 +1,4 @@
-﻿using System;
-using System.Globalization;
-using Avalonia.Data.Converters;
-using System.Linq;
-using System.Collections.Generic;
+﻿using Avalonia.Data.Converters;
 
 namespace Modern.Vice.PdbMonitor.Converters;
 

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Globalization;
-using Avalonia;
+﻿using Avalonia;
 
 namespace Modern.Vice.PdbMonitor.Converters;
 public class LevelToMarginConverter : ValueConverter<int, Thickness, double?>

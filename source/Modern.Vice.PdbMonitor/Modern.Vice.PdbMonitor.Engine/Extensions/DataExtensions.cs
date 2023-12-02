@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Immutable;
-
-namespace Modern.Vice.PdbMonitor.Engine.Extensions;
+﻿namespace Modern.Vice.PdbMonitor.Engine.Extensions;
 public static class DataExtension
 {
     public static ImmutableArray<byte> Copy(this ReadOnlySpan<byte> buffer, int? size = null)

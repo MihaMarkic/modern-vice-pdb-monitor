@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Modern.Vice.PdbMonitor.Core;
+﻿using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.Common;

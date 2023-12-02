@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
-using System;
 
 namespace Modern.Vice.PdbMonitor.Controls.ValueEditors;
 public partial class BoolVariableEditor : VariableEditor

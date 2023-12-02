@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Globalization;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;

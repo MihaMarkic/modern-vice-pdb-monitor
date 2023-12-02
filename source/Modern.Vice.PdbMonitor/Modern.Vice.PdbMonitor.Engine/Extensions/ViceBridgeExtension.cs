@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;

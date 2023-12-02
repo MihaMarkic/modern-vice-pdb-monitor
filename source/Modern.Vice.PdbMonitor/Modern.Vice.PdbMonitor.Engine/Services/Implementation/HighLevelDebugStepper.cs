@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
@@ -68,22 +65,25 @@ public class HighLevelDebugStepper : DebugStepper, IDebugStepper
     public override async Task ContinueAsync(PdbLine? line, CancellationToken ct = default)
     {
         StartLine = line;
-        executionStatusViewModel.IsSteppingOver = false;
-        executionStatusViewModel.IsSteppingInto = true;
+        executionStatusViewModel.IsSteppingOver = true;
+        executionStatusViewModel.IsSteppingInto = false;
         IsActive = true;
+        SteppingStart = DateTimeOffset.Now;
         try
         {
+            int id = 0;
             while (IsActive)
             {
                 ct.ThrowIfCancellationRequested();
                 PrepareForContinue();
                 await ExitViceMonitorAsync();
                 await ContinueTask!;
+                id++;
             }
         }
         finally
         {
-            executionStatusViewModel.IsSteppingInto = false;
+            executionStatusViewModel.IsSteppingOver = false;
             IsActive = false;
             StartLine = null;
         }

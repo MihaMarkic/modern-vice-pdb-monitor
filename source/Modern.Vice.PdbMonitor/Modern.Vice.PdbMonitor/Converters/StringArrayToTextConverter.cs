@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-
-namespace Modern.Vice.PdbMonitor.Converters;
+﻿namespace Modern.Vice.PdbMonitor.Converters;
 
 public class ArrayToTextConverter : ParameterlessValueConverter<IEnumerable<object>, string>
 {

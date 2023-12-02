@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Modern.Vice.PdbMonitor.Core;
+﻿using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 

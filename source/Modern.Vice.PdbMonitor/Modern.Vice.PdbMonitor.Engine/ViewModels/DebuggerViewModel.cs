@@ -1,17 +1,11 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
-using Righthand.ViceMonitor.Bridge.Commands;
-using Righthand.ViceMonitor.Bridge.Services.Abstract;
-using Righthand.ViceMonitor.Bridge.Services.Implementation;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 

@@ -1,11 +1,10 @@
-﻿using Avalonia.Data.Converters;
-using System;
+﻿using Avalonia;
+using Avalonia.Data.Converters;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace Modern.Vice.PdbMonitor.Converters;
 
-public abstract class ParameterlessValueConverter<TSource, TDest> : IValueConverter
+public abstract class ParameterlessValueConverter<TSource, TDest> : AvaloniaObject, IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {

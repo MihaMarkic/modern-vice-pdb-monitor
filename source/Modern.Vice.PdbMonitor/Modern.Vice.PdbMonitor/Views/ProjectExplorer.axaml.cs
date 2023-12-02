@@ -1,5 +1,4 @@
-﻿using System;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 
 namespace Modern.Vice.PdbMonitor.Views;
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Modern.Vice.PdbMonitor.Core.Common;
+﻿using Modern.Vice.PdbMonitor.Core.Common;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 public record BreakpointsSettings(ImmutableArray<BreakpointInfo> Breakpoints)
