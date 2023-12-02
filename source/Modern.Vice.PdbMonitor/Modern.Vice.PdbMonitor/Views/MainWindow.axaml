@@ -254,19 +254,7 @@
         <v:ProjectExplorer DataContext="{Binding #Source.DataContext.DebuggerViewModel.ProjectExplorer}" />
       </ctl:DockTool>
       <ctl:DockSizer Width="5" Margin="2,0" DockPanel.Dock="Left" Orientation="Vertical" />
-      <TabControl DataContext="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel}" ItemsSource="{Binding Files}"
-        SelectedItem="{Binding Selected}">
-        <TabControl.ItemTemplate>
-          <DataTemplate>
-            <TextBlock Text="{Binding Path.FileName}" />
-          </DataTemplate>
-        </TabControl.ItemTemplate>
-        <TabControl.ContentTemplate>
-          <DataTemplate>
-            <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
-          </DataTemplate>
-        </TabControl.ContentTemplate>
-      </TabControl>
+      <v:SourceFilesViewer DataContext="{Binding #Source.DataContext.DebuggerViewModel.SourceFileViewerViewModel}"/>
     </DockPanel>
     <ContentControl Content="{Binding OverlayContent}" />
     </Grid>

@@ -14,12 +14,11 @@
   <UserControl.Resources>
     <c:ArrayToTextConverter x:Key="ArrayToTextConverter" />
   </UserControl.Resources>
-
-  <TabControl x:Name="files" ItemsSource="{Binding Files}" SelectedItem="{Binding Selected}">
+  <TabControl ItemsSource="{Binding Files}" SelectedItem="{Binding Selected}">
     <TabControl.ItemTemplate>
       <DataTemplate>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Path}" FontSize="15" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding Path.FileName}" FontSize="15" VerticalAlignment="Center"/>
           <Button Command="{Binding $parent[TabControl].DataContext.CloseSourceFileCommand}" CommandParameter="{Binding}" VerticalAlignment="Top"
             Padding="4" Background="Transparent">
             <Image Height="12">
@@ -32,7 +31,7 @@
       </DataTemplate>
     </TabControl.ItemTemplate>
     <TabControl.ContentTemplate>
-      <DataTemplate DataType="vm:SourceFileViewModel">
+      <DataTemplate>
         <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
       </DataTemplate>
     </TabControl.ContentTemplate>
