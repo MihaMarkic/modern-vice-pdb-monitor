@@ -41,6 +41,6 @@ public class MessagesHistoryViewModel: NotifiableObject
     }
     public void Clear()
     {
-        messagesHistorySource!.Clear();
+        messagesHistorySource?.Clear();
     }
 }
