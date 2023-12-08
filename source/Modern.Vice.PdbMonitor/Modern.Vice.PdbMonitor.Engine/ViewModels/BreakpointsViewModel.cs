@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using FuzzySharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -123,8 +122,11 @@ public class BreakpointsViewModel: NotifiableObject
         {
             var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(new BreakpointViewModel(), BreakpointDetailDialogMode.Create);
             var message =
-                new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>("Breakpoint properties", DialogButton.OK | DialogButton.Cancel, detailViewModel);
-            dispatcher.Dispatch(message);
+                new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>(
+                    "Breakpoint properties", 
+                    DialogButton.OK | DialogButton.Cancel, 
+                    detailViewModel);
+            dispatcher.DispatchShowModalDialog(message);
             var result = await message.Result;
         }
     }
@@ -161,8 +163,11 @@ public class BreakpointsViewModel: NotifiableObject
             {
                 var detailViewModel = scope.CreateScopedBreakpointDetailViewModel(breakpoint, BreakpointDetailDialogMode.Update);
                 var message =
-                    new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>("Breakpoint properties", DialogButton.OK | DialogButton.Cancel, detailViewModel);
-                dispatcher.Dispatch(message);
+                    new ShowModalDialogMessage<BreakpointDetailViewModel, SimpleDialogResult>(
+                        "Breakpoint properties", 
+                        DialogButton.OK | DialogButton.Cancel, 
+                        detailViewModel);
+                dispatcher.DispatchShowModalDialog(message);
                 var result = await message.Result;
             }
         }
