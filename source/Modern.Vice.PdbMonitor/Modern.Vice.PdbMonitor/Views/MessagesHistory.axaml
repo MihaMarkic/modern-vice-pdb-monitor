@@ -53,7 +53,7 @@
         <DataGridTextColumn Header="Time[ms]" CellStyleClasses="RightAlignment" Binding="{Binding StartTime, Converter={StaticResource TickToTextConverter}, Mode=OneWay}" />
         <DataGridTextColumn Header="Span[ms]" CellStyleClasses="RightAlignment" Binding="{Binding Elapsed, Converter={StaticResource TickToTextConverter}, Mode=OneWay}" />
         <DataGridTextColumn Header="Command" Binding="{Binding Command, Converter={StaticResource ViceCommandTypeToTextConverter}, Mode=OneWay}" />
-        <DataGridTextColumn Header="Response" Binding="{Binding Response, Converter={StaticResource ViceResponseTypeToTextConverter} Mode=OneWay}" />
+        <DataGridTextColumn Header="Response" Binding="{Binding Response, Converter={StaticResource ViceResponseTypeToTextConverter}, Mode=OneWay}" />
         <DataGridTextColumn 
           Header="Info" 
           Width="300"
