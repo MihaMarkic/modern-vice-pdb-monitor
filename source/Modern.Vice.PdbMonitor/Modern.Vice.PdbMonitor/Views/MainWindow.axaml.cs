@@ -40,7 +40,7 @@ partial class MainWindow : Window
             // TODO make generic
             DataContext = message,
             MinWidth = 500,
-            Height = 350,
+            Height = 500,
             MinHeight = 350,
             SizeToContent = SizeToContent.Width,
         };

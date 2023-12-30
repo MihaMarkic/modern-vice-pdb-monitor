@@ -167,9 +167,18 @@
       <Button ToolTip.Tip="Starts or continues debugging" Command="{Binding RunCommand}" DockPanel.Dock="Left">
         <StackPanel Orientation="Horizontal">
           <Image>
-            <Image.Source>
-              <svg:SvgImage Source="/Assets/Icons/play.svg"/>
-            </Image.Source>
+            <Image.Styles>
+              <Style Selector="Image:disabled">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/play_disabled.svg"/>
+                </Setter>
+              </Style>
+              <Style Selector="Image">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/play.svg"/>
+                </Setter>
+              </Style>
+            </Image.Styles>
           </Image>
           <TextBlock Margin="4,0,0,0" Text="{Binding RunCommandTitle}" />
         </StackPanel>
@@ -177,9 +186,18 @@
       <Button ToolTip.Tip="Pauses debugging" Command="{Binding PauseCommand}" DockPanel.Dock="Left">
         <StackPanel Orientation="Horizontal">
           <Image>
-            <Image.Source>
-              <svg:SvgImage Source="/Assets/Icons/pause.svg"/>
-            </Image.Source>
+            <Image.Styles>
+              <Style Selector="Image:disabled">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/pause_disabled.svg"/>
+                </Setter>
+              </Style>
+              <Style Selector="Image">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/pause.svg"/>
+                </Setter>
+              </Style>
+            </Image.Styles>
           </Image>
           <TextBlock Margin="4,0,0,0">Pause</TextBlock>
         </StackPanel>
@@ -187,9 +205,18 @@
       <Button ToolTip.Tip="Stops debugging" Command="{Binding StopCommand}" DockPanel.Dock="Left">
         <StackPanel Orientation="Horizontal">
           <Image>
-            <Image.Source>
-              <svg:SvgImage Source="/Assets/Icons/stop.svg"/>
-            </Image.Source>
+            <Image.Styles>
+              <Style Selector="Image:disabled">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/stop_disabled.svg"/>
+                </Setter>
+              </Style>
+              <Style Selector="Image">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/stop.svg"/>
+                </Setter>
+              </Style>
+            </Image.Styles>
           </Image>
           <TextBlock Margin="4,0,0,0">Stop</TextBlock>
         </StackPanel>
@@ -204,9 +231,18 @@
         IsVisible="{Binding !IsAutoUpdateEnabled}">
         <StackPanel Orientation="Horizontal">
           <Image>
-            <Image.Source>
-              <svg:SvgImage Source="/Assets/Icons/sync.svg"/>
-            </Image.Source>
+            <Image.Styles>
+              <Style Selector="Image:disabled">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/sync_disabled.svg"/>
+                </Setter>
+              </Style>
+              <Style Selector="Image">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/sync.svg"/>
+                </Setter>
+              </Style>
+            </Image.Styles>
           </Image>
           <TextBlock Margin="4,0,0,0">Update</TextBlock>
         </StackPanel>
@@ -220,7 +256,7 @@
           VICE
         </TextBlock>
       </StackPanel>
-      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0" IsVisible="{Binding !IsAutoUpdateEnabled}">
+      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0">
         <Image Source="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsUpdatedPdbAvailableConverter}}" />
         <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="4,0,0,0"
           Foreground="{Binding IsUpdatedPdbAvailable, Converter={StaticResource IsConnectedToForegroundConverter}}">

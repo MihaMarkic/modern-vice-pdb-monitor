@@ -1,6 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Text.Json.Serialization;
 using Modern.Vice.PdbMonitor.Core;
-using Newtonsoft.Json;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 
@@ -10,7 +9,7 @@ public class Settings : NotifiableObject
     public string? VicePath { get; set; }
     public bool ResetOnStop { get; set; }
     public bool IsAutoUpdateEnabled { get; set; }
-    public ObservableCollection<string> RecentProjects { get; } = new ObservableCollection<string>();
+    public ObservableCollection<string> RecentProjects { get; set; } = new ObservableCollection<string>();
     [JsonIgnore]
     public string? LastAccessedDirectory => RecentProjects.Count > 0 ? RecentProjects[0] : null;
     public void AddRecentProject(string path)

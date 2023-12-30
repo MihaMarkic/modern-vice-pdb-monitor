@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
-using Newtonsoft.Json;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 
@@ -39,7 +39,7 @@ public class SettingsManager : ISettingsManager
             try
             {
                 string content = File.ReadAllText(path);
-                result = JsonConvert.DeserializeObject<T>(content);
+                result = JsonSerializer.Deserialize<T>(content);
             }
             catch (Exception ex)
             {
@@ -52,7 +52,7 @@ public class SettingsManager : ISettingsManager
     public void Save(Settings settings) => Save(settings, settingsPath, true);
     public void Save<T>(T settings, string path, bool createDirectory)
     {
-        var data = JsonConvert.SerializeObject(settings);
+        var data = JsonSerializer.Serialize(settings);
         try
         {
             if (createDirectory)

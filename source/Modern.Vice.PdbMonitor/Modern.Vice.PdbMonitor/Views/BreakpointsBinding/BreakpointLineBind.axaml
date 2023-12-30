@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:brb="clr-namespace:Modern.Vice.PdbMonitor.Views.BreakpointsBinding"
+             x:DataType="brb:BreakpointLineBind"
+             x:Class="Modern.Vice.PdbMonitor.Views.BreakpointsBinding.BreakpointLineBind">
+  <StackPanel Orientation="Horizontal">
+    <TextBox Text="{Binding FileName.Path}" Width="200" IsEnabled="False" />
+    <Label Margin="4,0">line</Label>
+    <TextBox Text="{Binding LineNumber}"  IsEnabled="False" Width="100" HorizontalContentAlignment="Right" />
+  </StackPanel>
+</UserControl>

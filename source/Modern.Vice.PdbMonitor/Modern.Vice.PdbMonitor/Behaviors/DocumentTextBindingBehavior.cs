@@ -32,7 +32,7 @@ public class DocumentTextBindingBehavior : ClassicBehavior<TextEditor>
 
     void TextChanged(object? sender, EventArgs eventArgs)
     {
-        if (AssociatedObject?.Document != null)
+       if (AssociatedObject?.Document != null)
         {
             Text = AssociatedObject.Document.Text;
         }

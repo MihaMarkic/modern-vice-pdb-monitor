@@ -67,4 +67,8 @@
   <Style Selector="ctl|DockSizer">
     <Setter Property="Background" Value="LightGray" />
   </Style>
+  <!-- handling errors as tooltips -->
+  <Style Selector="DataValidationErrors">
+    <Setter Property="Theme" Value="{StaticResource TooltipDataValidationErrors}" />
+  </Style>
 </Styles>

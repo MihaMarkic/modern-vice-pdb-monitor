@@ -6,4 +6,5 @@ public interface IBindingValidator
     event EventHandler? HasErrorsChanged;
     ImmutableArray<string> Errors { get; }
     bool HasErrors { get; }
+    void Clear();
 }

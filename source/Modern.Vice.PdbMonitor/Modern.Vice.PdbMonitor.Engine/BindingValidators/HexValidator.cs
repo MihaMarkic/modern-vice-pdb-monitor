@@ -11,7 +11,7 @@ public class HexValidator : StringValidator<ushort?>
     readonly string hexFormat;
     public bool AllowEmpty { get; set; }
     public HexValidator(string sourcePropertyName, ushort? initialValue, int digits, Action<ushort?> assignToSource) 
-        : base(sourcePropertyName, initialValue, assignToSource)
+        : base(sourcePropertyName, assignToSource)
     {
         this.digits = digits;
         hexFormat = $"X{digits}";

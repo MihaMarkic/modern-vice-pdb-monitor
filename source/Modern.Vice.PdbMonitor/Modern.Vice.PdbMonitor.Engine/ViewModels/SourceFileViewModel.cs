@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
+using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using PropertyChanged;
 using Righthand.ViceMonitor.Bridge;
@@ -55,7 +56,9 @@ public class SourceFileViewModel : ScopedViewModel
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
         AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
            canExecute: l => l?.Address is not null);
-        var fileBreakpoints = breakpoints.Breakpoints.Where(b => b.File == file).ToImmutableArray();
+        var fileBreakpoints = breakpoints.Breakpoints
+            .Where(b => b.Bind is BreakpointLineBind lineBind && lineBind.File == file)
+            .ToImmutableArray();
         AddBreakpointsToLine(fileBreakpoints);
         breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         _ = ParseFileAsync();
@@ -101,9 +104,9 @@ public class SourceFileViewModel : ScopedViewModel
                     var newBreakpoints = e.OldItems!.Cast<BreakpointViewModel>().ToImmutableArray();
                     foreach (var newBreakpoint in newBreakpoints)
                     {
-                        if (newBreakpoint.File == file)
+                        if (newBreakpoint.Bind is BreakpointLineBind lineBind && lineBind.File == file)
                         {
-                            var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, newBreakpoint.Line));
+                            var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, lineBind.Line));
                             targetLine.RemoveBreakpoint(newBreakpoint);
                         }
                     }
@@ -124,15 +127,15 @@ public class SourceFileViewModel : ScopedViewModel
     {
         foreach (var newBreakpoint in newBreakpoints)
         {
-            if (newBreakpoint.File == file)
+            if (newBreakpoint.Bind is BreakpointLineBind lineBind && lineBind.File == file)
             {
-                var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, newBreakpoint.Line));
+                var targetLine = Lines.Single(l => SourceLinesMatch(l.SourceLine, lineBind.Line));
                 targetLine.AddBreakpoint(newBreakpoint);
             }
         }
     }
     /// <summary>
-    /// Simplifies lines matching to avoid unnecessary comparisions
+    /// Simplifies lines matching to avoid unnecessary comparisons
     /// </summary>
     /// <param name="a"></param>
     /// <param name="b"></param>
@@ -174,7 +177,7 @@ public class SourceFileViewModel : ScopedViewModel
         if (line!.Breakpoints.IsEmpty)
         {
             int lineNumber = Lines.IndexOf(line);
-            await breakpointsViewModel.AddBreakpointAsync(file, line!.SourceLine, lineNumber, label: null, condition: null);
+            await breakpointsViewModel.AddLineBreakpointAsync(file, line!.SourceLine, lineNumber, condition: null);
         }
         else
         {

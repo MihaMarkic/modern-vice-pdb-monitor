@@ -1,10 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using TestsBase;
+using System.Threading;
+using System.Threading.Tasks;
+using AutoFixture;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
+using Modern.Vice.PdbMonitor.Engine.Models;
+using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using NSubstitute;
 using NUnit.Framework;
+using Righthand.ViceMonitor.Bridge.Commands;
+using Righthand.ViceMonitor.Bridge.Responses;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using TestsBase;
 
 namespace Modern.Vice.PdbMonitor.Engine.Test.ViewModels;
 
@@ -20,7 +31,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
 +			lda .string, x	; get character
 			bne -		; check whether last
 		rts";
-
+    //protected BreakpointsViewModel Target;
     protected PdbFile CreateSourceFile() => CreateSourceFile(source, PdbPath.CreateRelative("file.asm"));
     protected PdbFile CreateSourceFile(string source, PdbPath path)
     {
@@ -39,6 +50,14 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             linesToFileMap,
             default, default,
             file.Lines);
+    }
+    [SetUp]
+    public new void SetUp()
+    {
+        SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+        var globals = new Globals(Substitute.For<ILogger<Globals>>(), Substitute.For<ISettingsManager>());
+        fixture.Register(() => globals);
+
     }
     [TestFixture]
     public class FindMatchingLine: BreakpointsViewModelTest
@@ -247,6 +266,67 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             var actual = BreakpointsViewModel.GetFuzzyMatchScore("		lda .string", "		lda .string");
 
             Assert.That(actual, Is.EqualTo(100));
+        }
+    }
+    [TestFixture]
+    public class UpdateBreakpointAsync: BreakpointsViewModelTest
+    {
+        class MockViceBridge : MockViceBridgeCore
+        {
+            protected override ViceResponse ProcessCommand<T>(T command)
+            {
+                return command switch
+                {
+                    CheckpointSetCommand checkpointSet =>
+                        new CheckpointInfoResponse(default, ErrorCode.OK, 1, false, checkpointSet.StartAddress, checkpointSet.EndAddress,
+                            checkpointSet.StopWhenHit, checkpointSet.Enabled, checkpointSet.CpuOperation, false, 0, 0, false),
+                    ConditionSetCommand conditionSet => new EmptyViceResponse(default, ErrorCode.OK),
+                    _ => throw new NotImplementedException()
+                };
+            }
+        }
+        [SetUp]
+        public new void SetUp()
+        {
+            fixture.Register<IViceBridge>(() => new MockViceBridge());
+        }
+        [Test]
+        public async Task WhenConditionChanges_AndBreakpointHasNoCheckpointNumber_ConditionIsUpdatedInSource()
+        {
+            var source = new BreakpointViewModel(
+                stopWhenHit: true,
+                isEnabled: true,
+                BreakpointMode.Exec,
+                bind: null,
+                addressRanges: ImmutableHashSet<BreakpointAddressRange>.Empty.Add(new BreakpointAddressRange(0, 6)),
+                condition: null);
+            var clone = source.Clone();
+            clone.Condition = "A == $20";
+
+            await Target.UpdateBreakpointAsync(clone, source, default);
+
+            Assert.That(source.Condition, Is.EqualTo("A == $20"));
+        }
+        [Test]
+        public async Task WhenSourceHadErrors_UpdateClearsThem()
+        {
+            var source = new BreakpointViewModel(
+                stopWhenHit: true,
+                isEnabled: true,
+                BreakpointMode.Exec,
+                bind: null,
+                addressRanges: ImmutableHashSet<BreakpointAddressRange>.Empty.Add(new BreakpointAddressRange(0, 6)),
+                condition: null)
+            {
+                HasErrors = true,
+                ErrorText = "Oops",
+            };
+            var clone = source.Clone();
+
+            await Target.UpdateBreakpointAsync(clone, source, default);
+
+            Assert.That(source.HasErrors, Is.False);
+            Assert.That(source.ErrorText, Is.Null);
         }
     }
 }

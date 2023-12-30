@@ -19,6 +19,14 @@ public enum BreakpointMode
     Store
 }
 
+public enum BreakpointBindMode
+{
+    None,
+    Line,
+    Label,
+    GlobalVariable,
+}
+
 [Flags]
 public enum DialogButton
 {

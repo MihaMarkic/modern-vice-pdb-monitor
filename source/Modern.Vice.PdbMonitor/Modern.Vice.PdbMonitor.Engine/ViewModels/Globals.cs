@@ -90,8 +90,7 @@ public class Globals : NotifiableObject
         if (Project?.BreakpointsSettingsPath is not null)
         {
             var items = breakpoints.Select(b =>
-                new BreakpointInfo(b.StopWhenHit, b.IsEnabled, b.Mode, b.StartAddress, b.EndAddress, b.Condition,
-                    b.FileName, b.LineNumber, b.Line?.Text, b.Label)
+                new BreakpointInfo(b.StopWhenHit, b.IsEnabled, b.Mode, b.Condition, b.Bind.ConvertFromModel())
                 ).ToImmutableArray();
             var settings = new BreakpointsSettings(items);
             try

@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:cnv="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             Name="control"
+             x:Class="Modern.Vice.PdbMonitor.Views.BreakpointsBinding.BreakpointGlobalVariableBind">
+  <UserControl.Resources>
+  <cnv:PdbVariableAddressRangeToStringConverter x:Key="PdbVariableAddressRangeToStringConverter" />
+  </UserControl.Resources>
+  <ComboBox Width="200" ItemsSource="{Binding #control.GlobalVariables}"
+    SelectedItem="{Binding #control.Variable}">
+    <ComboBox.ItemTemplate>
+      <DataTemplate>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding Name}" />
+          <TextBlock Margin="4,0,0,0" Foreground="Gray"
+            Text="{Binding Converter={StaticResource PdbVariableAddressRangeToStringConverter}}"/>
+        </StackPanel>
+      </DataTemplate>
+    </ComboBox.ItemTemplate>
+  </ComboBox>
+</UserControl>

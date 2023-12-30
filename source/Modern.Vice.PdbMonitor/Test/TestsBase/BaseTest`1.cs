@@ -24,7 +24,7 @@ public abstract class BaseTest<T>
     }
 
     [SetUp]
-    public virtual void SetUp()
+    public void SetUp()
     {
         fixture = new Fixture();
         fixture.Customize(new AutoNSubstituteCustomization());

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="sync_disabled.svg"
+   inkscape:version="1.3.1 (91b66b0783, 2023-11-16)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="3.5761719"
+     inkscape:cx="255.86019"
+     inkscape:cy="256"
+     inkscape:window-width="3840"
+     inkscape:window-height="2066"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <!-- Font Awesome Free 5.15.3 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
+  <path
+     d="M 437.07827,17.524234 441.0009,100.3098 A 242.37912,247.20647 0 0 0 255.83329,12.953375 c -118.75753,0 -217.627348,86.936341 -238.829147,201.857945 a 11.767881,12.002256 0 0 0 11.571749,14.18266 h 48.101214 a 11.767881,12.002256 0 0 0 11.444264,-9.26174 172.50733,175.94307 0 0 1 310.86819,-56.9507 l -99.49743,-4.86092 a 11.767881,12.002256 0 0 0 -12.32686,12.00226 v 47.41891 a 11.767881,12.002256 0 0 0 11.76788,12.00226 h 196.3471 a 11.767881,12.002256 0 0 0 11.76788,-12.00226 V 16.954127 A 11.767881,12.002256 0 0 0 495.28025,4.9518712 H 448.82654 A 11.767881,12.002256 0 0 0 437.07827,17.524234 Z M 255.83329,437.03309 A 172.21313,175.64302 0 0 1 112.6574,359.21846 l 99.83086,4.87092 a 11.767881,12.002256 0 0 0 12.32686,-12.00226 V 304.67821 A 11.767881,12.002256 0 0 0 213.04723,292.67595 H 16.719752 A 11.767881,12.002256 0 0 0 4.9518712,304.67821 v 200.36766 a 11.767881,12.002256 0 0 0 11.7678808,12.00226 h 46.434097 a 11.767881,12.002256 0 0 0 11.767882,-12.60237 l -4.069726,-82.58552 a 242.38893,247.21647 0 0 0 184.981285,87.18638 c 118.76734,0 217.63715,-86.93634 238.83895,-201.85794 a 11.767881,12.002256 0 0 0 -11.57175,-14.18266 h -48.10121 a 11.767881,12.002256 0 0 0 -11.44427,9.26174 172.4583,175.89306 0 0 1 -167.72172,134.76533 z"
+     id="path1"
+     style="fill:none;stroke:#1a1a1a;stroke-width:9.90374;stroke-dasharray:none;stroke-opacity:1" />
+</svg>

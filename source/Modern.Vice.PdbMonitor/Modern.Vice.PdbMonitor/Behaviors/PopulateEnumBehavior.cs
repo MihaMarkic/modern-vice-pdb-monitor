@@ -15,7 +15,7 @@ public class PopulateEnumBehavior : ClassicBehavior<ComboBox>
     public Type? Type { get; set; }
     protected override void Attached()
     {
-        if (Type != null)
+        if (Type is not null)
         {
             var items = mapper.GetMapEnum(Type);
             AssociatedObject!.ItemsSource = items

@@ -15,7 +15,6 @@
              x:DataType="vm:ProjectExplorerViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.ProjectExplorer">
   <UserControl.Resources>
-    <cnv:PassthroughConverter x:Key="PassthroughConverter" />
     <cnv:BoolToFontWeightConverter x:Key="RelativePathToBoldConverter" OnTrue="Bold" OnFalse="Normal" />
   </UserControl.Resources>
   <TreeView x:Name="Tree" ItemsSource="{Binding Nodes}">

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.ComponentModel;
+using System.Net;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -13,6 +14,7 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<SimpleDialogResult>, INotifyDataErrorInfo
 {
     readonly ILogger<BreakpointDetailViewModel> logger;
+    readonly Globals globals;
     readonly BreakpointsViewModel breakpoints;
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
     readonly BreakpointViewModel sourceBreakpoint;
@@ -22,9 +24,10 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
     public RelayCommandAsync SaveCommand { get; }
     public RelayCommandAsync CreateCommand { get; }
     public RelayCommand CancelCommand { get; }
-    public RelayCommand ApplyCommand { get; }
-    public RelayCommand UnbindToFileCommand { get; }
-    public RelayCommand FullUnbindCommand { get; }
+    public RelayCommand ClearBindingCommand { get; }
+    public RelayCommand ConvertBindingToGlobalVariableCommand { get; }
+    //public RelayCommand UnbindToFileCommand { get; }
+    //public RelayCommand FullUnbindCommand { get; }
     public BreakpointDetailDialogMode Mode { get; }
     public bool HasChanges { get; private set; }
     public bool HasErrors { get; private set; }
@@ -41,20 +44,31 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         set => startAddressValidator.UpdateText(value);
     }
     readonly HexValidator startAddressValidator;
-    public bool IsStartAddressReadOnly => IsBreakpointBound;
     public string? EndAddress
     {
         get => endAddressValidator.TextValue;
         set => endAddressValidator.UpdateText(value);
     }
     readonly HexValidator endAddressValidator;
-    public bool IsEndAddressReadOnly => IsBreakpointBound;
-    public bool IsBreakpointBound => Breakpoint.FileName is not null;
-    readonly ImmutableArray<IBindingValidator> validators;
-    public BreakpointDetailViewModel(ILogger<BreakpointDetailViewModel> logger, BreakpointsViewModel breakpoints, BreakpointViewModel breakpoint,
-        BreakpointDetailDialogMode mode)
+    readonly HigherThanBindingValidator endAddressHigherThanStartValidator;
+    /// <summary>
+    /// Used for binding to global variable
+    /// </summary>
+    public PdbVariable? GlobalVariable { get; set; }
+    readonly PdbVariableBindValidator globalVariableBindValidator;
+    public bool IsAddressRangeReadOnly => IsBreakpointBound;
+    public bool IsBreakpointBound => Breakpoint.Bind is not BreakpointNoBind;
+    public bool IsModeEnabled => Breakpoint.Bind is not BreakpointLineBind;
+    public bool IsExecModeEnabled => Breakpoint.Bind is BreakpointLineBind || Breakpoint.Bind is BreakpointNoBind;
+    public bool IsLoadStoreModeEnabled => Breakpoint.Bind is not BreakpointLineBind;
+    public ImmutableArray<PdbVariable> GlobalVariables { get; }
+    public ImmutableDictionary<string, PdbVariable> GlobalVariablesMap { get; }
+    readonly ImmutableDictionary<string, ImmutableArray<IBindingValidator>> validators;
+    public BreakpointDetailViewModel(ILogger<BreakpointDetailViewModel> logger, Globals globals,
+        BreakpointsViewModel breakpoints, BreakpointViewModel breakpoint, BreakpointDetailDialogMode mode)
     {
         this.logger = logger;
+        this.globals = globals;
         this.breakpoints = breakpoints;
         sourceBreakpoint = breakpoint;
         Breakpoint = breakpoint.Clone();
@@ -62,36 +76,106 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         SaveCommand = new RelayCommandAsync(SaveAsync, CanSave);
         CreateCommand = new RelayCommandAsync(CreateAsync, CanSave);
         CancelCommand = new RelayCommand(Cancel);
-        ApplyCommand = new RelayCommand(Apply, CanSave);
+        ClearBindingCommand = new RelayCommand(ClearBinding, () => Breakpoint.Bind is not BreakpointNoBind);
+        ConvertBindingToGlobalVariableCommand = new RelayCommand(ConvertBindingToGlobalVariable);
         Breakpoint.PropertyChanged += Breakpoint_PropertyChanged;
-        UnbindToFileCommand = new RelayCommand(UnbindToFile, () => Breakpoint.Label is not null);
-        FullUnbindCommand = new RelayCommand(FullUnbind, () => IsBreakpointBound);
 
-        startAddressValidator = new HexValidator(nameof(StartAddress), Breakpoint.StartAddress, 4, a => Breakpoint.StartAddress = a ?? 0);
-        endAddressValidator = new HexValidator(nameof(EndAddress), Breakpoint.EndAddress, 4, a => Breakpoint.EndAddress = a ?? 0);
-        validators = ImmutableArray<IBindingValidator>.Empty.Add(startAddressValidator).Add(endAddressValidator);
-        foreach (var validator in validators)
+        GlobalVariables = globals.Project?.DebugSymbols?.GlobalVariables.Values.ToImmutableArray() 
+            ?? ImmutableArray<PdbVariable>.Empty;
+        GlobalVariablesMap = globals.Project?.DebugSymbols?.GlobalVariables
+            ?? ImmutableDictionary<string, PdbVariable>.Empty;
+
+        startAddressValidator = new HexValidator(nameof(StartAddress), 0, 4, a => UpdateStartAddress(a ?? 0));
+        endAddressValidator = new HexValidator(nameof(EndAddress), 0, 4, a => UpdateEndAddress(a ?? 0));
+        endAddressHigherThanStartValidator = new HigherThanBindingValidator(nameof(EndAddress));
+        globalVariableBindValidator = new PdbVariableBindValidator(nameof(GlobalVariable), UpdateGlobalVariable);
+        validators = ImmutableDictionary<string, ImmutableArray<IBindingValidator>>
+            .Empty
+            .Add(nameof(StartAddress), ImmutableArray<IBindingValidator>.Empty.Add(startAddressValidator))
+            .Add(nameof(EndAddress), ImmutableArray<IBindingValidator>.Empty
+                .Add(endAddressValidator).Add(endAddressHigherThanStartValidator))
+            .Add(nameof(GlobalVariable), ImmutableArray<IBindingValidator>.Empty.Add(globalVariableBindValidator));
+        // bind all validators
+        foreach (var validator in validators.Values.SelectMany(a => a))
         {
             validator.HasErrorsChanged += ValidatorHasErrorsChanged;
         }
+
+        switch (Breakpoint.Bind)
+        {
+            case BreakpointNoBind noBind:
+                UpdateNoBindAddressesFromViewModel(noBind);
+                startAddressValidator.UpdateText(StartAddress);
+                endAddressValidator.UpdateText(EndAddress);
+                endAddressHigherThanStartValidator.Update(noBind);
+                break;
+            case BreakpointGlobalVariableBind globalVariableBind:
+                GlobalVariable = GlobalVariablesMap.TryGetValue(globalVariableBind.VariableName, out var tempGlobalVariable)
+                    ? tempGlobalVariable : null;
+                globalVariableBindValidator.Update(GlobalVariable);
+                break;
+        }
+    }
+    void UpdateNoBindAddressesFromViewModel(BreakpointNoBind noBind)
+    {
+        StartAddress = startAddressValidator.ConvertTo(noBind.StartAddress);
+        EndAddress = endAddressValidator.ConvertTo(noBind.EndAddress);
+    }
+    void UpdateStartAddress(ushort address)
+    {
+        if (Breakpoint.Bind is BreakpointNoBind noBind)
+        {
+            Breakpoint.Bind = noBind with
+            {
+                StartAddress = address,
+            };
+        }
+    }
+    void UpdateEndAddress(ushort address)
+    {
+        if (Breakpoint.Bind is BreakpointNoBind noBind)
+        {
+            Breakpoint.Bind = noBind with
+            {
+                EndAddress = address,
+            };
+        }
+    }
+    void UpdateGlobalVariable(PdbVariable variable)
+    {
+        if (Breakpoint.Bind is BreakpointGlobalVariableBind globalVariableBind)
+        {
+            Breakpoint.Bind = globalVariableBind with
+            {
+                VariableName = variable.Name,
+            };
+            Breakpoint.AddressRanges = ImmutableHashSet<BreakpointAddressRange>.Empty
+                .Add(new BreakpointAddressRange((ushort)variable.Start, (ushort)variable.End));
+        }
+    }
+    internal void ClearBinding()
+    {
+        Breakpoint.Bind = BreakpointNoBind.Empty;
+        UpdateNoBindAddressesFromViewModel(BreakpointNoBind.Empty);
+    }
+    internal void ConvertBindingToGlobalVariable()
+    {
+        Breakpoint.Bind = new BreakpointGlobalVariableBind("");
+        if (Breakpoint.Mode == BreakpointMode.Exec)
+        {
+            Breakpoint.Mode = BreakpointMode.Load;
+        }
     }
     internal bool CanSave() => !HasErrors && Breakpoint.IsChangedFrom(sourceBreakpoint);
-    void UnbindToFile()
-    {
-        Breakpoint.Label = null;
-    }
-    void FullUnbind()
-    {
-        UnbindToFile();
-        Breakpoint.File = null;
-        Breakpoint.Line = null;
-        Breakpoint.LineNumber = null;
-    }
     [SuppressPropertyChangedWarnings]
     void OnErrorsChanged(DataErrorsChangedEventArgs e) => ErrorsChanged?.Invoke(this, e);
     void ValidatorHasErrorsChanged(object? sender, EventArgs e)
     {
         var validator = (IBindingValidator)sender!;
+        HasErrors = validators.Values
+            .SelectMany(a => a)
+            .Where(v => v.HasErrors)
+            .Any();
         OnErrorsChanged(new DataErrorsChangedEventArgs(validator.SourcePropertyName));
     }
     void Breakpoint_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -100,47 +184,63 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         SaveError = null;
         SaveCommand.RaiseCanExecuteChanged();
         CreateCommand.RaiseCanExecuteChanged();
-        ApplyCommand.RaiseCanExecuteChanged();
         switch (e.PropertyName)
         {
-            case nameof(BreakpointViewModel.File):
-            case nameof(BreakpointViewModel.Label):
-                UnbindToFileCommand.RaiseCanExecuteChanged();
-                FullUnbindCommand.RaiseCanExecuteChanged();
+            case nameof(BreakpointViewModel.Bind):
+                ClearBindingCommand.RaiseCanExecuteChanged();
                 OnPropertyChanged(nameof(IsBreakpointBound));
-                OnPropertyChanged(nameof(IsStartAddressReadOnly));
-                OnPropertyChanged(nameof(IsEndAddressReadOnly));
-                break;
-            case nameof(StartAddress):
-            case nameof(EndAddress):
-                // validates start and end address, not very efficient since it does it on every change
-                // TODO improve
-                OnErrorsChanged(new DataErrorsChangedEventArgs(nameof(EndAddress)));
+                OnPropertyChanged(nameof(IsModeEnabled));
+                OnPropertyChanged(nameof(IsAddressRangeReadOnly));
+                OnPropertyChanged(nameof(IsExecModeEnabled));
+                OnPropertyChanged(nameof(IsLoadStoreModeEnabled));
+                endAddressHigherThanStartValidator.Update(Breakpoint.Bind as BreakpointNoBind);
+                switch (Breakpoint.Bind)
+                {
+                    case BreakpointNoBind noBind:
+                        Breakpoint.AddressRanges = ImmutableHashSet<BreakpointAddressRange>
+                            .Empty.Add(new(noBind.StartAddress, noBind.EndAddress));
+                        break;
+                    case BreakpointGlobalVariableBind variableBind:
+                        Breakpoint.AddressRanges = ImmutableHashSet<BreakpointAddressRange>.Empty;
+                        globalVariableBindValidator.Update(null);
+                        break;
+                };
+                // clear no bind (address) validators when type is changed
+                if (Breakpoint.Bind is not BreakpointNoBind)
+                {
+                    startAddressValidator.Clear();
+                    endAddressValidator.Clear();
+                    endAddressHigherThanStartValidator.Clear();
+                }
+                if (Breakpoint.Bind is not BreakpointGlobalVariableBind)
+                {
+                    GlobalVariable = null;
+                }
                 break;
         }
     }
     public IEnumerable GetErrors(string? propertyName)
     {
-        var errors = new List<string>();
-        foreach (var validator in validators)
+        if (!string.IsNullOrEmpty(propertyName) && validators.TryGetValue(propertyName, out var propertyValidators))
         {
-            errors.AddRange(validator.Errors);
-        }
-        if (!startAddressValidator.HasErrors && !endAddressValidator.HasErrors)
-        {
-            if (Breakpoint.EndAddress <= Breakpoint.StartAddress)
+            var errors = new List<string>();
+            foreach (var pv in propertyValidators)
             {
-                errors.Add("End Address should be higher than Start Address");
+                errors.AddRange(pv.Errors);
             }
+            HasErrors = errors.Count > 0;
+            return errors.ToImmutableArray();
         }
-        HasErrors = errors.Count > 0;
-        return errors.ToImmutableArray();
+        else
+        {
+            return Enumerable.Empty<string>();
+        }
     }
     async Task SaveAsync()
     {
         try
         {
-            await breakpoints.UpdateBreakpointAsync(Breakpoint);
+            await breakpoints.UpdateBreakpointAsync(Breakpoint, sourceBreakpoint);
             Close?.Invoke(new SimpleDialogResult(DialogResultCode.OK));
         }
         catch (Exception ex)
@@ -165,11 +265,6 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         Close?.Invoke(new SimpleDialogResult(DialogResultCode.Cancel));
     }
 
-    void Apply()
-    {
-        // not implemented at this time
-    }
-
     protected override void OnPropertyChanged(string name = null!)
     {
         base.OnPropertyChanged(name);
@@ -177,8 +272,10 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         {
             case nameof(HasErrors):
                 SaveCommand.RaiseCanExecuteChanged();
-                ApplyCommand.RaiseCanExecuteChanged();
                 CreateCommand.RaiseCanExecuteChanged();
+                break;
+            case nameof(GlobalVariable):
+                globalVariableBindValidator.Update(GlobalVariable);
                 break;
         }
     }

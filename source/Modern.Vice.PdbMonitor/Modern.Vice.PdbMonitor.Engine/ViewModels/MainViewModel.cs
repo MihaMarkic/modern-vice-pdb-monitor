@@ -261,7 +261,7 @@ public class MainViewModel : NotifiableObject
         _ = uiFactory.StartNew(async () =>
         {
             IsUpdatedPdbAvailable = true;
-            if (IsAutoUpdateEnabled)
+            if (IsAutoUpdateEnabled && !executionStatusViewModel.IsDebugging)
             {
                 await UpdatePdbAsync();
             }
@@ -269,12 +269,22 @@ public class MainViewModel : NotifiableObject
     }
     void PrgFilePathChanged(PrgFilePathChangedMessage message)
     {
-        _ = UpdatePdbAsync();
+        IsUpdatedPdbAvailable = true;
+        if (!executionStatusViewModel.IsDebugging)
+        {
+            _ = UpdatePdbAsync();
+        }
     }
     void OnShowModalDialog(ShowModalDialogMessageCore message)
     {
         ShowModalDialog?.Invoke(message);
     }
+    /// <summary>
+    /// Updates debugging symbols.
+    /// </summary>
+    /// <remarks>
+    /// Shouldn't be called when debugging is ongoing.</remarks>
+    /// <returns></returns>
     async Task UpdatePdbAsync()
     {
         IsParsingPdb = true;
@@ -342,6 +352,11 @@ public class MainViewModel : NotifiableObject
     internal void ToggleIsAutoUpdateEnabled()
     {
         IsAutoUpdateEnabled = !IsAutoUpdateEnabled;
+        // when turning on auto update, apply changes if any are pending
+        if (IsAutoUpdateEnabled && IsUpdatedPdbAvailable && !executionStatusViewModel.IsDebugging)
+        {
+            _ = UpdatePdbAsync();
+        }
     }
     internal async Task StopDebuggingAsync()
     {
@@ -379,16 +394,16 @@ public class MainViewModel : NotifiableObject
                     viceProcess.Exited += ViceProcess_Exited;
                 }
             }
+            bool hasPdbChanged = IsUpdatedPdbAvailable;
+            if (IsUpdatedPdbAvailable)
+            {
+                await UpdatePdbAsync();
+            }
             executionStatusViewModel.InitializeForDebugging();
             executionStatusViewModel.IsStartingDebugging = true;
             executionStatusViewModel.IsDebugging = true;
             try
             {
-                bool hasPdbChanged = IsUpdatedPdbAvailable;
-                if (IsUpdatedPdbAvailable)
-                {
-                    await UpdatePdbAsync();
-                }
                 startDebuggingCts = new CancellationTokenSource();
                 if (!viceBridge.IsConnected)
                 {

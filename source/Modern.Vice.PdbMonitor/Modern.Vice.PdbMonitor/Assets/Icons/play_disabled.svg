@@ -3,7 +3,7 @@
    viewBox="0 0 448 512"
    version="1.1"
    id="svg1"
-   sodipodi:docname="play.svg"
+   sodipodi:docname="play_disabled.svg"
    inkscape:version="1.3.1 (91b66b0783, 2023-11-16)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -31,7 +31,7 @@
      inkscape:current-layer="svg1" />
   <!-- Font Awesome Free 5.15.3 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) -->
   <path
-     d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z"
+     d="M 420.01617,215.47906 75.714155,11.360544 C 47.739616,-5.2161159 4.8974907,10.870111 4.8974907,51.87037 v 408.13895 c 0,36.78253 39.8099203,58.95014 70.8166643,40.50983 L 420.01617,296.49872 c 30.7133,-18.14605 30.81111,-62.87361 0,-81.01966 z"
      id="path1"
-     style="fill:#008000" />
+     style="fill:none;stroke:#1a1a1a;stroke-width:9.79498;stroke-dasharray:none;stroke-opacity:1" />
 </svg>
