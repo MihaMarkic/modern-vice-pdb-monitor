@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>1.0.0-beta.1</Version>
+    <Version>1.0.0-alpha.3</Version>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
@@ -66,6 +66,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.0.6" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.5" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.0.6" />
     <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.0.6" />
     <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.0.2" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.6" />
