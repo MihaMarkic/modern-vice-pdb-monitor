@@ -1,4 +1,5 @@
-﻿using Compiler.Oscar64.Models;
+﻿using System.Collections.Immutable;
+using Compiler.Oscar64.Models;
 using Compiler.Oscar64.Services.Implementation;
 using NUnit.Framework;
 using TestsBase;
@@ -114,17 +115,94 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
         public async Task GiveSampleVoidType_ReturnsVoidType()
         {
             const string source = """
+                {
+                    "types": [
+                        {"name": "", "typeid": 1, "size": 0}
+                    ]
+                }
+                """;
+
+            var actual = await Target.LoadContentAsync(source);
+
+            var type = actual!.Types.Single();
+            Assert.That(type, Is.TypeOf<Oscar64VoidType>());
+        }
+        [Test]
+        public async Task GiveSampleVariable_WithReferences_ParsesReferencesCorrectly()
         {
-            "types": [
-                {"name": "", "typeid": 1, "size": 0}
+            const string source = """
+                {
+                    "variables": [
+                        {
+                            "name": "Tubo",
+                            "start": 2290,
+                            "end": 2292,
+                            "typeid": 2,
+                            "references": [
+                                {
+                                    "source": "D:/Temp/oscar64/memory_breakpoints/main.cpp",
+                                    "line": 20,
+                                    "column": 10
+                                },
+                                {
+                                    "source": "D:/Temp/oscar64/memory_breakpoints/main.cpp",
+                                    "line": 21,
+                                    "column": 11
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+            var actual = await Target.LoadContentAsync(source);
+
+            var variable = actual?.Variables.Single();
+            Assert.That(variable, Is.Not.Null);
+            var expectedReferences = ImmutableArray<SymbolReference>.Empty
+                .Add(new SymbolReference("D:/Temp/oscar64/memory_breakpoints/main.cpp", 20, 10))
+                .Add(new SymbolReference("D:/Temp/oscar64/memory_breakpoints/main.cpp", 21, 11));
+            Assert.That(variable!.References, Is.EquivalentTo(expectedReferences));
+        }
+        [Test]
+        public async Task GiveSampleFunction_WithReferences_ParsesReferencesCorrectly()
+        {
+            const string source = """
+        {
+            "functions": [
+                {
+                    "name": "Test",
+                    "xname": "Test()->i16",
+                    "start": 2274,
+                    "end": 2289,
+                    "typeid": 10,
+                    "source": "D:/Temp/oscar64/memory_breakpoints/main.cpp",
+                    "line": 5,
+                    "references": [
+                        {
+                            "source": "D:/Temp/oscar64/memory_breakpoints/main.cpp",
+                            "line": 20,
+                            "column": 10
+                        },
+                        {
+                            "source": "D:/Temp/oscar64/memory_breakpoints/main.cpp",
+                            "line": 21,
+                            "column": 11
+                        }
+                    ]
+                }
             ]
         }
         """;
 
             var actual = await Target.LoadContentAsync(source);
 
-            var type = actual!.Types.Single();
-            Assert.That(type, Is.TypeOf<Oscar64VoidType>());
+            var function = actual?.Functions.Single();
+            Assert.That(function, Is.Not.Null);
+            var expectedReferences = ImmutableArray<SymbolReference>.Empty
+                .Add(new SymbolReference("D:/Temp/oscar64/memory_breakpoints/main.cpp", 20, 10))
+                .Add(new SymbolReference("D:/Temp/oscar64/memory_breakpoints/main.cpp", 21, 11));
+            Assert.That(function!.References, Is.EquivalentTo(expectedReferences));
         }
     }
 }

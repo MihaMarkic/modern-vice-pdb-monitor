@@ -16,10 +16,16 @@ public enum MemoryBlockType
     Start,
     End
 }
+public interface IWithReferences
+{
+    ImmutableArray<SymbolReference> References { get; }
+}
 public record MemoryBlock(string Name, string XName, ushort Start, ushort End, string Type, string Source, [JsonProperty("line")] int LineNumber);
-public record Variable(string Name, ushort Start, ushort End, ushort? Base, int? Enter, int? Leave, int TypeId);
-public  record Function(string Name, string XName, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber, 
-    ImmutableArray<FunctionLine> Lines, ImmutableArray<Variable> Variables);
+public record Variable(string Name, ushort Start, ushort End, ushort? Base, int? Enter, int? Leave, int TypeId,
+    ImmutableArray<SymbolReference> References): IWithReferences;
+public record Function(string Name, string XName, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber, 
+    ImmutableArray<FunctionLine> Lines, ImmutableArray<Variable> Variables, ImmutableArray<SymbolReference> References): IWithReferences;
+public record SymbolReference(string Source, int Line, int Column);
 public record FunctionLine(ushort Start, ushort End, string Source, [JsonProperty("Line")]int LineNumber);
 
 [JsonConverter(typeof(JsonSubtypes), "type")]

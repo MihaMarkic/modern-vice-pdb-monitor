@@ -1,7 +1,9 @@
 ﻿using System.Collections.Immutable;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Compiler.Oscar64.Models;
 using Compiler.Oscar64.Services.Implementation;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Services.Abstract;
 
@@ -12,10 +14,12 @@ public class Oscar64CompilerServices : ICompilerServices
     public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     readonly Oscar64DbjParser parser;
     readonly IFileService fileService;
-    public Oscar64CompilerServices(Oscar64DbjParser parser, IFileService fileService)
+    readonly ILogger<Oscar64CompilerServices> logger;
+    public Oscar64CompilerServices(Oscar64DbjParser parser, IFileService fileService, ILogger<Oscar64CompilerServices> logger)
     {
         this.parser = parser;
         this.fileService = fileService;
+        this.logger = logger;
     }
     public async Task<(Pdb? Pdb, string? ErrorMessage)> ParseDebugSymbolsAsync(string projectDirectory, string prgPath, 
         CancellationToken ct)
@@ -57,22 +61,27 @@ public class Oscar64CompilerServices : ICompilerServices
         var pdbTypes = CreatePdbTypes(debugFile.Types);
         var globalVariables = CreateVariables(pdbTypes, debugFile.Variables);
 
-        var pdbLinesAndFunctions = CreatePdbLines(projectDirectory, debugFile.Functions, 
-            emptyPdbFiles, paths, pdbTypes);
-        var pdbFiles = pdbLinesAndFunctions.Select(p => p.Key with { Lines = p.Value.Lines, Functions = p.Value.Functions })
+        var (pdbLinesAndFunctions, localVariablesMap) = CreatePdbLines(projectDirectory, debugFile.Functions, emptyPdbFiles, paths, pdbTypes);
+        var pdbFiles = pdbLinesAndFunctions.Select(
+            p => p.Key with { Lines = p.Value.Lines, Functions = p.Value.Functions })
             .ToImmutableArray();
         var lines = pdbFiles.SelectMany(f => f.Lines).ToImmutableArray();
         var finalLineToFileMap = (from f in pdbFiles
                                   from l in f.Lines
                                   select new { File = f, Line = l })
-                          .ToImmutableDictionary(p => p.Line, p => p.File, RhReferenceEqualityComparer<PdbLine>.Instance);
+                          .ToImmutableDictionary(p => p.Line, p => p.File, 
+                                RhReferenceEqualityComparer<PdbLine>.Instance);
+        var pdbFilesMap = pdbFiles.ToImmutableDictionary(f => f.Path, f => f);
+        var symbolReferencesMap = CreateSymbolReferences(projectDirectory, debugFile, pdbFilesMap, globalVariables, localVariablesMap);
+
         var pdb = new Pdb(
-            pdbFiles.ToImmutableDictionary(f => f.Path, f => f),
+            pdbFilesMap,
             ImmutableDictionary<string, PdbLabel>.Empty,
             finalLineToFileMap,
             globalVariables,
             pdbTypes,
-            lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray());
+            lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray(),
+            symbolReferencesMap);
 
         return (pdb, null);
     }
@@ -97,7 +106,13 @@ public class Oscar64CompilerServices : ICompilerServices
         }
 
     }
-    internal record VariableWithRange(VariableRange Range, PdbVariable Variable);
+    /// <summary>
+    /// Stores range of the variable, mapped <see cref="PdbVariable"/> and source <see cref="Variable"/>.
+    /// </summary>
+    /// <param name="Range"></param>
+    /// <param name="Variable"></param>
+    /// <param name="Source"></param>
+    internal record VariableWithRange(VariableRange Range, PdbVariable Variable, Variable Source);
     /// <summary>
     /// Sorts and arranges possibly nested variables.
     /// </summary>
@@ -114,12 +129,12 @@ public class Oscar64CompilerServices : ICompilerServices
         }
 
         var query = from v in variables
-                    let pdb = ConvertVariableToPdb(v, types)
-                    where pdb is not null
+                    let pdbVariable = ConvertVariableToPdb(v, types)
+                    where pdbVariable is not null
                     let p = new VariableWithRange(
                         v.Enter is not null && v.Leave is not null
                             ? new VariableRange(v.Enter.Value, v.Leave.Value) : VariableRange.All,
-                        pdb)
+                        pdbVariable, v)
                     group p by p.Variable.Name;
         var map = query.ToImmutableDictionary(
             g => g.Key,
@@ -240,7 +255,10 @@ public class Oscar64CompilerServices : ICompilerServices
         return new PdbEnumType(source.TypeId, source.Name, source.Size, variableType, members);
     }
 
-    internal ImmutableDictionary<PdbFile, (ImmutableArray<PdbLine> Lines, ImmutableDictionary<string, PdbFunction> Functions)>
+    internal (
+        ImmutableDictionary<PdbFile, (ImmutableArray<PdbLine> Lines, ImmutableDictionary<string, PdbFunction> Functions)> FilesMap,
+        ImmutableDictionary<Variable, PdbVariable> VariablesMap
+        )
         CreatePdbLines(
             string projectDirectory,
             ImmutableArray<Function> functions, 
@@ -256,6 +274,8 @@ public class Oscar64CompilerServices : ICompilerServices
             var textLines = fileService.ReadAllLines(absolutePath);
             return new { File = f.Value, Text = textLines };
         }).ToImmutableDictionary(r => r.File, r => r.Text);
+
+        var variablesMapBuilder = ImmutableDictionary.CreateBuilder<Variable, PdbVariable>();
 
         // prepares slots for resulting PdbLines
         // Dictionary of file -> pdb lines array per each source line
@@ -274,6 +294,10 @@ public class Oscar64CompilerServices : ICompilerServices
             var linesBuilder = new List<PdbLine>(f.Lines.Length);
             // first creates nested map of variables
             var lineVariablesMap = CreateLineVariables(types, f.Variables);
+            // adds generated variables to global list of mappings between variables and pdb variables
+            variablesMapBuilder.AddRange(lineVariablesMap.Values
+                .SelectMany(v => v)
+                .ToDictionary(r => r.Source, r => r.Variable));
             // then checks if it has any nested variable
             bool hasNestedVariables = lineVariablesMap.Values
                 .Any(l => l.Any(v => v.Range != VariableRange.All));
@@ -351,7 +375,127 @@ public class Oscar64CompilerServices : ICompilerServices
             f => f.Key,
             f => f.Value.ToImmutableDictionary(d => d.XName, d => d));
         var linesResult = linesMap.ToImmutableDictionary(f => f.Key, f => f.Value.ToImmutableArray());
-        return files.Values.ToImmutableDictionary(f => f, f => (linesResult[f], functionsResult[f]));
+        return (
+            files.Values.ToImmutableDictionary(f => f, f => (linesResult[f], functionsResult[f])),
+            variablesMapBuilder.ToImmutable()
+            );
+    }
+    internal enum PopulateSymbolReferenceTarget
+    {
+        GlobalVariables,
+        LocalVariables,
+        Functions
+    }
+
+    internal class LineSymbolReferencesBuilder
+    {
+        public List<LineSymbolReference<PdbVariable>> GlobalVariables { get; } = new();
+        public List<LineSymbolReference<PdbVariable>> LocalVariables { get; } = new();
+        public List<LineSymbolReference<PdbFunction>> Functions { get; } = new();
+        public LineSymbolReferences ToImmutable() => new LineSymbolReferences(GlobalVariables, LocalVariables, Functions);
+    }
+    /// <summary>
+    /// Creates symbol references for each line.
+    /// </summary>
+    /// <param name="projectDirectory"></param>
+    /// <param name="debugFile"></param>
+    /// <param name="filesMap"></param>
+    /// <param name="globalVariables"></param>
+    /// <param name="localVariablesMap"></param>
+    /// <returns></returns>
+    internal ImmutableDictionary<PdbLine, LineSymbolReferences> CreateSymbolReferences(
+        string projectDirectory, DebugFile debugFile, ImmutableDictionary<PdbPath, PdbFile> filesMap,
+        ImmutableDictionary<string, PdbVariable> globalVariables, 
+        ImmutableDictionary<Variable, PdbVariable> localVariablesMap)
+    {
+        var builder = new Dictionary<PdbLine, LineSymbolReferencesBuilder>();
+        foreach (var globalVariable in debugFile.Variables)
+        {
+            AddReferences(globalVariable, PopulateSymbolReferenceTarget.GlobalVariables);
+        }
+        foreach (var function in debugFile.Functions)
+        {
+            AddReferences(function, PopulateSymbolReferenceTarget.Functions);
+            foreach (var variable in function.Variables)
+            {
+                AddReferences(variable, PopulateSymbolReferenceTarget.LocalVariables);
+            }
+        }
+        void AddReferences(IWithReferences withReferences, PopulateSymbolReferenceTarget target)
+        {
+            if (!withReferences.References.IsDefaultOrEmpty)
+            {
+                foreach (var sr in withReferences.References)
+                {
+                    var pdbPath = PdbPath.Create(projectDirectory, sr.Source);
+                    if (filesMap.TryGetValue(pdbPath, out var file) && file.Lines.Length >= sr.Line - 1)
+                    {
+                        var line = file.Lines[sr.Line - 1];
+                        if (!builder.TryGetValue(line, out var lineSymbolReferencesBuilder))
+                        {
+                            lineSymbolReferencesBuilder = new LineSymbolReferencesBuilder();
+                            builder[line] = lineSymbolReferencesBuilder;
+                        }
+                        switch (target)
+                        {
+                            case PopulateSymbolReferenceTarget.GlobalVariables:
+                                {
+                                    var source = (Variable)withReferences;
+                                    if (globalVariables.TryGetValue(source.Name, out var globalVariable))
+                                    {
+                                        lineSymbolReferencesBuilder.GlobalVariables.Add(
+                                                new LineSymbolReference<PdbVariable>(sr.Column, source.Name.Length, globalVariable));
+                                    }
+                                    else
+                                    {
+                                        logger.LogError("Failed to find global variable {GlobalVariable}", source.Name);
+                                    }
+                                }
+                                break;
+                            case PopulateSymbolReferenceTarget.LocalVariables:
+                                {
+                                    var source = (Variable)withReferences;
+                                    if (localVariablesMap.TryGetValue(source, out var variable))
+                                    {
+                                        lineSymbolReferencesBuilder.LocalVariables.Add(
+                                                new LineSymbolReference<PdbVariable>(sr.Column, source.Name.Length, variable));
+                                    }
+                                    else
+                                    {
+                                        logger.LogError("Failed to find local variable {LocalVariable} in function {Function}", 
+                                            source.Name, line.Function?.Name);
+                                    }
+                                }
+                                break;
+                            case PopulateSymbolReferenceTarget.Functions:
+                                {
+                                    var source = (Function)withReferences;
+                                    var functionPdbPath = PdbPath.Create(projectDirectory, source.Source);
+                                    if (filesMap.TryGetValue(functionPdbPath, out var functionFile)
+                                        && functionFile.Functions.TryGetValue(source.XName, out var function))
+                                    {
+                                        lineSymbolReferencesBuilder.Functions.Add(
+                                                new LineSymbolReference<PdbFunction>(sr.Column, function.Name.Length, function));
+                                    }
+                                    else
+                                    {
+                                        logger.LogError("Failed to find function {Function}", source.XName);
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        logger.LogError("Failed to find source file {Path}", pdbPath);
+                    }
+                }
+            }
+        }
+        return builder
+            .ToImmutableDictionary(
+                p => p.Key,
+                p => p.Value.ToImmutable());
     }
     internal ImmutableDictionary<string, PdbVariable> GetLineVariables(int lineNumber,
         ImmutableDictionary<string, ImmutableArray<VariableWithRange>> variablesMap)

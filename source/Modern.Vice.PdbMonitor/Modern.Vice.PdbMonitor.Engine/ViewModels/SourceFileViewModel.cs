@@ -1,11 +1,15 @@
 ﻿using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
+using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using PropertyChanged;
+using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
@@ -13,9 +17,11 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 public class SourceFileViewModel : ScopedViewModel
 {
+    readonly ILogger<SourceFileViewModel> logger;
     readonly Globals globals;
     readonly BreakpointsViewModel breakpointsViewModel;
     readonly PdbFile file;
+    readonly IDispatcher dispatcher;
     readonly IViceBridge viceBridge;
     readonly IServiceProvider serviceProvider;
     readonly TaskFactory uiFactory;
@@ -30,6 +36,9 @@ public class SourceFileViewModel : ScopedViewModel
     public int CursorColumn { get; set; }
     public int CursorRow { get; protected set; }
     public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
+    public RelayCommand<PdbFunction> GoToImplementationCommand { get; }
+    public object? ContextSymbolReference { get; set; }
+    public PdbFunction? ContextFunctionReference => ContextSymbolReference as PdbFunction;
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
     public SourceLanguage? SourceLanguage => globals.Project?.SourceLanguage;
 
@@ -42,10 +51,13 @@ public class SourceFileViewModel : ScopedViewModel
     /// Constructor arguments are passed by <see cref="ServiceProviderExtension.CreateSourceFileViewModel"/>.
     /// It is mandatory that they are in sync.
     /// </remarks>
-    public SourceFileViewModel(Globals globals, IViceBridge viceBridge, IServiceProvider serviceProvider,
+    public SourceFileViewModel(ILogger<SourceFileViewModel> logger,
+        Globals globals, IViceBridge viceBridge, IDispatcher dispatcher, IServiceProvider serviceProvider,
         PdbFile file, ImmutableArray<LineViewModel> lines, BreakpointsViewModel breakpoints)
     {
+        this.logger = logger;
         this.globals =  globals;
+        this.dispatcher = dispatcher;
         this.viceBridge = viceBridge;
         this.serviceProvider = serviceProvider;
         this.breakpointsViewModel = breakpoints;
@@ -62,6 +74,7 @@ public class SourceFileViewModel : ScopedViewModel
         AddBreakpointsToLine(fileBreakpoints);
         breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         _ = ParseFileAsync();
+        GoToImplementationCommand = new RelayCommand<PdbFunction>(GoToImplementation, f => f is not null);
     }
     async Task ParseFileAsync()
     {
@@ -86,6 +99,22 @@ public class SourceFileViewModel : ScopedViewModel
     void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
     {
         uiFactory.StartNew(() => AddOrRemoveBreakpointCommand.RaiseCanExecuteChanged());
+    }
+    private void GoToImplementation(PdbFunction? function)
+    {
+        if (function is not null)
+        {
+            var functionFile = globals.Project?.DebugSymbols?.Files[function.DefinitionFile];
+            if (functionFile is not null)
+            {
+                dispatcher.Dispatch(new OpenSourceFileMessage(functionFile, function.LineNumber));
+            }
+            else
+            {
+                logger.LogError("Couldn't find function {FunctionName} definition file {DefinitionFile}",
+                    function.Name, function.DefinitionFile);
+            }
+        }
     }
 
     void Breakpoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -122,7 +151,6 @@ public class SourceFileViewModel : ScopedViewModel
                 break;
         }
     }
-
     void AddBreakpointsToLine(ImmutableArray<BreakpointViewModel> newBreakpoints)
     {
         foreach (var newBreakpoint in newBreakpoints)
@@ -193,6 +221,17 @@ public class SourceFileViewModel : ScopedViewModel
         OnExecutionRowChanged(EventArgs.Empty);
     }
 
+    protected override void OnPropertyChanged([CallerMemberName] string name = default!)
+    {
+        base.OnPropertyChanged(name);
+        switch (name)
+        {
+            case nameof(ContextSymbolReference):
+                GoToImplementationCommand.RaiseCanExecuteChanged();
+                break;
+        }
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -213,13 +252,15 @@ public class LineViewModel : NotifiableObject
     public int Row { get; }
     public ushort? Address { get; }
     public string Content { get; }
-    public LineViewModel(PdbLine sourceLine, int row, string content)
+    public LineSymbolReferences SymbolReferences { get; }
+    public LineViewModel(PdbLine sourceLine, int row, string content, LineSymbolReferences symbolReferences)
     {
         Breakpoints = ImmutableArray<BreakpointViewModel>.Empty;
         SourceLine = sourceLine;
         Row = row;
         Content = content;
         Address = sourceLine.Addresses.FirstOrDefault()?.StartAddress;
+        SymbolReferences = symbolReferences;
     }
     public void ClearBreakpoints()
     {

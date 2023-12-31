@@ -2,11 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              xmlns:aee="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:SourceFileViewModel"
+             x:Name="control"
              x:Class="Modern.Vice.PdbMonitor.Views.SourceFileViewer">
   <ae:TextEditor Name="Editor"
         FontFamily="{StaticResource CodeFont}"
@@ -18,7 +21,11 @@
         HorizontalScrollBarVisibility="Auto"
         VerticalScrollBarVisibility="Auto"
         FontWeight="Light"
-        FontSize="14">
+        FontSize="14"
+        PointerHover="Editor_PointerHover"
+        PointerPressed="Editor_PointerPressed"
+        PointerHoverStopped="Editor_PointerHoverStopped"
+        PointerMoved="Editor_PointerMoved">
     <ae:TextEditor.Styles>
       <Style Selector="aee|TextArea">
         <Setter Property="SelectionBrush" Value="#66ffff80" />
@@ -27,5 +34,11 @@
     <ae:TextEditor.Options>
       <ae:TextEditorOptions ShowTabs="False" />
     </ae:TextEditor.Options>
+    <ae:TextEditor.ContextMenu>
+      <ContextMenu>
+        <MenuItem Header="Go To Implementation" Command="{Binding GoToImplementationCommand}"
+          CommandParameter="{Binding ContextFunctionReference}"/>
+      </ContextMenu>
+    </ae:TextEditor.ContextMenu>
   </ae:TextEditor>
 </UserControl>

@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -82,17 +84,18 @@ public class SourceFileViewerViewModel : NotifiableObject
     {
         var oldFiles = Files.ToImmutableArray();
         var filesToDelete = new List<int>();
+        var debugSymbols = (globals.Project?.DebugSymbols).ValueOrThrow();
         for (int i = 0; i < oldFiles.Length; i++)
         {
             var oldFile = Files[i];
-            var newFile = globals.Project?.DebugSymbols?.Files[oldFile.Path];
+            var newFile = debugSymbols.Files[oldFile.Path];
             if (newFile is null)
             {
                 filesToDelete.Add(i);
             }
             else
             {
-                var item = CreateSourceFileViewModel(newFile);
+                var item = CreateSourceFileViewModel(newFile, debugSymbols.SymbolReferences);
                 Files[i] = item;
             }
             oldFile.Scope!.Dispose();
@@ -103,10 +106,17 @@ public class SourceFileViewerViewModel : NotifiableObject
             Files.RemoveAt(fileIndexToDelete);
         }
     }
-    internal SourceFileViewModel CreateSourceFileViewModel(PdbFile file)
+    internal SourceFileViewModel CreateSourceFileViewModel(PdbFile file, 
+        ImmutableDictionary<PdbLine, LineSymbolReferences> symbolReferences)
     {
         var content = file.Lines
-            .Select((l, i) => new LineViewModel(l, l.LineNumber, l.Text))
+            .Select((l, i) => { 
+                if (!symbolReferences.TryGetValue(l, out var sr))
+                {
+                    sr = LineSymbolReferences.Empty;
+                }
+                return new LineViewModel(l, l.LineNumber, l.Text, sr); 
+            })
             .ToImmutableArray();
         var item = serviceProvider.CreateScopedSourceFileViewModel(file, content);
         return item;
@@ -115,9 +125,10 @@ public class SourceFileViewerViewModel : NotifiableObject
     {
         var pdbFile = message!.File;
         var item = Files.FirstOrDefault(f => f.Path == pdbFile.Path);
+        var debugSymbols = (globals.Project?.DebugSymbols).ValueOrThrow();
         if (item is null)
         {
-            item = CreateSourceFileViewModel(pdbFile);
+            item = CreateSourceFileViewModel(pdbFile, debugSymbols.SymbolReferences);
             Files.Add(item);
         }
         if (item is not null)

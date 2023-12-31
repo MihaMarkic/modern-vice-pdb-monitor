@@ -49,7 +49,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             ImmutableDictionary<string, PdbLabel>.Empty,
             linesToFileMap,
             default, default,
-            file.Lines);
+            file.Lines,
+            ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
     }
     [SetUp]
     public new void SetUp()
@@ -106,7 +107,8 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
                 ImmutableDictionary<string, PdbLabel>.Empty,
                 linesToFileMap.ToImmutableDictionary(),
                 default, default,
-                lines);
+                lines,
+                ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
 
             var actual = BreakpointsViewModel.FindMatchingLine(pdb, sourceFile, 
                 new BreakpointsViewModel.LineSearchCriteria(sourceLine.LineNumber, sourceLine.Text));

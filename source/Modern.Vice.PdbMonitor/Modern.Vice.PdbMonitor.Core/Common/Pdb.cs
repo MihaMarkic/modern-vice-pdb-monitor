@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -16,14 +15,16 @@ public record Pdb(ImmutableDictionary<PdbPath, PdbFile> Files,
         ImmutableDictionary<PdbLine, PdbFile> LinesToFilesMap,
         ImmutableDictionary<string, PdbVariable> GlobalVariables,
         ImmutableDictionary<int, PdbType> Types,
-        ImmutableArray<PdbLine> LinesWithAddress)
+        ImmutableArray<PdbLine> LinesWithAddress,
+        ImmutableDictionary<PdbLine, LineSymbolReferences> SymbolReferences)
 {
     public static Pdb Empty { get; } = new Pdb(ImmutableDictionary<PdbPath, PdbFile>.Empty,
         ImmutableDictionary<string, PdbLabel>.Empty,
         ImmutableDictionary<PdbLine, PdbFile>.Empty,
         ImmutableDictionary<string, PdbVariable>.Empty,
         ImmutableDictionary<int, PdbType>.Empty,
-        ImmutableArray<PdbLine>.Empty);
+        ImmutableArray<PdbLine>.Empty,
+        ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
     public PdbFile? GetFileOfLine(PdbLine line) => LinesToFilesMap[line];
 }
 public sealed record PdbFile(PdbPath Path, ImmutableDictionary<string, PdbFunction> Functions, ImmutableArray<PdbLine> Lines)
@@ -281,5 +282,70 @@ public sealed class PdbLineReferenceEqualityComparer : IEqualityComparer<PdbLine
     public int GetHashCode([DisallowNull] PdbLine obj)
     {
         throw new NotImplementedException();
+    }
+}
+/// <summary>
+/// Provides link from line to symbol reference.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <param name="Column"></param>
+/// <param name="Symbol"></param>
+public sealed record LineSymbolReference<T>(int Column, int Length, T Symbol);
+public sealed record LineSymbolReferences
+{
+    public static LineSymbolReferences Empty { get; } = new LineSymbolReferences();
+    /// <summary>
+    /// Provides references to all global variables.
+    /// </summary>
+    public ImmutableArray<LineSymbolReference<PdbVariable>> GlobalVariables { get; }
+    /// <summary>
+    /// Provides references to all local variables.
+    /// </summary>
+    public ImmutableArray<LineSymbolReference<PdbVariable>> LocalVariables { get; }
+    /// <summary>
+    /// Provides references to all function call occurrences. 
+    /// </summary>
+    public ImmutableArray<LineSymbolReference<PdbFunction>> Functions { get; }
+    public LineSymbolReferences()
+    {
+        GlobalVariables = ImmutableArray<LineSymbolReference<PdbVariable>>.Empty;
+        LocalVariables = ImmutableArray<LineSymbolReference<PdbVariable>>.Empty;
+        Functions = ImmutableArray<LineSymbolReference<PdbFunction>>.Empty;
+    }
+    public LineSymbolReferences(IEnumerable<LineSymbolReference<PdbVariable>> globalVariables,
+        IEnumerable<LineSymbolReference<PdbVariable>> localVariables,
+        IEnumerable<LineSymbolReference<PdbFunction>> functions)
+    {
+        GlobalVariables = globalVariables.OrderBy(r => r.Column).ToImmutableArray();
+        LocalVariables = localVariables.OrderBy(r => r.Column).ToImmutableArray();
+        Functions = functions.OrderBy(r => r.Column).ToImmutableArray();
+    }
+}
+
+public static class LineSymbolReferencesExtension
+{
+    /// <summary>
+    /// Searches for a symbol that matches the column.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="column"></param>
+    /// <returns></returns>
+    public static T? GetAtColumn<T>(this ImmutableArray<LineSymbolReference<T>> source,
+        int column)
+        where T: class
+    {
+        foreach (var reference in source)
+        {
+            if (reference.Column > column)
+            {
+                return null;
+            }
+            if (reference.Column <= column && reference.Column + reference.Length >= column)
+            {
+                return reference.Symbol;
+            }
+        }
+        return null;
     }
 }

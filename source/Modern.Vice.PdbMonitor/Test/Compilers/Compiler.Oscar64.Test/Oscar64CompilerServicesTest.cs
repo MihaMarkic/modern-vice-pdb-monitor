@@ -44,8 +44,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
             var types = ImmutableDictionary<int, PdbType>.Empty
                 .Add(0, new PdbValueType(0, "null", 0, PdbVariableType.Void));
             var variables = ImmutableArray<Variable>.Empty
-                .Add(new Variable("i", 0, 100, null, null, null, 0))
-                .Add(new Variable("i", 0, 100, null, 5, 10, 0));
+                .Add(new Variable("i", 0, 100, null, null, null, 0, ImmutableArray<SymbolReference>.Empty))
+                .Add(new Variable("i", 0, 100, null, 5, 10, 0, ImmutableArray<SymbolReference>.Empty));
 
             var actual = Oscar64CompilerServices.CreateLineVariables(types, variables);
 
@@ -99,7 +99,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         {
             var args = await CreateArguments("TestFunctionsSplitBetweenFiles", "character.cpp", "character.h");
 
-            var actual = Target.CreatePdbLines(RootDirectory, args.Functions, args.EmptyPdbFiles, args.Paths, args.PdbTypes);
+            var (actual, variablesMap) = Target.CreatePdbLines(RootDirectory, args.Functions, args.EmptyPdbFiles, args.Paths, args.PdbTypes);
 
             Assert.That(actual.Count, Is.EqualTo(2));
         }
@@ -119,6 +119,10 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
     [TestFixture]
     public class GetLineVariable : Oscar64CompilerServicesTest
     {
+        /// <summary>
+        /// Defines a sample variable as these are used merely for mapping and
+        /// </summary>
+        readonly Variable sampleVariable = new Variable("Sample", 0, 2, null, null, null, 0, ImmutableArray<SymbolReference>.Empty);
         [Test]
         public void WhenNoRanges_ReturnsNull()
         {
@@ -131,7 +135,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         {
             var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
             var ranges = ImmutableArray<VariableWithRange>.Empty
-                .Add(new VariableWithRange(VariableRange.All, variable));
+                .Add(new VariableWithRange(VariableRange.All, variable, sampleVariable));
 
             var actual = Oscar64CompilerServices.GetLineVariable(0, ranges);
 
@@ -147,7 +151,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         {
             var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
             var ranges = ImmutableArray<VariableWithRange>.Empty
-                .Add(new VariableWithRange(new VariableRange(enter, leave), variable));
+                .Add(new VariableWithRange(new VariableRange(enter, leave), variable, sampleVariable));
 
             var actual = Oscar64CompilerServices.GetLineVariable(lineNumber, ranges);
 
@@ -165,8 +169,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
             var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
 
             var ranges = ImmutableArray<VariableWithRange>.Empty
-                .Add(new VariableWithRange(VariableRange.All, variable))
-                .Add(new VariableWithRange(new VariableRange(enter, leave), nestedVariable));
+                .Add(new VariableWithRange(VariableRange.All, variable, sampleVariable))
+                .Add(new VariableWithRange(new VariableRange(enter, leave), nestedVariable, sampleVariable));
 
             var actual = Oscar64CompilerServices.GetLineVariable(lineNumber, ranges);
 
@@ -184,8 +188,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
             var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
 
             var ranges = ImmutableArray<VariableWithRange>.Empty
-                .Add(new VariableWithRange(new VariableRange(0, 5), variable))
-                .Add(new VariableWithRange(new VariableRange(enter, leave), nestedVariable));
+                .Add(new VariableWithRange(new VariableRange(0, 5), variable, sampleVariable))
+                .Add(new VariableWithRange(new VariableRange(enter, leave), nestedVariable, sampleVariable));
 
             var actual = Oscar64CompilerServices.GetLineVariable(lineNumber, ranges);
 

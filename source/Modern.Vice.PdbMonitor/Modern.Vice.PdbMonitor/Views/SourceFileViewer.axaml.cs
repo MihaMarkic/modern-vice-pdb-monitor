@@ -1,12 +1,17 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
+using Antlr4.Runtime.Misc;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
+using AvaloniaEdit.Utils;
+using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using TextMateSharp.Grammars;
@@ -20,12 +25,16 @@ public partial class SourceFileViewer : UserControl
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
     SourceFileViewModel? oldTypedDataContext;
     SourceFileViewModel? oldDataContext;
+    BreakpointsMargin? breakpointsMargin;
 
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
+    
     static SourceFileViewer()
     {
-        TextEditorScrollViewerPropertyInfo = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        TextEditorScrollViewerPropertyInfo = typeof(TextEditor)
+            .GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)
+            .ValueOrThrow();
         registryOptions = new RegistryOptions(ThemeName.SolarizedLight);
     }
     public SourceFileViewer()
@@ -51,14 +60,6 @@ public partial class SourceFileViewer : UserControl
         //    }
     }
 
-    //void DockDocumentViewModel_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    //{
-    //    if (e.Property == DockDocumentViewModel.DataProperty)
-    //    {
-    //        UpdateContent();
-    //    }
-    //}
-
     void UpdateContent()
     {
         var leftMargins = Editor.TextArea.LeftMargins;
@@ -76,7 +77,7 @@ public partial class SourceFileViewer : UserControl
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
             viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
-            var breakpointsMargin = new BreakpointsMargin(viewModel);
+            breakpointsMargin = new BreakpointsMargin(viewModel);
             leftMargins.Insert(0, breakpointsMargin);
             var addressMargin = new AddressMargin(Editor.FontFamily, Editor.FontSize, Brushes.DarkGray, viewModel.Lines)
             {
@@ -106,6 +107,71 @@ public partial class SourceFileViewer : UserControl
             }
         }
         oldTypedDataContext = viewModel;
+    }
+    private void Editor_PointerHover(object? sender, PointerEventArgs e)
+    {
+    }
+
+    private void Editor_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (ViewModel is not null)
+        {
+            var point = e.GetCurrentPoint(sender as Control);
+            if (point.Properties.IsRightButtonPressed)
+            {
+                ViewModel.ContextSymbolReference = GetSymbolReferenceAtPosition(e);
+            }
+        }
+    }
+
+    object? GetSymbolReferenceAtPosition(PointerEventArgs e)
+    {
+        if (ViewModel is not null)
+        {
+            var textView = Editor.TextArea.TextView;
+            var pos = e.GetPosition(textView);
+            pos = new Point(pos.X, pos.Y.CoerceValue(0, textView.Bounds.Height) + textView.VerticalOffset);
+            var vp = textView.GetPosition(pos);
+            if (vp is not null)
+            {
+                Debug.WriteLine($"Pos {vp.Value.Line} {vp.Value.Column}");
+
+                var line = ViewModel.Lines[vp.Value.Line - 1];
+                Debug.WriteLine($"Line: {line.SourceLine.Text}");
+                var globalVariable = line.SymbolReferences.GlobalVariables.GetAtColumn(vp.Value.Column - 2);
+                if (globalVariable is not null)
+                {
+                    Debug.WriteLine($"Found global variable {globalVariable.Name}");
+                    return globalVariable;
+                }
+                else
+                {
+                    var localVariable = line.SymbolReferences.LocalVariables.GetAtColumn(vp.Value.Column - 1);
+                    if (localVariable is not null)
+                    {
+                        Debug.WriteLine($"Found local variable {localVariable.Name}");
+                        return localVariable;
+                    }
+                    else
+                    {
+                        var function = line.SymbolReferences.Functions.GetAtColumn(vp.Value.Column - 1);
+                        if (function is not null)
+                        {
+                            Debug.WriteLine($"Found function {function.Name}");
+                            return function;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    private void Editor_PointerHoverStopped(object? sender, PointerEventArgs e)
+    {
+    }
+    private void Editor_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        
     }
 
     void ViewModel_BreakpointsChanged(object? sender, EventArgs e)

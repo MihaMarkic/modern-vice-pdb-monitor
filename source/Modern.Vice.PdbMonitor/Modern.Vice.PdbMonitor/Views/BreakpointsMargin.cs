@@ -147,7 +147,7 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
         base.OnPointerExited(e);
         InvalidateVisual();
     }
-    private VisualLine? GetTextLineSegment(PointerEventArgs e)
+    public VisualLine? GetTextLineSegment(PointerEventArgs e)
     {
         var pos = e.GetPosition(TextView);
         pos = new Point(0, pos.Y.CoerceValue(0, TextView.Bounds.Height) + TextView.VerticalOffset);
