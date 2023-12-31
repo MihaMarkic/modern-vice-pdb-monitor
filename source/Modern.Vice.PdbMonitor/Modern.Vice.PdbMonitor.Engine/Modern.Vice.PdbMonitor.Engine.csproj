@@ -26,7 +26,7 @@
     <PackageReference Include="FuzzySharp" Version="2.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="All" />
-    <PackageReference Include="Righthand.MessageBus" Version="2.0.0-beta.6" />
+    <PackageReference Include="Righthand.MessageBus" Version="2.0.0-beta.7" />
     <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.18" />
     <PackageReference Include="System.Text.Json" Version="8.0.0" />
   </ItemGroup>
