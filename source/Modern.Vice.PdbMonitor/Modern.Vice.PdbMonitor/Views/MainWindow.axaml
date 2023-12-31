@@ -280,6 +280,9 @@
           <TabItem Header="Variables">
             <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
           </TabItem>
+          <TabItem Header="Watch">
+            <v:Variables DataContext="{Binding #Source.DataContext.WatchedVariablesViewModel}" />
+          </TabItem>
           <TabItem Header="Trace">
             <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
           </TabItem>

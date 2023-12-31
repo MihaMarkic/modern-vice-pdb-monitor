@@ -20,6 +20,7 @@ public class SourceFileViewModel : ScopedViewModel
     readonly ILogger<SourceFileViewModel> logger;
     readonly Globals globals;
     readonly BreakpointsViewModel breakpointsViewModel;
+    readonly WatchedVariablesViewModel watchedVariablesViewModel;
     readonly PdbFile file;
     readonly IDispatcher dispatcher;
     readonly IViceBridge viceBridge;
@@ -40,6 +41,7 @@ public class SourceFileViewModel : ScopedViewModel
     public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
     public RelayCommand<PdbFunction> GoToImplementationCommand { get; }
     public RelayCommand<IWithDefinition> GoToDefinitionCommand { get; }
+    public RelayCommand<PdbVariable> AddVariableToWatchCommand { get; }
     public object? ContextSymbolReference { get; set; }
     public PdbFunction? ContextFunctionReference => ContextSymbolReference as PdbFunction;
     public PdbVariable? ContextVariableReference => ContextSymbolReference as PdbVariable;
@@ -58,14 +60,16 @@ public class SourceFileViewModel : ScopedViewModel
     /// </remarks>
     public SourceFileViewModel(ILogger<SourceFileViewModel> logger,
         Globals globals, IViceBridge viceBridge, IDispatcher dispatcher, IServiceProvider serviceProvider,
-        PdbFile file, ImmutableArray<LineViewModel> lines, BreakpointsViewModel breakpoints)
+        PdbFile file, ImmutableArray<LineViewModel> lines, 
+        BreakpointsViewModel breakpointsViewModel, WatchedVariablesViewModel watchedVariablesViewModel)
     {
         this.logger = logger;
         this.globals =  globals;
         this.dispatcher = dispatcher;
         this.viceBridge = viceBridge;
         this.serviceProvider = serviceProvider;
-        this.breakpointsViewModel = breakpoints;
+        this.breakpointsViewModel = breakpointsViewModel;
+        this.watchedVariablesViewModel = watchedVariablesViewModel;
         this.file = file;
         Elements = ImmutableDictionary<int, ImmutableArray<SyntaxElement>>.Empty;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
@@ -73,14 +77,15 @@ public class SourceFileViewModel : ScopedViewModel
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
         AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
            canExecute: l => l?.Address is not null);
-        var fileBreakpoints = breakpoints.Breakpoints
+        var fileBreakpoints = breakpointsViewModel.Breakpoints
             .Where(b => b.Bind is BreakpointLineBind lineBind && lineBind.File == file)
             .ToImmutableArray();
         AddBreakpointsToLine(fileBreakpoints);
-        breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
+        breakpointsViewModel.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         _ = ParseFileAsync();
         GoToImplementationCommand = new RelayCommand<PdbFunction>(GoToImplementation, f => f is not null);
         GoToDefinitionCommand = new RelayCommand<IWithDefinition>(GoToDefinition, d => d is not null);
+        AddVariableToWatchCommand = new RelayCommand<PdbVariable>(AddVariableToWatch, v => v is not null);
     }
     async Task ParseFileAsync()
     {
@@ -163,6 +168,13 @@ public class SourceFileViewModel : ScopedViewModel
         }
     }
 
+    void AddVariableToWatch(PdbVariable? source)
+    {
+        if (source is not null)
+        {
+            watchedVariablesViewModel.AddVariable(source);
+        }
+    }
     void Breakpoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)

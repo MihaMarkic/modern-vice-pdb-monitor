@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;

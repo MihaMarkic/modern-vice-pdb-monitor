@@ -48,7 +48,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
             ImmutableDictionary<PdbPath, PdbFile>.Empty.Add(file.Path, file),
             ImmutableDictionary<string, PdbLabel>.Empty,
             linesToFileMap,
-            default, default,
+            ImmutableDictionary<string, PdbVariable>.Empty, default,
             file.Lines,
             ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
     }
@@ -106,7 +106,7 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
                 ImmutableDictionary<PdbPath, PdbFile>.Empty.Add(newFile.Path, newFile),
                 ImmutableDictionary<string, PdbLabel>.Empty,
                 linesToFileMap.ToImmutableDictionary(),
-                default, default,
+                ImmutableDictionary<string, PdbVariable>.Empty, default,
                 lines,
                 ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
 

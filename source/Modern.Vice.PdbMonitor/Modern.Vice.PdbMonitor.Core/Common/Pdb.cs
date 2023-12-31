@@ -13,7 +13,7 @@ namespace Modern.Vice.PdbMonitor.Core.Common;
 public record Pdb(ImmutableDictionary<PdbPath, PdbFile> Files, 
         ImmutableDictionary<string, PdbLabel> Labels,
         ImmutableDictionary<PdbLine, PdbFile> LinesToFilesMap,
-        ImmutableDictionary<string, PdbVariable> GlobalVariables,
+        ImmutableDictionary<string, PdbVariable> GlobalVariablesMap,
         ImmutableDictionary<int, PdbType> Types,
         ImmutableArray<PdbLine> LinesWithAddress,
         ImmutableDictionary<PdbLine, LineSymbolReferences> SymbolReferences)
@@ -26,6 +26,7 @@ public record Pdb(ImmutableDictionary<PdbPath, PdbFile> Files,
         ImmutableArray<PdbLine>.Empty,
         ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
     public PdbFile? GetFileOfLine(PdbLine line) => LinesToFilesMap[line];
+    public ImmutableHashSet<PdbVariable> GlobalVariables { get; } = GlobalVariablesMap.Values.ToImmutableHashSet();
 }
 public sealed record PdbFile(PdbPath Path, ImmutableDictionary<string, PdbFunction> Functions, ImmutableArray<PdbLine> Lines)
 {

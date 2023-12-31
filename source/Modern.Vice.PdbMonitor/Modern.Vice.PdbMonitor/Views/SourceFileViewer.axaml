@@ -40,6 +40,8 @@
           CommandParameter="{Binding ContextFunctionReference}"/>
         <MenuItem Header="Go To Definition" Command="{Binding GoToDefinitionCommand}"
           CommandParameter="{Binding ContextWithDefinitionReference}"/>
+        <MenuItem Header="Add Watch" Command="{Binding AddVariableToWatchCommand}"
+          CommandParameter="{Binding ContextVariableReference}"/>
       </ContextMenu>
     </ae:TextEditor.ContextMenu>
   </ae:TextEditor>

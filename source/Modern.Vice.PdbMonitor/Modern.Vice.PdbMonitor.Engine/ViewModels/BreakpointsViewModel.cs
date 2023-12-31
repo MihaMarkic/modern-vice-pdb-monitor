@@ -349,7 +349,7 @@ public class BreakpointsViewModel: NotifiableObject
 
                     break;
                 case BreakpointGlobalVariableBind globalVariableBind:
-                    bool isVariableFound = pdbDebug.GlobalVariables.TryGetValue(globalVariableBind.VariableName, out var pdbVariable);
+                    bool isVariableFound = pdbDebug.GlobalVariablesMap.TryGetValue(globalVariableBind.VariableName, out var pdbVariable);
                     if (isVariableFound)
                     {
                         breakpoint.AddressRanges = ImmutableHashSet<BreakpointAddressRange>.Empty.Add(new BreakpointAddressRange(
@@ -825,7 +825,7 @@ public class BreakpointsViewModel: NotifiableObject
     {
         if (bind.VariableName is not null)
         {
-            bool isVariableFound = debug.GlobalVariables.TryGetValue(bind.VariableName, out var pdbVariable);
+            bool isVariableFound = debug.GlobalVariablesMap.TryGetValue(bind.VariableName, out var pdbVariable);
             var addressRanges = ImmutableHashSet<BreakpointAddressRange>.Empty;
             if (isVariableFound)
             {

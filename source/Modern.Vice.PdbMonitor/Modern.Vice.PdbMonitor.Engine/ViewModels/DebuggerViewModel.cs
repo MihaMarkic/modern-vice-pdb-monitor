@@ -27,11 +27,13 @@ public class DebuggerViewModel : ScopedViewModel
     public ProjectExplorerViewModel ProjectExplorer { get; }
     public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
     public VariablesViewModel Variables { get; }
+    public WatchedVariablesViewModel WatchedVariables { get; }
     PdbLine? lastActiveLine;
     public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
         SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher,
         ExecutionStatusViewModel executionStatusViewModel, 
         VariablesViewModel variablesViewModel,
+        WatchedVariablesViewModel watchedVariablesViewModel,
         BreakpointsViewModel breakpointsViewModel,
         EmulatorMemoryViewModel emulatorMemoryViewModel,
         IProjectFactory projectFactory)
@@ -47,6 +49,7 @@ public class DebuggerViewModel : ScopedViewModel
         ProjectExplorer = projectExplorerViewModel;
         SourceFileViewerViewModel = sourceFileViewerViewModel;
         Variables = variablesViewModel;
+        WatchedVariables = watchedVariablesViewModel;
         Registers = registers;
         Registers.PropertyChanged += Registers_PropertyChanged;
         globals.PropertyChanged += Globals_PropertyChanged;
@@ -86,12 +89,14 @@ public class DebuggerViewModel : ScopedViewModel
                 else
                 {
                     Variables.ClearVariables();
+                    WatchedVariables.ClearValues();
                 }    
                 break;
             case nameof(ExecutionStatusViewModel.IsDebuggingPaused):
                 if (!executionStatusViewModel.IsDebuggingPaused && !executionStatusViewModel.IsStepping)
                 {
                     Variables.ClearVariables();
+                    WatchedVariables.ClearValues();
                 }
                 if (executionStatusViewModel.IsDebuggingPaused && registersUpdated)
                 {
@@ -185,6 +190,7 @@ public class DebuggerViewModel : ScopedViewModel
                 dispatcher.Dispatch(new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber));
                 await emulatorMemoryViewModel.GetSnapshotAsync(ct);
                 Variables.UpdateForLine(matchingLine);
+                WatchedVariables.UpdateValues();
                 return;
             }
             else if (DebugStepper?.IsActive == true)
@@ -198,6 +204,7 @@ public class DebuggerViewModel : ScopedViewModel
             }
         }
         Variables.ClearVariables();
+        WatchedVariables.ClearValues();
         SourceFileViewerViewModel.ClearExecutionRow();
     }
 

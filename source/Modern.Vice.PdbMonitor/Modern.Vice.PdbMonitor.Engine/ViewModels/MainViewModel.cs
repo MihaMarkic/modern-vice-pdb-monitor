@@ -85,6 +85,7 @@ public class MainViewModel : NotifiableObject
     public RegistersViewModel RegistersViewModel { get; }
     public BreakpointsViewModel BreakpointsViewModel { get; }
     public VariablesViewModel VariablesViewModel { get; }
+    public WatchedVariablesViewModel WatchedVariablesViewModel { get; }
     public DebuggerViewModel DebuggerViewModel { get; }
     public TraceOutputViewModel TraceOutputViewModel { get; }
     public MessagesHistoryViewModel MessagesHistoryViewModel { get; }
@@ -98,7 +99,8 @@ public class MainViewModel : NotifiableObject
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
-        VariablesViewModel variablesViewModel, DebuggerViewModel debuggerViewModel, 
+        VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
+        DebuggerViewModel debuggerViewModel, 
         TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel)
     {
         this.logger = logger;
@@ -113,6 +115,7 @@ public class MainViewModel : NotifiableObject
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
         VariablesViewModel = variablesViewModel;
+        WatchedVariablesViewModel = watchedVariablesViewModel;
         DebuggerViewModel = debuggerViewModel;
         TraceOutputViewModel = traceOutputViewModel;
         MessagesHistoryViewModel = messagesHistoryViewModel;

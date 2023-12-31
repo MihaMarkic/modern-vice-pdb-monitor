@@ -22,6 +22,7 @@ public static class IoCRegistrar
             .AddScoped<MessagesHistoryViewModel>()
             .AddSingleton<RegistersViewModel>()
             .AddSingleton<VariablesViewModel>()
+            .AddSingleton<WatchedVariablesViewModel>()
             .AddSingleton<RegistersMapping>()
             .AddSingleton<ExecutionStatusViewModel>()
             .AddSingleton<BreakpointsViewModel>()

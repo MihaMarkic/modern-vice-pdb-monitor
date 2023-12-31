@@ -80,9 +80,9 @@ public class BreakpointDetailViewModel: NotifiableObject, IDialogViewModel<Simpl
         ConvertBindingToGlobalVariableCommand = new RelayCommand(ConvertBindingToGlobalVariable);
         Breakpoint.PropertyChanged += Breakpoint_PropertyChanged;
 
-        GlobalVariables = globals.Project?.DebugSymbols?.GlobalVariables.Values.ToImmutableArray() 
+        GlobalVariables = globals.Project?.DebugSymbols?.GlobalVariables.ToImmutableArray() 
             ?? ImmutableArray<PdbVariable>.Empty;
-        GlobalVariablesMap = globals.Project?.DebugSymbols?.GlobalVariables
+        GlobalVariablesMap = globals.Project?.DebugSymbols?.GlobalVariablesMap
             ?? ImmutableDictionary<string, PdbVariable>.Empty;
 
         startAddressValidator = new HexValidator(nameof(StartAddress), 0, 4, a => UpdateStartAddress(a ?? 0));
