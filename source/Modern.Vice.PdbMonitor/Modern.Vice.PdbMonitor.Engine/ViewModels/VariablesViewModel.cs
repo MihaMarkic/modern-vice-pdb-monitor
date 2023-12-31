@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -16,6 +15,7 @@ public class VariablesViewModel: NotifiableObject
     readonly ILogger<VariablesViewModel> logger;
     readonly IViceBridge viceBridge;
     readonly IDispatcher dispatcher;
+    readonly EmulatorMemoryViewModel emulatorMemoryViewModel;
     readonly TaskFactory uiFactory;
     readonly Globals globals;
     readonly CommandsManager commandsManager;
@@ -24,11 +24,12 @@ public class VariablesViewModel: NotifiableObject
     public bool IsWorking => IsWorkingCount > 0;
     int IsWorkingCount { get; set; }
     public VariablesViewModel(ILogger<VariablesViewModel> logger, IViceBridge viceBridge,
-        IDispatcher dispatcher, Globals globals)
+        IDispatcher dispatcher, EmulatorMemoryViewModel emulatorMemoryViewModel, Globals globals)
     {
         this.logger = logger;
         this.viceBridge = viceBridge;
         this.dispatcher = dispatcher;
+        this.emulatorMemoryViewModel = emulatorMemoryViewModel;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         this.globals = globals;
         commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
@@ -50,34 +51,6 @@ public class VariablesViewModel: NotifiableObject
         numericSlot.Value = numericValue;
     }
 
-    CancellationTokenSource? ctsUpdateForLineAsync;
-    public void CancelUpdateForLine()
-    {
-        ctsUpdateForLineAsync?.Cancel();
-        ClearVariables();
-    }
-    public async Task StartUpdateForLineAsync(PdbLine line)
-    {
-        ctsUpdateForLineAsync?.Cancel();
-        ctsUpdateForLineAsync = new CancellationTokenSource();
-        IsWorkingCount++;
-        try
-        {
-            await UpdateForLineAsync(line, ctsUpdateForLineAsync.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            // ignore cancellations
-        }
-        catch
-        {
-
-        }
-        finally
-        {
-            IsWorkingCount--;
-        }
-    }
     void ToggleVariableExpansion(VariableSlot? variableSlot)
     {
         if (variableSlot is not null)
@@ -146,9 +119,7 @@ public class VariablesViewModel: NotifiableObject
                         var variable = new PdbVariable("*", ptrVariableValue.PointerAddress, endAddress, null, referencedType, null);
                         var referencedTypeSlot = new VariableSlot(variable, variableSlot.IsGlobal, variableSlot.Level + 1);
                         Items.Insert(slotPosition + 1, referencedTypeSlot);
-                        ctsUpdateForLineAsync?.Cancel();
-                        ctsUpdateForLineAsync = new ();
-                        _ = FillVariableValueAsync(referencedTypeSlot, variable, ctsUpdateForLineAsync.Token);
+                        FillVariableValue(referencedTypeSlot, variable);
                         break;
 
                 }
@@ -162,7 +133,7 @@ public class VariablesViewModel: NotifiableObject
     /// <param name="line"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task UpdateForLineAsync(PdbLine line, CancellationToken ct = default)
+    public void UpdateForLine(PdbLine line)
     {
         ClearVariables();
         var lineVariables = line.Variables;
@@ -188,21 +159,19 @@ public class VariablesViewModel: NotifiableObject
                 Items.Add(slot);
             }
             var map = mapBuilder.ToImmutable();
-            await FillVariableValuesAsync(map, ct);
+            FillVariableValues(map);
         }
     }
-    internal async Task<ushort> GetVariableBaseAddressAsync(ushort basePointerAddress, CancellationToken ct)
-    {
-        var command = viceBridge.EnqueueCommand(
-        new MemoryGetCommand(0, basePointerAddress, (ushort)(basePointerAddress + 1), MemSpace.MainMemory, 0),
-            true);
-        var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
-        using (var buffer = response?.Memory ?? throw new Exception("Failed to retrieve base address"))
-        {
-            ushort baseAddress = BitConverter.ToUInt16(buffer.Data);
-            return baseAddress;
-        }
-    }
+    internal ushort GetVariableBaseAddress(ushort basePointerAddress) => emulatorMemoryViewModel.GetShortAt(basePointerAddress);
+        //var command = viceBridge.EnqueueCommand(
+        //new MemoryGetCommand(0, basePointerAddress, (ushort)(basePointerAddress + 1), MemSpace.MainMemory, 0),
+        //    true);
+        //var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
+        //using (var buffer = response?.Memory ?? throw new Exception("Failed to retrieve base address"))
+        //{
+        //    ushort baseAddress = BitConverter.ToUInt16(buffer.Data);
+        //    return baseAddress;
+        //}
     /// <summary>
     /// Fetches memory required for variables and passes it to <see cref="FillVariableValue"/> that extracts it to
     /// variable values.
@@ -210,21 +179,21 @@ public class VariablesViewModel: NotifiableObject
     /// <param name="map"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    async Task FillVariableValuesAsync(ImmutableDictionary<PdbVariable, VariableSlot> map, CancellationToken ct)
+    void FillVariableValues(ImmutableDictionary<PdbVariable, VariableSlot> map)
     {
         foreach (var variable in map.Keys)
         {
-            await FillVariableValueAsync(map[variable], variable, ct);
+            FillVariableValue(map[variable], variable);
         }
     }
 
-    async Task FillVariableValueAsync(VariableSlot slot, PdbVariable variable, CancellationToken ct)
+    void FillVariableValue(VariableSlot slot, PdbVariable variable)
     {
         ushort memoryStart;
         ushort memoryEnd;
         if (variable.Base is not null)
         {
-            ushort baseAddress = await GetVariableBaseAddressAsync(variable.Base.Value, ct);
+            ushort baseAddress = GetVariableBaseAddress(variable.Base.Value);
             memoryStart = (ushort)(baseAddress + variable.Start);
             memoryEnd = (ushort)(baseAddress + variable.End);
         }
@@ -233,24 +202,26 @@ public class VariablesViewModel: NotifiableObject
             memoryStart = (ushort)variable.Start;
             memoryEnd = (ushort)variable.End;
         }
-        var command = viceBridge.EnqueueCommand(
-            new MemoryGetCommand(0, memoryStart, memoryEnd, MemSpace.MainMemory, 0),
-            resumeOnStopped: true);
-        var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
-        ct.ThrowIfCancellationRequested();
-        var buffer = response?.Memory;
-        if (buffer is not null)
-        {
-            var data = buffer.Value.Data;
-            try
-            {
-                FillVariableValue(slot, variable, data);
-            }
-            finally
-            {
-                buffer.Value.Dispose();
-            }
-        }
+        var data = emulatorMemoryViewModel.GetSpan(memoryStart, memoryEnd);
+        FillVariableValue(slot, variable, data);
+        //var command = viceBridge.EnqueueCommand(
+        //    new MemoryGetCommand(0, memoryStart, memoryEnd, MemSpace.MainMemory, 0),
+        //    resumeOnStopped: true);
+        //var response = await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, ct: ct);
+        //ct.ThrowIfCancellationRequested();
+        //var buffer = response?.Memory;
+        //if (buffer is not null)
+        //{
+        //    var data = buffer.Value.Data;
+        //    try
+        //    {
+        //        FillVariableValue(slot, variable, data);
+        //    }
+        //    finally
+        //    {
+        //        buffer.Value.Dispose();
+        //    }
+        //}
     }
 
     public async Task UpdateVariableValueAsync(VariableSlot slot, object value, CancellationToken ct)
@@ -294,6 +265,7 @@ public class VariablesViewModel: NotifiableObject
                 if (response?.ErrorCode == ErrorCode.OK)
                 {
                     slot.Value = CreateNumericVariable((PdbValueType)slot.Source.Type, slot.Value.Address, bytes.AsSpan());
+                    emulatorMemoryViewModel.UpdateMemory(slot.Value.Address, bytes.AsSpan());
                 }
                 else
                 {

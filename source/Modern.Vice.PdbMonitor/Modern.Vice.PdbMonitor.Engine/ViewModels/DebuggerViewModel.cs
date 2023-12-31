@@ -16,6 +16,7 @@ public class DebuggerViewModel : ScopedViewModel
     readonly IDispatcher dispatcher;
     readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly BreakpointsViewModel breakpointsViewModel;
+    readonly EmulatorMemoryViewModel emulatorMemoryViewModel;
     readonly IProjectFactory projectFactory;
     IPdbManager? pdbManager;
     public IDebugStepper? DebugStepper { get; private set; }
@@ -32,6 +33,7 @@ public class DebuggerViewModel : ScopedViewModel
         ExecutionStatusViewModel executionStatusViewModel, 
         VariablesViewModel variablesViewModel,
         BreakpointsViewModel breakpointsViewModel,
+        EmulatorMemoryViewModel emulatorMemoryViewModel,
         IProjectFactory projectFactory)
     {
         this.logger = logger;
@@ -39,6 +41,7 @@ public class DebuggerViewModel : ScopedViewModel
         this.dispatcher = dispatcher;
         this.executionStatusViewModel = executionStatusViewModel;
         this.breakpointsViewModel = breakpointsViewModel;
+        this.emulatorMemoryViewModel = emulatorMemoryViewModel;
         this.projectFactory = projectFactory;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         ProjectExplorer = projectExplorerViewModel;
@@ -82,17 +85,17 @@ public class DebuggerViewModel : ScopedViewModel
                 }
                 else
                 {
-                    Variables.CancelUpdateForLine();
+                    Variables.ClearVariables();
                 }    
                 break;
             case nameof(ExecutionStatusViewModel.IsDebuggingPaused):
                 if (!executionStatusViewModel.IsDebuggingPaused && !executionStatusViewModel.IsStepping)
                 {
-                    Variables.CancelUpdateForLine();
+                    Variables.ClearVariables();
                 }
                 if (executionStatusViewModel.IsDebuggingPaused && registersUpdated)
                 {
-                    UpdateState();
+                    _ = UpdateStateAsync(CancellationToken.None);
                     registersUpdated = false;
                 }
                 break;
@@ -146,7 +149,7 @@ public class DebuggerViewModel : ScopedViewModel
         }
     }
 
-    internal void UpdateState()
+    internal async Task UpdateStateAsync(CancellationToken ct)
     {
         ushort? address = Registers.Current.PC;
         if (pdbManager is not null && address.HasValue)
@@ -179,10 +182,9 @@ public class DebuggerViewModel : ScopedViewModel
                 }
                 var file = pdbManager.FindFileOfLine(matchingLine)!;
                 int matchingLineNumber = file.Lines.IndexOf(matchingLine);
-                dispatcher.Dispatch(
-                    new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber)
-                );
-                _ = Variables.StartUpdateForLineAsync(matchingLine);
+                dispatcher.Dispatch(new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber));
+                await emulatorMemoryViewModel.GetSnapshotAsync(ct);
+                Variables.UpdateForLine(matchingLine);
                 return;
             }
             else if (DebugStepper?.IsActive == true)
@@ -195,7 +197,7 @@ public class DebuggerViewModel : ScopedViewModel
                 }
             }
         }
-        Variables.CancelUpdateForLine();
+        Variables.ClearVariables();
         SourceFileViewerViewModel.ClearExecutionRow();
     }
 
