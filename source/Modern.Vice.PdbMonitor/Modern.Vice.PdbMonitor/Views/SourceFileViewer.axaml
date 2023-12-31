@@ -38,6 +38,8 @@
       <ContextMenu>
         <MenuItem Header="Go To Implementation" Command="{Binding GoToImplementationCommand}"
           CommandParameter="{Binding ContextFunctionReference}"/>
+        <MenuItem Header="Go To Definition" Command="{Binding GoToDefinitionCommand}"
+          CommandParameter="{Binding ContextWithDefinitionReference}"/>
       </ContextMenu>
     </ae:TextEditor.ContextMenu>
   </ae:TextEditor>

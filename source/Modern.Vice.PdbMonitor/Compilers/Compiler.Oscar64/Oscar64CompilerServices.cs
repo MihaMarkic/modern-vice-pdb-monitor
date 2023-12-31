@@ -59,7 +59,7 @@ public class Oscar64CompilerServices : ICompilerServices
             .ToImmutableDictionary(f => f.Path, f => f);
 
         var pdbTypes = CreatePdbTypes(debugFile.Types);
-        var globalVariables = CreateVariables(pdbTypes, debugFile.Variables);
+        var globalVariables = CreateVariables(projectDirectory, pdbTypes, debugFile.Variables);
 
         var (pdbLinesAndFunctions, localVariablesMap) = CreatePdbLines(projectDirectory, debugFile.Functions, emptyPdbFiles, paths, pdbTypes);
         var pdbFiles = pdbLinesAndFunctions.Select(
@@ -121,7 +121,7 @@ public class Oscar64CompilerServices : ICompilerServices
     /// <returns></returns>
     /// <remarks>Nested range never overlaps outside parent.</remarks>
     internal static ImmutableDictionary<string, ImmutableArray<VariableWithRange>> CreateLineVariables
-        (ImmutableDictionary<int, PdbType> types, ImmutableArray<Variable> variables)
+        (string projectDirectory, ImmutableDictionary<int, PdbType> types, ImmutableArray<Variable> variables)
     {
         if (variables.IsDefaultOrEmpty)
         {
@@ -129,7 +129,7 @@ public class Oscar64CompilerServices : ICompilerServices
         }
 
         var query = from v in variables
-                    let pdbVariable = ConvertVariableToPdb(v, types)
+                    let pdbVariable = ConvertVariableToPdb(projectDirectory, v, types)
                     where pdbVariable is not null
                     let p = new VariableWithRange(
                         v.Enter is not null && v.Leave is not null
@@ -143,21 +143,29 @@ public class Oscar64CompilerServices : ICompilerServices
         return map;
     }
 
-    static PdbVariable? ConvertVariableToPdb(Variable v, ImmutableDictionary<int, PdbType> types)
+    static PdbVariable? ConvertVariableToPdb(string projectDirectory, Variable v, ImmutableDictionary<int, PdbType> types)
     {
         var type = types[v.TypeId] as PdbDefinedType;
-        return type is not null ? new PdbVariable(v.Name, v.Start, v.End, v.Base, type) : null;
+        if (type is not null)
+        {
+            var declarationReference = v.References.FirstOrDefault();
+            SymbolDeclarationSource? declarationSource = declarationReference is not null ?
+                new SymbolDeclarationSource(PdbPath.Create(projectDirectory, declarationReference.Source), 
+                    declarationReference.Line, declarationReference.Column): null;
+            return new PdbVariable(v.Name, v.Start, v.End, v.Base, type, declarationSource);
+        }
+        return null;
     }
 
-    internal static ImmutableDictionary<string, PdbVariable> CreateVariables(ImmutableDictionary<int, PdbType> types,
-        ImmutableArray<Variable> variables)
+    internal static ImmutableDictionary<string, PdbVariable> CreateVariables(string projectDirectory,
+        ImmutableDictionary<int, PdbType> types, ImmutableArray<Variable> variables)
     {
         if (variables.IsDefaultOrEmpty)
         {
             return ImmutableDictionary<string, PdbVariable>.Empty;
         }
         var query = from v in variables
-                    let pdb = ConvertVariableToPdb(v, types)
+                    let pdb = ConvertVariableToPdb(projectDirectory, v, types)
                     where pdb is not null
                     select pdb;
 
@@ -293,7 +301,7 @@ public class Oscar64CompilerServices : ICompilerServices
             // keep track of generated lines
             var linesBuilder = new List<PdbLine>(f.Lines.Length);
             // first creates nested map of variables
-            var lineVariablesMap = CreateLineVariables(types, f.Variables);
+            var lineVariablesMap = CreateLineVariables(projectDirectory, types, f.Variables);
             // adds generated variables to global list of mappings between variables and pdb variables
             variablesMapBuilder.AddRange(lineVariablesMap.Values
                 .SelectMany(v => v)
@@ -346,7 +354,12 @@ public class Oscar64CompilerServices : ICompilerServices
                 linesBuilder.Add(pdbLine);
             }
             var definitionPath = paths[f.Source];
-            var pdbFunction = new PdbFunction(f.Name, f.XName, definitionPath, f.Start, f.End, f.LineNumber);
+            // creates 
+            var declarationReference = f.References.FirstOrDefault();
+            var declarationSource = declarationReference is not null ?
+                new SymbolDeclarationSource(PdbPath.Create(projectDirectory, declarationReference.Source),
+                    declarationReference.Line, declarationReference.Column): null;
+            var pdbFunction = new PdbFunction(f.Name, f.XName, definitionPath, f.Start, f.End, f.LineNumber, declarationSource);
             // stores all function to all files where it has code
             foreach (var fileWithFunctionCode in filesWithFunctionCode)
             {

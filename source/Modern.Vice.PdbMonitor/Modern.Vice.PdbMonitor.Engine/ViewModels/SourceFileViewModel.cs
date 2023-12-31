@@ -26,6 +26,8 @@ public class SourceFileViewModel : ScopedViewModel
     readonly IServiceProvider serviceProvider;
     readonly TaskFactory uiFactory;
     public event EventHandler? ShowCursorRow;
+    public event EventHandler? ShowCursorColumn;
+    public event EventHandler<MoveCaretEventArgs>? MoveCaret;
     /// <summary>
     /// Raised when any of lines in <see cref="Lines"/> has a breakpoint added or removed.
     /// </summary>
@@ -37,8 +39,11 @@ public class SourceFileViewModel : ScopedViewModel
     public int CursorRow { get; protected set; }
     public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
     public RelayCommand<PdbFunction> GoToImplementationCommand { get; }
+    public RelayCommand<IWithDefinition> GoToDefinitionCommand { get; }
     public object? ContextSymbolReference { get; set; }
     public PdbFunction? ContextFunctionReference => ContextSymbolReference as PdbFunction;
+    public PdbVariable? ContextVariableReference => ContextSymbolReference as PdbVariable;
+    public IWithDefinition? ContextWithDefinitionReference => ContextSymbolReference as IWithDefinition;
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
     public SourceLanguage? SourceLanguage => globals.Project?.SourceLanguage;
 
@@ -75,6 +80,7 @@ public class SourceFileViewModel : ScopedViewModel
         breakpoints.Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
         _ = ParseFileAsync();
         GoToImplementationCommand = new RelayCommand<PdbFunction>(GoToImplementation, f => f is not null);
+        GoToDefinitionCommand = new RelayCommand<IWithDefinition>(GoToDefinition, d => d is not null);
     }
     async Task ParseFileAsync()
     {
@@ -88,6 +94,10 @@ public class SourceFileViewModel : ScopedViewModel
     [SuppressPropertyChangedWarnings]
     void OnShowCursorRow(EventArgs e) => ShowCursorRow?.Invoke(this, e);
     [SuppressPropertyChangedWarnings]
+    void OnShowCursorColumn(EventArgs e) => ShowCursorColumn?.Invoke(this, e);
+    [SuppressPropertyChangedWarnings]
+    void OnMoveCaret(MoveCaretEventArgs e) => MoveCaret?.Invoke(this, e);
+    [SuppressPropertyChangedWarnings]
     void OnExecutionRowChanged(EventArgs e) => ExecutionRowChanged?.Invoke(this, e);
     [SuppressPropertyChangedWarnings]
     void OnBreakpointsChanged(EventArgs e) => BreakpointsChanged?.Invoke(this, e);
@@ -96,23 +106,59 @@ public class SourceFileViewModel : ScopedViewModel
         CursorRow = value;
         OnShowCursorRow(EventArgs.Empty);
     }
+    public void SetCursorColumn(int value)
+    {
+        CursorColumn = value;
+        OnShowCursorColumn(EventArgs.Empty);
+    }
+    /// <summary>
+    /// Request client to position caret.
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="column"></param>
+    public void SetMoveCaret(int row, int column)
+    {
+        OnMoveCaret(new MoveCaretEventArgs(row, column));
+    }
     void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
     {
         uiFactory.StartNew(() => AddOrRemoveBreakpointCommand.RaiseCanExecuteChanged());
     }
     private void GoToImplementation(PdbFunction? function)
     {
-        if (function is not null)
+        var definition = function?.Definition;
+        if (definition is not null)
         {
-            var functionFile = globals.Project?.DebugSymbols?.Files[function.DefinitionFile];
-            if (functionFile is not null)
+            var implementationFile = globals.Project?.DebugSymbols?.Files[function!.DefinitionFile];
+            if (implementationFile is not null)
             {
-                dispatcher.Dispatch(new OpenSourceFileMessage(functionFile, function.LineNumber));
+                dispatcher.Dispatch(
+                    new OpenSourceFileMessage(implementationFile, definition.LineNumber, 
+                        Column: definition.ColumnNumber, MoveCaret: true));
             }
             else
             {
                 logger.LogError("Couldn't find function {FunctionName} definition file {DefinitionFile}",
-                    function.Name, function.DefinitionFile);
+                    function!.Name, function.DefinitionFile);
+            }
+        }
+    }
+    void GoToDefinition(IWithDefinition? source)
+    {
+        var definition = source?.Definition;
+        if (definition is not null)
+        {
+            var definitionFile = globals.Project?.DebugSymbols?.Files[definition.Path];
+            if (definitionFile is not null)
+            {
+                dispatcher.Dispatch(
+                    new OpenSourceFileMessage(definitionFile, definition.LineNumber, 
+                        Column: definition.ColumnNumber, MoveCaret: true));
+            }
+            else
+            {
+                logger.LogError("Couldn't find symbol {VariableName} definition file {DefinitionFile}",
+                    source!.Name, definition.Path);
             }
         }
     }
@@ -228,6 +274,7 @@ public class SourceFileViewModel : ScopedViewModel
         {
             case nameof(ContextSymbolReference):
                 GoToImplementationCommand.RaiseCanExecuteChanged();
+                GoToDefinitionCommand.RaiseCanExecuteChanged();
                 break;
         }
     }
@@ -273,5 +320,16 @@ public class LineViewModel : NotifiableObject
     public void RemoveBreakpoint(BreakpointViewModel breakpoint)
     {
         Breakpoints = Breakpoints.Remove(breakpoint);
+    }
+}
+
+public sealed class MoveCaretEventArgs: EventArgs
+{
+    public int Line { get; }
+    public int Column { get; }
+    public MoveCaretEventArgs(int row, int column)
+    {
+        Line = row;
+        Column = column;
     }
 }

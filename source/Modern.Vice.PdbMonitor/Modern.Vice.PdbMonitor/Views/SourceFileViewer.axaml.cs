@@ -11,6 +11,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
+using FuzzySharp.Edits;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
@@ -74,6 +75,8 @@ public partial class SourceFileViewer : UserControl
             string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
             Editor.Text = text;
             viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+            viewModel.ShowCursorColumn += ViewModel_ShowCursorColumn;
+            viewModel.MoveCaret += ViewModel_MoveCaret;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
             viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
@@ -108,6 +111,22 @@ public partial class SourceFileViewer : UserControl
         }
         oldTypedDataContext = viewModel;
     }
+
+    private void ViewModel_MoveCaret(object? sender, MoveCaretEventArgs e)
+    {
+        var caret = Editor.TextArea.Caret;
+        caret.Line = e.Line;
+        caret.Column = e.Column;
+    }
+
+    private void ViewModel_ShowCursorColumn(object? sender, EventArgs e)
+    {
+        if (ViewModel is not null)
+        {
+            Editor.ScrollTo(ViewModel.CursorRow, ViewModel.CursorColumn);
+        }
+    }
+
     private void Editor_PointerHover(object? sender, PointerEventArgs e)
     {
     }

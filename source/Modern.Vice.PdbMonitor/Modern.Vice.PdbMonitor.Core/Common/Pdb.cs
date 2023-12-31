@@ -107,8 +107,10 @@ public  record AddressRange(ushort StartAddress, ushort Length, ImmutableArray<b
 }
 public sealed record PdbLabel(ushort Address, string Name);
 
-public sealed record PdbVariable(string Name, int Start, int End, ushort? Base, PdbDefinedType Type);
+public sealed record PdbVariable(string Name, int Start, int End, ushort? Base, PdbDefinedType Type,
+    SymbolDeclarationSource? Definition): IWithDefinition;
 
+public sealed record SymbolDeclarationSource(PdbPath Path, int LineNumber, int ColumnNumber);
 
 /* PdbType stuff */
 public abstract class PdbType
@@ -206,7 +208,14 @@ public enum PdbVariableType
     Float,
 }
 
-public record PdbFunction(string Name, string XName, PdbPath DefinitionFile, int Start, int End, int LineNumber);
+public interface IWithDefinition
+{
+    public string Name { get; }
+    public SymbolDeclarationSource? Definition { get; }
+}
+
+public record PdbFunction(string Name, string XName, PdbPath DefinitionFile, int Start, int End, int LineNumber,
+    SymbolDeclarationSource? Definition): IWithDefinition;
 
 public record PdbParseResult<T>(T ParsedData, ImmutableArray<PdbParseError> Errors);
 public static class PdbParseResultBuilder

@@ -152,6 +152,14 @@ public class SourceFileViewerViewModel : NotifiableObject
             {
                 item.SetCursorRow(cursorRow.Value);
             }
+            if (message.Column.HasValue)
+            {
+                item.SetCursorColumn(message.Column.Value);
+            }
+            if (message.MoveCaret && cursorRow.HasValue && message.Column.HasValue)
+            {
+                item.SetMoveCaret(cursorRow.Value, message.Column.Value);
+            }
         }
     }
     void CloseSourceFile(SourceFileViewModel? sourceFile)

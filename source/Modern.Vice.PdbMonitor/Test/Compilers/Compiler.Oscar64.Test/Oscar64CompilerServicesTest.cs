@@ -47,7 +47,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
                 .Add(new Variable("i", 0, 100, null, null, null, 0, ImmutableArray<SymbolReference>.Empty))
                 .Add(new Variable("i", 0, 100, null, 5, 10, 0, ImmutableArray<SymbolReference>.Empty));
 
-            var actual = Oscar64CompilerServices.CreateLineVariables(types, variables);
+            var actual = Oscar64CompilerServices.CreateLineVariables("projectDirectory", types, variables);
 
             Assert.That(actual.Count, Is.EqualTo(1));
             var ranges = actual["i"];
@@ -133,7 +133,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         [Test]
         public void WhenOnlyAllRangePresent_ReturnsItsVariable()
         {
-            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
+            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
             var ranges = ImmutableArray<VariableWithRange>.Empty
                 .Add(new VariableWithRange(VariableRange.All, variable, sampleVariable));
 
@@ -149,7 +149,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         public bool WhenRangePresent_AndLineIsWithinRange_ReturnsVariablePresence(
             int enter, int leave, int lineNumber)
         {
-            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
+            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
             var ranges = ImmutableArray<VariableWithRange>.Empty
                 .Add(new VariableWithRange(new VariableRange(enter, leave), variable, sampleVariable));
 
@@ -165,8 +165,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         public bool WhenRangePresent_AndLineIsWithinRange_AndVariableIsNestedWithinAll_ReturnsNestedVariablePresence(
             int enter, int leave, int lineNumber)
         {
-            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
-            var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
+            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
+            var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
 
             var ranges = ImmutableArray<VariableWithRange>.Empty
                 .Add(new VariableWithRange(VariableRange.All, variable, sampleVariable))
@@ -184,8 +184,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         public bool WhenRangePresent_AndLineIsWithinRange_AndVariableIsNestedWithinNestedRange_ReturnsNestedVariablePresence(
             int enter, int leave, int lineNumber)
         {
-            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
-            var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16));
+            var variable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
+            var nestedVariable = new PdbVariable("variable", 0, 0, null, new PdbValueType(0, "type", 2, PdbVariableType.Int16), null);
 
             var ranges = ImmutableArray<VariableWithRange>.Empty
                 .Add(new VariableWithRange(new VariableRange(0, 5), variable, sampleVariable))

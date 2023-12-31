@@ -41,7 +41,10 @@ public class VariablesViewModel: NotifiableObject
     {
         var numericValue = new NumericVariableValue<ushort>(1234, ImmutableArray<byte>.Empty.Add(1).Add(2), 12);
         var numericSlot = new VariableSlot(
-            new PdbVariable("Short1", 1, 2, Base: null, new PdbValueType(1, "ushort", 2, PdbVariableType.UInt16)), false);
+            new PdbVariable("Short1", 1, 2, Base: null, 
+                new PdbValueType(1, "ushort", 2, PdbVariableType.UInt16),
+                new SymbolDeclarationSource(PdbPath.Create("xxx", "xxx"), 0, 0)),
+            false);
         Items.Add(numericSlot);
         await Task.Delay(5000);
         numericSlot.Value = numericValue;
@@ -101,7 +104,7 @@ public class VariablesViewModel: NotifiableObject
                         for (int i = 0; i < (arrayType.ItemsCount ?? 0); i++)
                         {
                             int end = start + arrayItemSize;
-                            var arrayItemVariable = new PdbVariable($"[{i}]", start, end, baseAddress, arrayType.ReferencedOfType!);
+                            var arrayItemVariable = new PdbVariable($"[{i}]", start, end, baseAddress, arrayType.ReferencedOfType!, null);
                             var arrayItemSlot = new VariableSlot(arrayItemVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
                             var arrayItemData = variableSlot.Data!.Value.AsSpan().Slice(i * arrayItemSize, arrayItemSize);
                             var variableValue = arrayVariableValue.Items[i];
@@ -126,7 +129,8 @@ public class VariablesViewModel: NotifiableObject
                                 member.Name,
                                 memberStart, memberStart + variableValue.Data.Length,
                                 baseAddress,
-                                memberType);
+                                memberType,
+                                null);
                             var structMemberSlot = new VariableSlot(memberVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
                             if (variableValue is not null)
                             {
@@ -139,7 +143,7 @@ public class VariablesViewModel: NotifiableObject
                         var ptrVariableValue = (PtrVariableValue)variableSlot.Value!;
                         var referencedType = ptrType.ReferencedOfType!;
                         ushort endAddress = (ushort)(ptrVariableValue.PointerAddress + referencedType.Size);
-                        var variable = new PdbVariable("*", ptrVariableValue.PointerAddress, endAddress, null, referencedType);
+                        var variable = new PdbVariable("*", ptrVariableValue.PointerAddress, endAddress, null, referencedType, null);
                         var referencedTypeSlot = new VariableSlot(variable, variableSlot.IsGlobal, variableSlot.Level + 1);
                         Items.Insert(slotPosition + 1, referencedTypeSlot);
                         ctsUpdateForLineAsync?.Cancel();
