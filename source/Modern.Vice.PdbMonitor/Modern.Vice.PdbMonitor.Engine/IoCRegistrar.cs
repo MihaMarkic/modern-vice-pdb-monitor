@@ -29,7 +29,9 @@ public static class IoCRegistrar
             .AddTransient<SourceFileViewModel>()
             .AddSingleton<Globals>()
             .AddSingleton<ISettingsManager, SettingsManager>()
-            .AddSingleton<IDispatcher, Dispatcher>()
+            .AddSingleton<IDispatcher>(
+            // uses dispatching from within same thread to all subscriptions by default as most subscribers are running on UI thread
+            new Dispatcher(new DispatchContext(DispatchThreading.SameThread)))
             .AddSingleton<IProjectPrgFileWatcher, ProjectPrgFileWatcher>()
             .AddSingleton<IPdbManager, PdbManager>()
             .AddTransient(sp => sp.CreateScope())
