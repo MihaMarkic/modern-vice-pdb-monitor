@@ -42,6 +42,8 @@ public class SourceFileViewModel : ScopedViewModel
     public RelayCommand<PdbFunction> GoToImplementationCommand { get; }
     public RelayCommand<IWithDefinition> GoToDefinitionCommand { get; }
     public RelayCommand<PdbVariable> AddVariableToWatchCommand { get; }
+    public RelayCommandAsync<PdbVariable> AddStoreBreakpointCommand { get; }
+    public RelayCommandAsync<PdbVariable> AddLoadBreakpointCommand { get; }
     public object? ContextSymbolReference { get; set; }
     public PdbFunction? ContextFunctionReference => ContextSymbolReference as PdbFunction;
     public PdbVariable? ContextVariableReference => ContextSymbolReference as PdbVariable;
@@ -86,6 +88,8 @@ public class SourceFileViewModel : ScopedViewModel
         GoToImplementationCommand = new RelayCommand<PdbFunction>(GoToImplementation, f => f is not null);
         GoToDefinitionCommand = new RelayCommand<IWithDefinition>(GoToDefinition, d => d is not null);
         AddVariableToWatchCommand = new RelayCommand<PdbVariable>(AddVariableToWatch, v => v is not null);
+        AddStoreBreakpointCommand = new RelayCommandAsync<PdbVariable>(AddStoreBreakpoint, v => v is not null);
+        AddLoadBreakpointCommand = new RelayCommandAsync<PdbVariable>(AddLoadBreakpoint, v => v is not null);
     }
     async Task ParseFileAsync()
     {
@@ -173,6 +177,40 @@ public class SourceFileViewModel : ScopedViewModel
         if (source is not null)
         {
             watchedVariablesViewModel.AddVariable(source);
+        }
+    }
+    async Task AddStoreBreakpoint(PdbVariable? variable)
+    {
+        await AddVariableBreakpoint(variable, BreakpointMode.Store);
+    }
+    async Task AddLoadBreakpoint(PdbVariable? variable)
+    {
+        await AddVariableBreakpoint(variable, BreakpointMode.Load);
+    }
+    async Task AddVariableBreakpoint(PdbVariable? variable, BreakpointMode mode)
+    {
+        if (variable is not null)
+        {
+            // TODO check if DebugSymbols are static for this viewmodel and simplify if yes
+            var globalVariables = globals.Project?.DebugSymbols?.GlobalVariables ?? ImmutableHashSet<PdbVariable>.Empty;
+            bool isGlobal = globalVariables.Contains(variable);
+
+            BreakpointBind bind = isGlobal 
+                ? new BreakpointGlobalVariableBind(variable.Name):
+                new BreakpointNoBind((ushort)variable.Start, (ushort)variable.End);
+            var breakpoint = new BreakpointViewModel(
+                stopWhenHit: true,
+                isEnabled: true,
+                mode: mode,
+                bind: bind,
+                addressRanges: ImmutableHashSet<BreakpointAddressRange>.Empty
+                .Add(new BreakpointAddressRange((ushort)variable.Start, (ushort)variable.End)),
+                condition: null);
+            await breakpointsViewModel.AddBreakpointAsync(breakpoint, CancellationToken.None);
+        }
+        else
+        {
+            logger.LogError("Failed to add variable breakpoint for null variable");
         }
     }
     void Breakpoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

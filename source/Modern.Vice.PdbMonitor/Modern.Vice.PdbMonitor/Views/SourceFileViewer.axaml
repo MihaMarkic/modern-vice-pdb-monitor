@@ -42,6 +42,10 @@
           CommandParameter="{Binding ContextWithDefinitionReference}"/>
         <MenuItem Header="Add Watch" Command="{Binding AddVariableToWatchCommand}"
           CommandParameter="{Binding ContextVariableReference}"/>
+        <MenuItem Header="Add Store Breakpoint" Command="{Binding AddStoreBreakpointCommand}"
+          CommandParameter="{Binding ContextVariableReference}"/>
+        <MenuItem Header="Add Load Breakpoint" Command="{Binding AddLoadBreakpointCommand}"
+          CommandParameter="{Binding ContextVariableReference}"/>
       </ContextMenu>
     </ae:TextEditor.ContextMenu>
   </ae:TextEditor>
