@@ -24,7 +24,6 @@ public class WatchedVariablesViewModel: VariablesCoreViewModel
         Items.Add(slot);
         FillVariableValue(slot, variable);
     }
-
     public void ClearValues()
     {
         foreach (var slot in Items)

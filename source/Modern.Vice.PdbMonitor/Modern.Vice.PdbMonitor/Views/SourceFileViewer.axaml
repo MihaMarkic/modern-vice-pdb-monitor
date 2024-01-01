@@ -7,6 +7,7 @@
              xmlns:aee="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
              xmlns:b="clr-namespace:Modern.Vice.PdbMonitor.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:SourceFileViewModel"
              x:Name="control"
@@ -48,5 +49,28 @@
           CommandParameter="{Binding ContextVariableReference}"/>
       </ContextMenu>
     </ae:TextEditor.ContextMenu>
+    <FlyoutBase.AttachedFlyout>
+      <Flyout ShowMode="TransientWithDismissOnPointerMoveAway">
+        <StackPanel Name="FlyoutContent" Orientation="Horizontal" x:DataType="vm:VariableInfo">
+          <TextBlock Text="global " IsVisible="{Binding IsGlobal}" />
+          <TextBlock Text="{Binding VariableName}" FontWeight="Bold" />
+          <TextBlock Text=": " IsVisible="{Binding HasValue}" />
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{Binding HasValue}"
+              DataContext="{Binding Slot}">
+            <StackPanel.Resources>
+              <c:HexValueConverter x:Key="HexValueConverter" />
+              <c:ByteToCharConverter x:Key="ByteToCharConverter" />
+            </StackPanel.Resources>
+            <TextBlock Text="{Binding VariableValue}" IsVisible="{Binding IsDefaultRepresentation}" />
+            <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}"
+              IsVisible="{Binding IsHexRepresentation}" />
+            <TextBlock Text="{Binding VariableValue, StringFormat=\'{0}\', Converter={StaticResource ByteToCharConverter}, Mode=OneWay}"
+              IsVisible="{Binding CanBeChar}" Foreground="Gray" Margin="4,0" />
+            <TextBlock Text="{Binding EnumValue, StringFormat=({0}), Mode=OneWay}"
+              IsVisible="{Binding IsEnum}" Foreground="Gray" Margin="4,0" />
+          </StackPanel>
+        </StackPanel>
+      </Flyout>
+    </FlyoutBase.AttachedFlyout>
   </ae:TextEditor>
 </UserControl>

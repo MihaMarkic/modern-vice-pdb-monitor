@@ -213,6 +213,18 @@ public class SourceFileViewModel : ScopedViewModel
             logger.LogError("Failed to add variable breakpoint for null variable");
         }
     }
+    public VariableInfo? GetContextSymbolReferenceInfo(object symbolReference)
+    {
+        if (symbolReference is PdbVariable variable)
+        {
+            // TODO check if DebugSymbols are static for this viewmodel and simplify if yes
+            var globalVariables = globals.Project?.DebugSymbols?.GlobalVariables ?? ImmutableHashSet<PdbVariable>.Empty;
+            bool isGlobal = globalVariables.Contains(variable);
+            var slot = watchedVariablesViewModel.GetVariableSlot(variable, isGlobal);
+            return new VariableInfo(isGlobal, variable.Name, slot);
+        }
+        return null;
+    }
     void Breakpoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
@@ -339,7 +351,10 @@ public class SourceFileViewModel : ScopedViewModel
         base.Dispose(disposing);
     }
 }
-
+public record VariableInfo(bool IsGlobal, string VariableName, VariableSlot? Slot)
+{
+    public bool HasValue => Slot is not null;
+}
 public class LineViewModel : NotifiableObject
 {
     public PdbLine SourceLine { get; }

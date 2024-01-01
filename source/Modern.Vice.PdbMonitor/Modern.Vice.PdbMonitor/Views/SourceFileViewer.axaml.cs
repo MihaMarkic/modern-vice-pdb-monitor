@@ -2,16 +2,15 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
-using Antlr4.Runtime.Misc;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
-using FuzzySharp.Edits;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
@@ -129,6 +128,23 @@ public partial class SourceFileViewer : UserControl
 
     private void Editor_PointerHover(object? sender, PointerEventArgs e)
     {
+        if (ViewModel is not null)
+        {
+            var flyout = (Flyout?)FlyoutBase.GetAttachedFlyout(Editor);
+            if (flyout is not null)
+            {
+                object? symbolReference = GetSymbolReferenceAtPosition(e);
+                if (symbolReference is not null)
+                {
+                    var info = ViewModel.GetContextSymbolReferenceInfo(symbolReference);
+                    if (info is not null)
+                    {
+                        FlyoutContent.DataContext = info;
+                        flyout.ShowAt(Editor, true);
+                    }
+                }
+            }
+        }
     }
 
     private void Editor_PointerPressed(object? sender, PointerPressedEventArgs e)

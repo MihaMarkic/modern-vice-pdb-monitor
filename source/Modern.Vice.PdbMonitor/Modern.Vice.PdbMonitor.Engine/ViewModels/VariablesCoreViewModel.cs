@@ -16,8 +16,8 @@ public abstract class VariablesCoreViewModel: NotifiableObject
     readonly IViceBridge viceBridge;
     readonly IDispatcher dispatcher;
     readonly EmulatorMemoryViewModel emulatorMemoryViewModel;
-    readonly ExecutionStatusViewModel executionStatusViewModel;
-    readonly protected Globals globals;
+    protected readonly ExecutionStatusViewModel executionStatusViewModel;
+    protected readonly Globals globals;
     readonly CommandsManager commandsManager;
     public RelayCommand<VariableSlot> ToggleVariableExpansionCommand { get; }
     public RelayCommand<VariableSlot> RemoveVariableCommand { get; }
@@ -56,7 +56,16 @@ public abstract class VariablesCoreViewModel: NotifiableObject
         await Task.Delay(5000);
         numericSlot.Value = numericValue;
     }
-
+    public VariableSlot? GetVariableSlot(PdbVariable variable, bool isGlobal)
+    {
+        if (executionStatusViewModel.IsDebuggingPaused)
+        {
+            var slot = new VariableSlot(variable, isGlobal: isGlobal);
+            FillVariableValue(slot, variable);
+            return slot;
+        }
+        return null;
+    }
     void RemoveVariable(VariableSlot? source)
     {
         if (source is not null)
