@@ -9,8 +9,8 @@
         xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls"
         xmlns:cmn="clr-namespace:Modern.Vice.PdbMonitor.Engine.Common;assembly=Modern.Vice.PdbMonitor.Engine"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        MinWidth="400" Width="800"
-        MinHeight="200" Height="600"
+        MinWidth="600" Width="800"
+        MinHeight="300" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding Globals.ProjectCaption}">
@@ -267,26 +267,32 @@
     <Grid>
       <DockPanel IsVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNull}}">
       <ctl:DockTool DockPanel.Dock="Bottom" Height="200" Title="{Binding #BottomTabs.SelectedItem.Header}" HorizontalContentAlignment="Stretch">
-        <TabControl x:Name="BottomTabs" TabStripPlacement="Bottom">
-          <TabItem Header="Errors">
-            <v:ErrorMessages DataContext="{Binding #Source.DataContext.ErrorMessagesViewModel}" />
-          </TabItem>
-          <TabItem Header="Registers">
-            <v:Registers DataContext="{Binding #Source.DataContext.RegistersViewModel}" />
-          </TabItem>
-          <TabItem Header="Breakpoints">
-            <v:Breakpoints DataContext="{Binding #Source.DataContext.BreakpointsViewModel}" />
-          </TabItem>
-          <TabItem Header="Variables">
-            <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
-          </TabItem>
-          <TabItem Header="Watch">
-            <v:Variables DataContext="{Binding #Source.DataContext.WatchedVariablesViewModel}" />
-          </TabItem>
-          <TabItem Header="Trace">
-            <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
-          </TabItem>
-        </TabControl>
+        <Grid>
+          <TabControl x:Name="BottomTabs" TabStripPlacement="Bottom">
+            <TabItem Header="Errors">
+              <v:ErrorMessages DataContext="{Binding #Source.DataContext.ErrorMessagesViewModel}" />
+            </TabItem>
+            <TabItem Header="Registers">
+              <v:Registers DataContext="{Binding #Source.DataContext.RegistersViewModel}" />
+            </TabItem>
+            <TabItem Header="Breakpoints">
+              <v:Breakpoints DataContext="{Binding #Source.DataContext.BreakpointsViewModel}" />
+            </TabItem>
+            <TabItem Header="Variables">
+              <v:Variables DataContext="{Binding #Source.DataContext.VariablesViewModel}" />
+            </TabItem>
+            <TabItem Header="Watch">
+              <v:Variables DataContext="{Binding #Source.DataContext.WatchedVariablesViewModel}" />
+            </TabItem>
+            <TabItem Header="Trace">
+              <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
+            </TabItem>
+          </TabControl>
+          <v:ExecutionAddressInfo ExecutionAddress="{Binding RegistersViewModel.Current.PC}" 
+            ExecutionAddressVisible="{Binding IsDebuggingPaused}"
+            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Margin="0,0,4,4"/>
+        </Grid>
       </ctl:DockTool>
       <ctl:DockSizer Height="5" Margin="0,2" DockPanel.Dock="Bottom" Orientation="Horizontal" />
       <ctl:DockTool DockPanel.Dock="Left" Width="300" Title="Project Explorer">

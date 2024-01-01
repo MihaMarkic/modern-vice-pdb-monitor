@@ -1,5 +1,4 @@
-﻿using Modern.Vice.PdbMonitor.Core;
-using PropertyChanged;
+﻿using PropertyChanged;
 
 namespace Modern.Vice.PdbMonitor.Engine.BindingValidators;
 

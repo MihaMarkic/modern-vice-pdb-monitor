@@ -486,6 +486,7 @@ public class MainViewModel : NotifiableObject
     {
         logger.LogDebug("Cleaning after debugging");
         executionStatusViewModel.IsDebugging = false;
+        executionStatusViewModel.IsDebuggingPaused = false;
         await TraceOutputViewModel.ClearTraceCheckpointAsync();
         if (viceBridge?.IsConnected ?? false)
         {

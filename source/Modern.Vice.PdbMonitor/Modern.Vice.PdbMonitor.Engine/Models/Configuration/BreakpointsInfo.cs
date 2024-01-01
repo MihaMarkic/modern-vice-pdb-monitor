@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Modern.Vice.PdbMonitor.Core.Common;
-using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 public record BreakpointsSettings(ImmutableArray<BreakpointInfo> Breakpoints)

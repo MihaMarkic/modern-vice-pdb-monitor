@@ -1,6 +1,5 @@
 ﻿using Avalonia.Layout;
 using Avalonia;
-using Modern.Vice.PdbMonitor.Controls;
 using Righthand.ViceMonitor.Bridge.Responses;
 
 namespace Modern.Vice.PdbMonitor.Converters;

@@ -87,6 +87,9 @@
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Views\ExecutionAddressInfo.axaml.cs">
+      <DependentUpon>ExecutionAddressInfo.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\SourceFilesViewer.axaml.cs">
       <DependentUpon>SourceFilesViewer.axaml</DependentUpon>
     </Compile>
