@@ -89,6 +89,7 @@ public class MainViewModel : NotifiableObject
     public DebuggerViewModel DebuggerViewModel { get; }
     public TraceOutputViewModel TraceOutputViewModel { get; }
     public MessagesHistoryViewModel MessagesHistoryViewModel { get; }
+    public MemoryViewerViewModel MemoryViewerViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -100,7 +101,7 @@ public class MainViewModel : NotifiableObject
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
         VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
-        DebuggerViewModel debuggerViewModel, 
+        DebuggerViewModel debuggerViewModel, MemoryViewerViewModel memoryViewerViewModel,
         TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel)
     {
         this.logger = logger;
@@ -119,6 +120,7 @@ public class MainViewModel : NotifiableObject
         DebuggerViewModel = debuggerViewModel;
         TraceOutputViewModel = traceOutputViewModel;
         MessagesHistoryViewModel = messagesHistoryViewModel;
+        MemoryViewerViewModel = memoryViewerViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);

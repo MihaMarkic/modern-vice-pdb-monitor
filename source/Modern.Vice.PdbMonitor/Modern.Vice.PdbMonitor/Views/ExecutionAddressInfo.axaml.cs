@@ -54,6 +54,8 @@ public partial class ExecutionAddressInfo : UserControl
     /// <remarks>Not done in most beautiful way.</remarks>
     async Task DelayShowVisibilityAsync(bool value)
     {
+        // dont't throw these exceptions when in debug mode
+#if !DEBUG
         delayedVisibilityCts?.Cancel();
         if (value)
         {
@@ -67,6 +69,7 @@ public partial class ExecutionAddressInfo : UserControl
                 return;
             }
         }
+#endif
         EffectiveVisibility = value;
     }
 }

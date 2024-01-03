@@ -287,6 +287,9 @@
             <TabItem Header="Trace">
               <v:TraceOutput DataContext="{Binding #Source.DataContext.TraceOutputViewModel}" />
             </TabItem>
+            <TabItem Header="Memory">
+              <v:MemoryViewer DataContext="{Binding #Source.DataContext.MemoryViewerViewModel}" />
+            </TabItem>
           </TabControl>
           <v:ExecutionAddressInfo ExecutionAddress="{Binding RegistersViewModel.Current.PC}" 
             ExecutionAddressVisible="{Binding IsDebuggingPaused}"

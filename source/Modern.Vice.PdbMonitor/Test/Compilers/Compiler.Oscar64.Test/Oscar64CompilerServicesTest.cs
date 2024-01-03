@@ -44,8 +44,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
             var types = ImmutableDictionary<int, PdbType>.Empty
                 .Add(0, new PdbValueType(0, "null", 0, PdbVariableType.Void));
             var variables = ImmutableArray<Variable>.Empty
-                .Add(new Variable("i", 0, 100, null, null, null, 0, ImmutableArray<SymbolReference>.Empty))
-                .Add(new Variable("i", 0, 100, null, 5, 10, 0, ImmutableArray<SymbolReference>.Empty));
+                .Add(new Variable("i", 0, 100, null, null, null, 0))
+                .Add(new Variable("i", 0, 100, null, 5, 10, 0));
 
             var actual = Oscar64CompilerServices.CreateLineVariables("projectDirectory", types, variables);
 
@@ -122,7 +122,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
         /// <summary>
         /// Defines a sample variable as these are used merely for mapping and
         /// </summary>
-        readonly Variable sampleVariable = new Variable("Sample", 0, 2, null, null, null, 0, ImmutableArray<SymbolReference>.Empty);
+        readonly Variable sampleVariable = new Variable("Sample", 0, 2, null, null, null, 0);
         [Test]
         public void WhenNoRanges_ReturnsNull()
         {

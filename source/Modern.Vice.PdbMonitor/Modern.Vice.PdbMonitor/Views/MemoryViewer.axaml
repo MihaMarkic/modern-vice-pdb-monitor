@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:dg="DataGrid"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:MemoryViewerViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.MemoryViewer">
+  <UserControl.Resources>
+    <!-- these are required also from code -->
+    <c:HexValueConverter x:Key="HexValueConverter" />
+    <c:PetsciiByteToCharConverter x:Key="PetsciiByteToCharConverter" />
+    <c:BoolToFontWeightConverter x:Key="ChangedValueToBoldConverter" OnTrue="Bold" OnFalse="Normal" />
+  </UserControl.Resources>
+  <DockPanel LastChildFill="True">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+      <CheckBox IsChecked="{Binding ShowOnlyRowsWithChanges}">Only Changes</CheckBox>
+    </StackPanel>
+    <DataGrid Name="grid" ItemsSource="{Binding FilteredRows}" IsReadOnly="True">
+      <DataGrid.Resources>
+        <c:HexAddressConverter x:Key="HexAddressConverter" />
+      </DataGrid.Resources>
+      <DataGrid.Styles>
+        <Style Selector="DataGridRow:nth-child(odd)">
+          <Setter Property="Background" Value="{StaticResource OddRowBackground}" />
+        </Style>
+        <Style Selector="DataGridCell.address">
+          <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+          <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+        <Style Selector="TextBlock.value">
+          <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+          <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <!-- this guy is implemented (copy from DataGrid's fluent theme) only to change text alignment -->
+        <Style Selector="DataGridColumnHeader">
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Template">
+            <ControlTemplate>
+              <Border x:Name="HeaderBorder"
+                      Background="{TemplateBinding Background}"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="{TemplateBinding BorderThickness}"
+                      CornerRadius="{TemplateBinding CornerRadius}">
+                <Grid Name="PART_ColumnHeaderRoot" ColumnDefinitions="*,Auto">
+
+                  <Panel Margin="{TemplateBinding Padding}"
+                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" MinWidth="0" />
+                      </Grid.ColumnDefinitions>
+                
+                      <ContentPresenter Content="{TemplateBinding Content}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}" />
+                
+                      <Path Name="SortIcon"
+                            IsVisible="False"
+                            Grid.Column="1"
+                            Height="12"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Fill="{TemplateBinding Foreground}"
+                            Stretch="Uniform" />
+                    </Grid>
+                  </Panel>
+
+                  <Rectangle Name="VerticalSeparator"
+                             Grid.Column="1"
+                             Width="1"
+                             VerticalAlignment="Stretch"
+                             Fill="{TemplateBinding SeparatorBrush}"
+                             IsVisible="{TemplateBinding AreSeparatorsVisible}" />
+
+                  <Grid x:Name="FocusVisual" IsHitTestVisible="False"
+                        IsVisible="False">
+                    <Rectangle x:Name="FocusVisualPrimary"
+                               HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch"
+                               Fill="Transparent"
+                               IsHitTestVisible="False"
+                               Stroke="{DynamicResource DataGridCellFocusVisualPrimaryBrush}"
+                               StrokeThickness="2" />
+                    <Rectangle x:Name="FocusVisualSecondary"
+                               Margin="2"
+                               HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch"
+                               Fill="Transparent"
+                               IsHitTestVisible="False"
+                               Stroke="{DynamicResource DataGridCellFocusVisualSecondaryBrush}"
+                               StrokeThickness="1" />
+                  </Grid>
+                </Grid>
+              </Border>
+            </ControlTemplate>
+          </Setter>
+        </Style>
+      </DataGrid.Styles>
+      <DataGrid.Columns>
+        <DataGridTextColumn CellStyleClasses="address" Header="Address"
+          Binding="{Binding Address, Converter={StaticResource HexAddressConverter}}" />
+        <!--<DataGridTemplateColumn Header="00" Width="28">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate x:DataType="vm:MemoryViewerRow">
+            <TextBlock Classes="value" DataContext="{Binding Cells[0]}" Text="{Binding Value, Converter={StaticResource HexValueConverter}}"
+              HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>-->
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

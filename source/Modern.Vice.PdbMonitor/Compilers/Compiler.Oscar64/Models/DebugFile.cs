@@ -3,11 +3,13 @@ using JsonSubTypes;
 using Newtonsoft.Json;
 
 namespace Compiler.Oscar64.Models;
-public record DebugFile(
-    ImmutableArray<MemoryBlock> Memory,
-    ImmutableArray<Variable> Variables,
-    ImmutableArray<Function> Functions,
-    ImmutableArray<Oscar64Type> Types);
+public class DebugFile
+{
+    public ImmutableArray<MemoryBlock> Memory { get; init; } = ImmutableArray<MemoryBlock>.Empty;
+    public ImmutableArray<Variable> Variables { get; init; } = ImmutableArray<Variable>.Empty;
+    public ImmutableArray<Function> Functions { get; init; } = ImmutableArray<Function>.Empty;
+    public ImmutableArray<Oscar64Type> Types { get; init; } = ImmutableArray<Oscar64Type>.Empty;
+}
 
 public enum MemoryBlockType
 {
@@ -21,12 +23,19 @@ public interface IWithReferences
     ImmutableArray<SymbolReference> References { get; }
 }
 public record MemoryBlock(string Name, string XName, ushort Start, ushort End, string Type, string Source, [JsonProperty("line")] int LineNumber);
-public record Variable(string Name, ushort Start, ushort End, ushort? Base, int? Enter, int? Leave, int TypeId,
-    ImmutableArray<SymbolReference> References): IWithReferences;
-public record Function(string Name, string XName, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber, 
-    ImmutableArray<FunctionLine> Lines, ImmutableArray<Variable> Variables, ImmutableArray<SymbolReference> References): IWithReferences;
+public record Variable(string Name, ushort Start, ushort End, ushort? Base, int? Enter, int? Leave, int TypeId) : IWithReferences
+{
+    public ImmutableArray<SymbolReference> References { get; init; } = ImmutableArray<SymbolReference>.Empty;
+}
+public record Function(string Name, string XName, ushort Start, ushort End, int TypeId, string Source, [JsonProperty("line")] int LineNumber)
+    : IWithReferences
+{
+    public ImmutableArray<FunctionLine> Lines { get; init; } = ImmutableArray<FunctionLine>.Empty;
+    public ImmutableArray<Variable> Variables { get; init; } = ImmutableArray<Variable>.Empty;
+    public ImmutableArray<SymbolReference> References { get; init; } = ImmutableArray<SymbolReference>.Empty;
+}
 public record SymbolReference(string Source, int Line, int Column);
-public record FunctionLine(ushort Start, ushort End, string Source, [JsonProperty("Line")]int LineNumber);
+public record FunctionLine(ushort Start, ushort End, string Source, [JsonProperty("Line")] int LineNumber);
 
 [JsonConverter(typeof(JsonSubtypes), "type")]
 [JsonSubtypes.KnownSubType(typeof(Oscar64UIntType), "uint")]
