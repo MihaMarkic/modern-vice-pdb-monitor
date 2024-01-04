@@ -9,11 +9,18 @@ App is currently in *alpha* state. Feel free to open issues, if you are in a moo
 I'm mostly hanging out at [Everything C64 discord development channel](https://discord.gg/SFQaN4jgqm) and
 [Mastodon](https://mastodon.social/@mihamarkic) as @mihamarkic@mastodon.social.
 
+## Status
+
+Main development is going on on `develop` branch and specific features are being developed and dedicated `feature/FEATURE` branches until they are merged into `develop` branch.
+Releases are published as framework dependent binaries (.NET 8.0 runtime required) here and there until an automated distribution system is put in place.
+At this time new features are still being added any many pieces have yet to fall in place.
+Also this documentation is outdated.
+
+
 ## Getting started
 
 Application was first developed with ACME as compiler in mind, then it was modified to be compiler agnostic and lastly
-Oscar64 support was added where most of the work has been done since. Until I update documentation below, consider it
-quite obsolete and it might not even work with ACME for now.
+Oscar64 support was added where most of the work has been done since. Until I update documentation below, consider it quite obsolete and it might not even work with ACME for now.
 
 Oscar64 compilation should use these parameters, to minimize optimizations:
 
@@ -21,7 +28,7 @@ Oscar64 compilation should use these parameters, to minimize optimizations:
 
 ### Requirements
 
-Oscar64 compiler or ACME Cross-Assembler and VICE emulator.
+Oscar64 compiler (preferebly as fresh as possible) or ACME Cross-Assembler and VICE emulator.
 
 ### Steps
 
