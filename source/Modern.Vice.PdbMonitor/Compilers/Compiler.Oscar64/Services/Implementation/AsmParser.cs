@@ -181,7 +181,7 @@ public class AsmParser
 
     internal bool IsDataLine(string line, out ushort address)
     {
-        if (line.Length > 0
+        if (line.Length > 6
             && ushort.TryParse(line.AsSpan()[0..4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort tempAddress)
             && line[4] == ' '
             && line[5] == ':')

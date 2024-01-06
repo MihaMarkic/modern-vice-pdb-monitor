@@ -242,6 +242,17 @@ internal class AsmParserTest: BaseTest<AsmParser>
             Assert.That(actual, Is.EquivalentTo(expected).Using(AssemblyFunctionComparer.Default));
         }
     }
+    [TestFixture]
+    public class IsDataLine : AsmParserTest
+    {
+        [Test]
+        public void GivenNonDataShortLine_ReturnsFalse()
+        {
+            var actual = Target.IsDataLine("cr:", out ushort address);
+
+            Assert.That(actual, Is.False);
+        }
+    }
 }
 public class AssemblyFunctionComparer : IEqualityComparer<AssemblyFunction>
 {
