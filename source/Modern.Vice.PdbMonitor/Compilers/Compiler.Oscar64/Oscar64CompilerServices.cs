@@ -25,15 +25,17 @@ public class Oscar64CompilerServices : ICompilerServices
         CancellationToken ct)
     {
         string metadataFilePath = GetDebugFilePath(projectDirectory, prgPath);
-        DebugFile? debugFile = null;
+        string assemblyFilePath = GetAssemblyFilePath(projectDirectory, prgPath);
         try
         {
-            debugFile = await parser.LoadFileAsync(metadataFilePath, ct);
+            var asmFunctionsTask = parser.LoadAssemblyFileAsync(assemblyFilePath, ct);
+            DebugFile? debugFile = await parser.LoadFileAsync(metadataFilePath, ct);
             if (debugFile is null)
             {
                 return (null, $"Debug data file {metadataFilePath} does not exist of failed to deserialize");
             }
-            return ParseDebugFile(projectDirectory, debugFile);
+            var asmFunctions = (await asmFunctionsTask) ?? ImmutableArray<AssemblyFunction>.Empty;
+            return ParseDebugFile(projectDirectory, debugFile, asmFunctions);
         }
         catch (Exception ex)
         {
@@ -41,7 +43,8 @@ public class Oscar64CompilerServices : ICompilerServices
         }
     }
 
-    (Pdb? Pdb, string? ErrorMessage) ParseDebugFile(string projectDirectory, DebugFile debugFile)
+    (Pdb? Pdb, string? ErrorMessage) ParseDebugFile(string projectDirectory, DebugFile debugFile,
+        ImmutableArray<AssemblyFunction> asmFunctions)
     {
         var uniqueFileNamesBuilder = ImmutableHashSet.CreateBuilder<string>();
         foreach (var f in debugFile.Functions)
@@ -61,7 +64,8 @@ public class Oscar64CompilerServices : ICompilerServices
         var pdbTypes = CreatePdbTypes(debugFile.Types);
         var globalVariables = CreateVariables(projectDirectory, pdbTypes, debugFile.Variables);
 
-        var (pdbLinesAndFunctions, localVariablesMap) = CreatePdbLines(projectDirectory, debugFile.Functions, emptyPdbFiles, paths, pdbTypes);
+        var (pdbLinesAndFunctions, localVariablesMap) = CreatePdbLines(projectDirectory, debugFile.Functions,
+            emptyPdbFiles, paths, pdbTypes, asmFunctions);
         var pdbFiles = pdbLinesAndFunctions.Select(
             p => p.Key with { Lines = p.Value.Lines, Functions = p.Value.Functions })
             .ToImmutableArray();
@@ -263,6 +267,36 @@ public class Oscar64CompilerServices : ICompilerServices
         return new PdbEnumType(source.TypeId, source.Name, source.Size, variableType, members);
     }
 
+    /// <summary>
+    /// Creates a map of File,LineNumber key to PdbAssemblyLine array value
+    /// </summary>
+    /// <param name="projectDirectory"></param>
+    /// <param name="asmFunctions"></param>
+    /// <returns></returns>
+    /// <remarks>Used to map assembly lines to source lines</remarks>
+    internal static ImmutableDictionary<(PdbPath File, int LineNumber), ImmutableArray<PdbAssemblyLine>> CreateAssemblyLinesMap(
+        string projectDirectory, ImmutableArray<AssemblyFunction> asmFunctions)
+    {
+        var allAssemblyLines = asmFunctions.SelectMany(f => f.SourceLines);
+        var builder = ImmutableDictionary.CreateBuilder<(PdbPath File, int LineNumber), ImmutableArray<PdbAssemblyLine>>();
+        foreach (var sl in allAssemblyLines)
+        {
+            var key = (PdbPath.Create(projectDirectory, sl.FilePath), sl.LineNumber);
+            var execLines = sl.ExecutionLines
+                .Select(el => new PdbAssemblyLine(el.Address, el.Text, el.Data))
+                .ToImmutableArray();
+            if (!builder.TryGetValue(key, out ImmutableArray<PdbAssemblyLine> lines))
+            {
+                builder.Add(key, execLines);
+            }
+            else
+            {
+                builder[key] = lines.AddRange(execLines);
+            }
+        }
+        return builder.ToImmutable();
+    }
+    
     internal (
         ImmutableDictionary<PdbFile, (ImmutableArray<PdbLine> Lines, ImmutableDictionary<string, PdbFunction> Functions)> FilesMap,
         ImmutableDictionary<Variable, PdbVariable> VariablesMap
@@ -272,7 +306,8 @@ public class Oscar64CompilerServices : ICompilerServices
             ImmutableArray<Function> functions, 
             ImmutableDictionary<PdbPath, PdbFile> files, 
             ImmutableDictionary<string, PdbPath> paths,
-            ImmutableDictionary<int, PdbType> types)
+            ImmutableDictionary<int, PdbType> types,
+            ImmutableArray<AssemblyFunction> asmFunctions)
     {
         // sorts all text on files
         var filesWithAllText = files.Select(f =>
@@ -284,6 +319,8 @@ public class Oscar64CompilerServices : ICompilerServices
         }).ToImmutableDictionary(r => r.File, r => r.Text);
 
         var variablesMapBuilder = ImmutableDictionary.CreateBuilder<Variable, PdbVariable>();
+
+        var asmLinesMap = CreateAssemblyLinesMap(projectDirectory, asmFunctions);
 
         // prepares slots for resulting PdbLines
         // Dictionary of file -> pdb lines array per each source line
@@ -336,10 +373,15 @@ public class Oscar64CompilerServices : ICompilerServices
                 if (slots[lineNumber] is null)
                 {
                     // when pdb line is created, also assign it variables
+                    if (!asmLinesMap.TryGetValue((path, lineNumber+1), out var asmLines))
+                    {
+                        asmLines = ImmutableArray<PdbAssemblyLine>.Empty;
+                    }
                     pdbLine = new PdbLine(path, lineNumber, fileWithText[lineNumber])
                     {
                         Variables = hasNestedVariables ? GetLineVariables(lineNumber, lineVariablesMap)
                                         : allLinesVariables,
+                        AssemblyLines = asmLines,
                     };
                 }
                 else
@@ -540,8 +582,16 @@ public class Oscar64CompilerServices : ICompilerServices
     /// <returns></returns>
     internal string GetDebugFilePath(string projectDirectory, string prgPath)
     {
+        return GetMetadataFilePath(projectDirectory, prgPath, "dbj");
+    }
+    internal string GetAssemblyFilePath(string projectDirectory, string prgPath)
+    {
+        return GetMetadataFilePath(projectDirectory, prgPath, "asm");
+    }
+    internal string GetMetadataFilePath(string projectDirectory, string prgPath, string extension)
+    {
         string directory = Path.Combine(projectDirectory, Path.GetDirectoryName(prgPath) ?? "");
         string project = Path.GetFileNameWithoutExtension(prgPath);
-        return Path.Combine(directory, $"{project}.dbj");
+        return Path.Combine(directory, $"{project}.{extension}");
     }
 }

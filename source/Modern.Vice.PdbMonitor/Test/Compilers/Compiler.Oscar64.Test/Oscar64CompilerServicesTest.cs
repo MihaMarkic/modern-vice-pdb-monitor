@@ -26,7 +26,7 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
     async Task<DebugFile> LoadSampleFromFileAsync(string fileName)
     {
         string content = File.ReadAllText(fileName);
-        var parser = new Oscar64DbjParser(fixture.Create<ILogger<Oscar64DbjParser>>());
+        var parser = new Oscar64DbjParser(fixture.Create<ILogger<Oscar64DbjParser>>(), fixture.Create<AsmParser>());
         return await parser.LoadContentAsync(content) ?? throw new NullReferenceException($"Failed to parse file {fileName}");
     }
     ImmutableArray<string> LoadLines(string path, string name)
@@ -61,7 +61,8 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
     {
         const string RootDirectory = @"D:\ROOT";
         record Arguments(ImmutableArray<Function> Functions, ImmutableDictionary<PdbPath, PdbFile> EmptyPdbFiles, 
-            ImmutableDictionary<string, PdbPath> Paths, ImmutableDictionary<int, PdbType> PdbTypes);
+            ImmutableDictionary<string, PdbPath> Paths, ImmutableDictionary<int, PdbType> PdbTypes,
+            ImmutableArray<AssemblyFunction> AsmFunctions);
 
         /// <summary>
         /// From main.dbj and source files placed in <paramref name="sampleSubdirectory"/> directory creates
@@ -91,15 +92,17 @@ internal class Oscar64CompilerServicesTest: BaseTest<Oscar64CompilerServices>
                 .ToImmutableDictionary(f => f.Path, f => f);
 
             var pdbTypes = CreatePdbTypes(dbj.Types);
+            var asmFunctions = ImmutableArray<AssemblyFunction>.Empty;
 
-            return new Arguments(dbj.Functions, emptyPdbFiles, paths, pdbTypes);
+            return new Arguments(dbj.Functions, emptyPdbFiles, paths, pdbTypes, asmFunctions);
         }
         [Test]
         public async Task WhenFunctionIsSplitBetweenTwoFiles_ParsesProperly()
         {
             var args = await CreateArguments("TestFunctionsSplitBetweenFiles", "character.cpp", "character.h");
 
-            var (actual, variablesMap) = Target.CreatePdbLines(RootDirectory, args.Functions, args.EmptyPdbFiles, args.Paths, args.PdbTypes);
+            var (actual, variablesMap) = 
+                Target.CreatePdbLines(RootDirectory, args.Functions, args.EmptyPdbFiles, args.Paths, args.PdbTypes, args.AsmFunctions);
 
             Assert.That(actual.Count, Is.EqualTo(2));
         }

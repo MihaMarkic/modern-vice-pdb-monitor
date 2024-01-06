@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\Implementation\AssemblyExecutionLineComparer.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture.AutoNSubstitute" Version="4.18.1" />
     <PackageReference Include="AutoFixture.Community.ImmutableCollections" Version="1.0.0" />
@@ -23,6 +27,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="Samples\nested_variable.dbj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\sample.asm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\sprcoltut4.dbj">

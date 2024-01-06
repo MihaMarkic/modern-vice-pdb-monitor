@@ -6,7 +6,7 @@ using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Utils;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-namespace Modern.Vice.PdbMonitor.Views;
+namespace Modern.Vice.PdbMonitor.Views.Editor;
 
 /// <summary>
 /// Provides breakpoints display and toggle for <see cref="SourceFileViewer"/>.
@@ -59,14 +59,19 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
             foreach (var visualLine in textView.VisualLines)
             {
                 var lineNumber = visualLine.FirstDocumentLine.LineNumber;
-                var line = sourceFileViewModel.Lines[lineNumber - 1];
-                if (line.HasBreakpoint)
+                var line = sourceFileViewModel.EditorLines[lineNumber - 1];
+                switch (line)
                 {
-                    DrawBreakpointIcon(drawingContext, activeBrush, visualLine);
-                }
-                else if (lineNumber == hoverLine && sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(line))
-                {
-                    DrawBreakpointIcon(drawingContext, hoverBrush, visualLine);
+                    case LineViewModel lineViewModel:
+                        if (lineViewModel.HasBreakpoint)
+                        {
+                            DrawBreakpointIcon(drawingContext, activeBrush, visualLine);
+                        }
+                        else if (lineNumber == hoverLine && sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(line))
+                        {
+                            DrawBreakpointIcon(drawingContext, hoverBrush, visualLine);
+                        }
+                        break;
                 }
             }
         }
@@ -87,10 +92,15 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
             if (visualLine is not null)
             {
                 var lineNumber = visualLine.FirstDocumentLine.LineNumber;
-                var line = sourceFileViewModel.Lines[lineNumber-1];
-                if (sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(line))
+                var line = sourceFileViewModel.EditorLines[lineNumber - 1];
+                switch (line)
                 {
-                    sourceFileViewModel.AddOrRemoveBreakpointCommand.Execute(line);
+                    case LineViewModel lineViewModel:
+                        if (sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(lineViewModel))
+                        {
+                            sourceFileViewModel.AddOrRemoveBreakpointCommand.Execute(lineViewModel);
+                        }
+                        break;
                 }
             }
         }
@@ -100,23 +110,28 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
     {
         base.OnPointerEntered(e);
         UpdateHoverPosition(e);
-    }        
+    }
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
         UpdateHoverPosition(e);
-        bool cursorSet = false;
+        var cursorSet = false;
         if (!e.Handled && TextView is not null && TextArea is not null)
         {
             var visualLine = GetTextLineSegment(e);
             if (visualLine is not null)
             {
                 var lineNumber = visualLine.FirstDocumentLine.LineNumber;
-                var line = sourceFileViewModel.Lines[lineNumber - 1];
-                if (sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(line))
+                var line = sourceFileViewModel.EditorLines[lineNumber - 1];
+                switch (line)
                 {
-                    Cursor = new Cursor(StandardCursorType.Arrow);
-                    cursorSet = true;
+                    case LineViewModel lineViewModel:
+                        if (sourceFileViewModel.AddOrRemoveBreakpointCommand.CanExecute(lineViewModel))
+                        {
+                            Cursor = new Cursor(StandardCursorType.Arrow);
+                            cursorSet = true;
+                        }
+                        break;
                 }
             }
         }
@@ -132,7 +147,7 @@ public class BreakpointsMargin : AdditionalLineInfoMargin
             var visualLine = GetTextLineSegment(e);
             if (visualLine is not null)
             {
-                int newHoverLine = visualLine.FirstDocumentLine.LineNumber;
+                var newHoverLine = visualLine.FirstDocumentLine.LineNumber;
                 if (newHoverLine != hoverLine)
                 {
                     hoverLine = newHoverLine;

@@ -5,7 +5,12 @@ public abstract record BreakpointBind;
 public record BreakpointLineBind(PdbFile File, PdbLine Line, int LineNumber) : BreakpointBind
 {
     public PdbPath? FileName => File.Path;
-    public override string ToString() => $"Line {LineNumber} File {File.Path.Path}";
+    /// <summary>
+    /// Shows info.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>LineNumber is Editor adjusted (+1).</remarks>
+    public override string ToString() => $"Line {LineNumber+1} File {File.Path.Path}";
 }
 public record BreakpointGlobalVariableBind(string VariableName) : BreakpointBind
 {

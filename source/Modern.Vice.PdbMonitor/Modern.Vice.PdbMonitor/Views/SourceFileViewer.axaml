@@ -12,65 +12,70 @@
              x:DataType="vm:SourceFileViewModel"
              x:Name="control"
              x:Class="Modern.Vice.PdbMonitor.Views.SourceFileViewer">
-  <ae:TextEditor Name="Editor"
-        FontFamily="{StaticResource CodeFont}"
-        Background="#FFFDF6E3"
-        ShowLineNumbers="True"
-        IsReadOnly="True"
-        Margin="12,4,4,4"
-        Foreground="Black"
-        HorizontalScrollBarVisibility="Auto"
-        VerticalScrollBarVisibility="Auto"
-        FontWeight="Light"
-        FontSize="14"
-        PointerHover="Editor_PointerHover"
-        PointerPressed="Editor_PointerPressed"
-        PointerHoverStopped="Editor_PointerHoverStopped"
-        PointerMoved="Editor_PointerMoved">
-    <ae:TextEditor.Styles>
-      <Style Selector="aee|TextArea">
-        <Setter Property="SelectionBrush" Value="#66ffff80" />
-      </Style>
-    </ae:TextEditor.Styles>
-    <ae:TextEditor.Options>
-      <ae:TextEditorOptions ShowTabs="False" />
-    </ae:TextEditor.Options>
-    <ae:TextEditor.ContextMenu>
-      <ContextMenu>
-        <MenuItem Header="Go To Implementation" Command="{Binding GoToImplementationCommand}"
-          CommandParameter="{Binding ContextFunctionReference}"/>
-        <MenuItem Header="Go To Definition" Command="{Binding GoToDefinitionCommand}"
-          CommandParameter="{Binding ContextWithDefinitionReference}"/>
-        <MenuItem Header="Add Watch" Command="{Binding AddVariableToWatchCommand}"
-          CommandParameter="{Binding ContextVariableReference}"/>
-        <MenuItem Header="Add Store Breakpoint" Command="{Binding AddStoreBreakpointCommand}"
-          CommandParameter="{Binding ContextVariableReference}"/>
-        <MenuItem Header="Add Load Breakpoint" Command="{Binding AddLoadBreakpointCommand}"
-          CommandParameter="{Binding ContextVariableReference}"/>
-      </ContextMenu>
-    </ae:TextEditor.ContextMenu>
-    <FlyoutBase.AttachedFlyout>
-      <Flyout ShowMode="TransientWithDismissOnPointerMoveAway">
-        <StackPanel Name="FlyoutContent" Orientation="Horizontal" x:DataType="vm:VariableInfo">
-          <TextBlock Text="global " IsVisible="{Binding IsGlobal}" />
-          <TextBlock Text="{Binding VariableName}" FontWeight="Bold" />
-          <TextBlock Text=": " IsVisible="{Binding HasValue}" />
-          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{Binding HasValue}"
-              DataContext="{Binding Slot}">
-            <StackPanel.Resources>
-              <c:HexValueConverter x:Key="HexValueConverter" />
-              <c:ByteToCharConverter x:Key="ByteToCharConverter" />
-            </StackPanel.Resources>
-            <TextBlock Text="{Binding VariableValue}" IsVisible="{Binding IsDefaultRepresentation}" />
-            <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}"
-              IsVisible="{Binding IsHexRepresentation}" />
-            <TextBlock Text="{Binding VariableValue, StringFormat=\'{0}\', Converter={StaticResource ByteToCharConverter}, Mode=OneWay}"
-              IsVisible="{Binding CanBeChar}" Foreground="Gray" Margin="4,0" />
-            <TextBlock Text="{Binding EnumValue, StringFormat=({0}), Mode=OneWay}"
-              IsVisible="{Binding IsEnum}" Foreground="Gray" Margin="4,0" />
+  <DockPanel LastChildFill="True">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+      <CheckBox IsChecked="{Binding ShowAssemblyLines}">Assembly</CheckBox>
+    </StackPanel>
+    <ae:TextEditor Name="Editor"
+          FontFamily="{StaticResource CodeFont}"
+          Background="#FFFDF6E3"
+          ShowLineNumbers="False"
+          IsReadOnly="True"
+          Margin="12,4,4,4"
+          Foreground="Black"
+          HorizontalScrollBarVisibility="Auto"
+          VerticalScrollBarVisibility="Auto"
+          FontWeight="Light"
+          FontSize="14"
+          PointerHover="Editor_PointerHover"
+          PointerPressed="Editor_PointerPressed"
+          PointerHoverStopped="Editor_PointerHoverStopped"
+          PointerMoved="Editor_PointerMoved">
+      <ae:TextEditor.Styles>
+        <Style Selector="aee|TextArea">
+          <Setter Property="SelectionBrush" Value="#66ffff80" />
+        </Style>
+      </ae:TextEditor.Styles>
+      <ae:TextEditor.Options>
+        <ae:TextEditorOptions ShowTabs="False" />
+      </ae:TextEditor.Options>
+      <ae:TextEditor.ContextMenu>
+        <ContextMenu>
+          <MenuItem Header="Go To Implementation" Command="{Binding GoToImplementationCommand}"
+            CommandParameter="{Binding ContextFunctionReference}"/>
+          <MenuItem Header="Go To Definition" Command="{Binding GoToDefinitionCommand}"
+            CommandParameter="{Binding ContextWithDefinitionReference}"/>
+          <MenuItem Header="Add Watch" Command="{Binding AddVariableToWatchCommand}"
+            CommandParameter="{Binding ContextVariableReference}"/>
+          <MenuItem Header="Add Store Breakpoint" Command="{Binding AddStoreBreakpointCommand}"
+            CommandParameter="{Binding ContextVariableReference}"/>
+          <MenuItem Header="Add Load Breakpoint" Command="{Binding AddLoadBreakpointCommand}"
+            CommandParameter="{Binding ContextVariableReference}"/>
+        </ContextMenu>
+      </ae:TextEditor.ContextMenu>
+      <FlyoutBase.AttachedFlyout>
+        <Flyout ShowMode="TransientWithDismissOnPointerMoveAway">
+          <StackPanel Name="FlyoutContent" Orientation="Horizontal" x:DataType="vm:VariableInfo">
+            <TextBlock Text="global " IsVisible="{Binding IsGlobal}" />
+            <TextBlock Text="{Binding VariableName}" FontWeight="Bold" />
+            <TextBlock Text=": " IsVisible="{Binding HasValue}" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{Binding HasValue}"
+                DataContext="{Binding Slot}">
+              <StackPanel.Resources>
+                <c:HexValueConverter x:Key="HexValueConverter" />
+                <c:ByteToCharConverter x:Key="ByteToCharConverter" />
+              </StackPanel.Resources>
+              <TextBlock Text="{Binding VariableValue}" IsVisible="{Binding IsDefaultRepresentation}" />
+              <TextBlock Text="{Binding VariableValue, StringFormat=${0}, Converter={StaticResource HexValueConverter}, Mode=OneWay}"
+                IsVisible="{Binding IsHexRepresentation}" />
+              <TextBlock Text="{Binding VariableValue, StringFormat=\'{0}\', Converter={StaticResource ByteToCharConverter}, Mode=OneWay}"
+                IsVisible="{Binding CanBeChar}" Foreground="Gray" Margin="4,0" />
+              <TextBlock Text="{Binding EnumValue, StringFormat=({0}), Mode=OneWay}"
+                IsVisible="{Binding IsEnum}" Foreground="Gray" Margin="4,0" />
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-      </Flyout>
-    </FlyoutBase.AttachedFlyout>
-  </ae:TextEditor>
+        </Flyout>
+      </FlyoutBase.AttachedFlyout>
+    </ae:TextEditor>
+  </DockPanel>
 </UserControl>

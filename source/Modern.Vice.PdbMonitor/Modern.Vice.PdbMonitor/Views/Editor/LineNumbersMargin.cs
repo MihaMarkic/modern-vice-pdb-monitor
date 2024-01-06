@@ -3,25 +3,35 @@ using Avalonia.Media;
 using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-namespace Modern.Vice.PdbMonitor.Views;
+namespace Modern.Vice.PdbMonitor.Views.Editor;
 
-public class AddressMargin : AdditionalLineInfoMargin
+public class LineNumbersMargin : AdditionalLineInfoMargin
 {
     readonly double fontSize;
     readonly IBrush foreground;
-    readonly ImmutableArray<LineViewModel> lines;
+    ImmutableArray<EditorLineViewModel> lines;
+    ImmutableDictionary<int, int>? linesMap;
     readonly Typeface typeface;
-    public AddressMargin(FontFamily fontFamily, double fontSize, IBrush foreground, ImmutableArray<LineViewModel> lines)
+    public LineNumbersMargin(FontFamily fontFamily, double fontSize, IBrush foreground, 
+        ImmutableArray<EditorLineViewModel> lines, ImmutableDictionary<int, int>? linesMap)
     {
         this.fontSize = fontSize;
         this.foreground = foreground;
         this.lines = lines;
+        this.linesMap = linesMap;
         typeface = new Typeface(fontFamily);
+    }
+    internal void Update(ImmutableArray<EditorLineViewModel> lines, ImmutableDictionary<int, int>? linesMap)
+    {
+        this.lines = lines;
+        this.linesMap = linesMap;
     }
     protected override Size MeasureOverride(Size availableSize)
     {
+        int maxNumber = lines.OfType<LineViewModel>().Count();
+
         var text = new FormattedText(
-            "0000", // max address length is 4 chars
+            new string('0', maxNumber / 10 + 1), // max address length is 4 chars
             CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight,
             typeface,
@@ -41,18 +51,19 @@ public class AddressMargin : AdditionalLineInfoMargin
             {
                 var lineNumber = visualLine.FirstDocumentLine.LineNumber;
                 var line = lines[lineNumber - 1];
-                if (line.Address.HasValue)
+                if (line is LineViewModel)
                 {
+                    int lineIndex = linesMap is not null ? linesMap[lineNumber - 1]+1 : lineNumber;
                     var y = visualLine.GetTextLineVisualYPosition(visualLine.TextLines[0], VisualYPosition.TextTop);
                     var text = new FormattedText(
-                        line.Address.Value.ToString("X4"),
+                        lineIndex.ToString(),
                         CultureInfo.InvariantCulture,
                         FlowDirection.LeftToRight,
                         typeface,
                         fontSize,
                         foreground
                     );
-                    context.DrawText(text, new Point(0, y - TextView.VerticalOffset));
+                    context.DrawText(text, new Point(renderSize.Width - text.Width, y - TextView.VerticalOffset));
                 }
             }
         }

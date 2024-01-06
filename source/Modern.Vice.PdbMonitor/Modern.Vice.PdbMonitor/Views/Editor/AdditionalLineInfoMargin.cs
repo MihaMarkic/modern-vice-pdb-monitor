@@ -2,7 +2,7 @@
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 
-namespace Modern.Vice.PdbMonitor.Views;
+namespace Modern.Vice.PdbMonitor.Views.Editor;
 
 /// <summary>
 /// Provides UI update trigger upon document or text changes.
@@ -10,7 +10,7 @@ namespace Modern.Vice.PdbMonitor.Views;
 public abstract class AdditionalLineInfoMargin : AbstractMargin
 {
     /// <inheritdoc/>
-		protected override void OnTextViewChanged(TextView oldTextView, TextView newTextView)
+    protected override void OnTextViewChanged(TextView oldTextView, TextView newTextView)
     {
         if (oldTextView != null)
         {

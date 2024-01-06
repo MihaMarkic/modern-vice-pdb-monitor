@@ -65,6 +65,7 @@ public record PdbLine(PdbPath path, int LineNumber, string Text)
 {
     public ImmutableArray<AddressRange> Addresses { get; init; } = ImmutableArray<AddressRange>.Empty;
     public ImmutableDictionary<string, PdbVariable> Variables { get; init; } = ImmutableDictionary<string, PdbVariable>.Empty;
+    public ImmutableArray<PdbAssemblyLine> AssemblyLines { get; init; } = ImmutableArray<PdbAssemblyLine>.Empty;
     /// <summary>
     /// Owner function of this line.
     /// </summary>
@@ -99,6 +100,9 @@ public record PdbLine(PdbPath path, int LineNumber, string Text)
         return false;
     }
 }
+
+public sealed record PdbAssemblyLine(ushort Address, string Text, ImmutableArray<byte> Data);
+
 public  record AddressRange(ushort StartAddress, ushort Length, ImmutableArray<byte>? Data = null, bool HasMoreData = false)
 {
     public static AddressRange FromRange(ushort startAddress, ushort endAddress)

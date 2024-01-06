@@ -14,22 +14,26 @@ using AvaloniaEdit.Utils;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
+using Modern.Vice.PdbMonitor.Views.Editor;
 using TextMateSharp.Grammars;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
 public partial class SourceFileViewer : UserControl
 {
     LineColorizer lineColorizer = default!;
+    LineNumbersMargin? lineNumbersMargin;
     static readonly RegistryOptions registryOptions;
     static readonly PropertyInfo TextEditorScrollViewerPropertyInfo;
     SourceFileViewModel? oldTypedDataContext;
     SourceFileViewModel? oldDataContext;
     BreakpointsMargin? breakpointsMargin;
+    AddressMargin? addressMargin;
 
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
-    
+    SourceFileViewModel? oldViewModel;
     static SourceFileViewer()
     {
         TextEditorScrollViewerPropertyInfo = typeof(TextEditor)
@@ -51,6 +55,7 @@ public partial class SourceFileViewer : UserControl
         //    {
         //        oldDataContext.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
         //    }
+        BindToViewModel();
         UpdateContent();
         //    var dataContext = DockDocumentViewModel;
         //    if (dataContext is not null)
@@ -58,6 +63,47 @@ public partial class SourceFileViewer : UserControl
         //        oldDataContext = dataContext;
         //        dataContext.PropertyChanged += DockDocumentViewModel_PropertyChanged;
         //    }
+    }
+    void BindToViewModel()
+    {
+        if (oldViewModel is not null)
+        {
+            oldViewModel.ShowCursorRow -= ViewModel_ShowCursorRow;
+            oldViewModel.ShowCursorColumn -= ViewModel_ShowCursorColumn;
+            oldViewModel.MoveCaret -= ViewModel_MoveCaret;
+            oldViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            oldViewModel.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
+            oldViewModel.BreakpointsChanged -= ViewModel_BreakpointsChanged;
+            oldViewModel.ContentChanged -= ViewModel_ContentChanged;
+        }
+        var viewModel = ViewModel;
+        if (viewModel is not null)
+        {
+            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+            viewModel.ShowCursorColumn += ViewModel_ShowCursorColumn;
+            viewModel.MoveCaret += ViewModel_MoveCaret;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
+            viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
+            viewModel.ContentChanged += ViewModel_ContentChanged;
+        }
+        oldViewModel = viewModel;
+    }
+
+    private void ViewModel_ContentChanged(object? sender, EventArgs e)
+    {
+        UpdateOnShowAssemblyChange();
+    }
+
+    void UpdateOnShowAssemblyChange()
+    {
+        var viewModel = ViewModel;
+        if (viewModel is not null)
+        {
+            Editor.Text = viewModel.Text;
+            lineNumbersMargin?.Update(viewModel.EditorLines, viewModel.EditorRowToLinesMap);
+            addressMargin?.Update(viewModel.EditorLines, viewModel.ShowAssemblyLines);
+        }
     }
 
     void UpdateContent()
@@ -71,21 +117,21 @@ public partial class SourceFileViewer : UserControl
         if (viewModel is not null)
         {
             lineColorizer = new(viewModel);
-            string text = string.Join(Environment.NewLine, viewModel.Lines.Select(l => l.Content));
-            Editor.Text = text;
-            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
-            viewModel.ShowCursorColumn += ViewModel_ShowCursorColumn;
-            viewModel.MoveCaret += ViewModel_MoveCaret;
-            viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
-            viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
+            Editor.Text = viewModel.Text;
             breakpointsMargin = new BreakpointsMargin(viewModel);
             leftMargins.Insert(0, breakpointsMargin);
-            var addressMargin = new AddressMargin(Editor.FontFamily, Editor.FontSize, Brushes.DarkGray, viewModel.Lines)
+            addressMargin = new AddressMargin(Editor.FontFamily, Editor.FontSize, Brushes.DarkGray, 
+                viewModel.EditorLines, viewModel.ShowAssemblyLines)
             {
                 Margin = new Thickness(4, 0),
             };
             leftMargins.Insert(1, addressMargin);
+            lineNumbersMargin = new LineNumbersMargin(Editor.FontFamily, Editor.FontSize, Brushes.MediumPurple, 
+                viewModel.EditorLines, viewModel.EditorRowToLinesMap)
+            {
+                Margin = new Thickness(4, 0),
+            };
+            leftMargins.Insert(2, lineNumbersMargin);
             lineColorizer.LineNumber = viewModel.ExecutionRow + 1;
             Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             if (viewModel.SourceLanguage == SourceLanguage.Custom)
@@ -171,29 +217,32 @@ public partial class SourceFileViewer : UserControl
             {
                 Debug.WriteLine($"Pos {vp.Value.Line} {vp.Value.Column}");
 
-                var line = ViewModel.Lines[vp.Value.Line - 1];
-                Debug.WriteLine($"Line: {line.SourceLine.Text}");
-                var globalVariable = line.SymbolReferences.GlobalVariables.GetAtColumn(vp.Value.Column - 2);
-                if (globalVariable is not null)
+                var editorLine = ViewModel.EditorLines[vp.Value.Line - 1];
+                if (editorLine is LineViewModel line)
                 {
-                    Debug.WriteLine($"Found global variable {globalVariable.Name}");
-                    return globalVariable;
-                }
-                else
-                {
-                    var localVariable = line.SymbolReferences.LocalVariables.GetAtColumn(vp.Value.Column - 1);
-                    if (localVariable is not null)
+                    Debug.WriteLine($"Line: {line.SourceLine.Text}");
+                    var globalVariable = line.SymbolReferences.GlobalVariables.GetAtColumn(vp.Value.Column - 2);
+                    if (globalVariable is not null)
                     {
-                        Debug.WriteLine($"Found local variable {localVariable.Name}");
-                        return localVariable;
+                        Debug.WriteLine($"Found global variable {globalVariable.Name}");
+                        return globalVariable;
                     }
                     else
                     {
-                        var function = line.SymbolReferences.Functions.GetAtColumn(vp.Value.Column - 1);
-                        if (function is not null)
+                        var localVariable = line.SymbolReferences.LocalVariables.GetAtColumn(vp.Value.Column - 1);
+                        if (localVariable is not null)
                         {
-                            Debug.WriteLine($"Found function {function.Name}");
-                            return function;
+                            Debug.WriteLine($"Found local variable {localVariable.Name}");
+                            return localVariable;
+                        }
+                        else
+                        {
+                            var function = line.SymbolReferences.Functions.GetAtColumn(vp.Value.Column - 1);
+                            if (function is not null)
+                            {
+                                Debug.WriteLine($"Found function {function.Name}");
+                                return function;
+                            }
                         }
                     }
                 }

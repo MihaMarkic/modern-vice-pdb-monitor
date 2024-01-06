@@ -12,6 +12,7 @@ using PropertyChanged;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using static Compiler.Oscar64.Services.Implementation.AsmParser;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
@@ -34,8 +35,13 @@ public class SourceFileViewModel : ScopedViewModel
     /// </summary>
     public event EventHandler? BreakpointsChanged;
     public event EventHandler? ExecutionRowChanged;
+    /// <summary>
+    /// Signals need to update the content. Happens when <see cref="ShowAssemblyLines"/> changes.
+    /// </summary>
+    public event EventHandler? ContentChanged;
     public PdbPath Path => file.Path;
     public ImmutableArray<LineViewModel> Lines { get; }
+    public ImmutableArray<EditorLineViewModel> EditorLines { get; private set; }
     public int CursorColumn { get; set; }
     public int CursorRow { get; protected set; }
     public RelayCommandAsync<LineViewModel> AddOrRemoveBreakpointCommand { get; }
@@ -50,7 +56,9 @@ public class SourceFileViewModel : ScopedViewModel
     public IWithDefinition? ContextWithDefinitionReference => ContextSymbolReference as IWithDefinition;
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
     public SourceLanguage? SourceLanguage => globals.Project?.SourceLanguage;
-
+    public bool ShowAssemblyLines { get; set; }
+    public ImmutableDictionary<int, int>? EditorRowToLinesMap { get; private set; }
+    public ImmutableArray<int>? LineToEditorRowMap { get; private set; }
     /// <summary>
     /// 
     /// </summary>
@@ -90,7 +98,70 @@ public class SourceFileViewModel : ScopedViewModel
         AddVariableToWatchCommand = new RelayCommand<PdbVariable>(AddVariableToWatch, v => v is not null);
         AddStoreBreakpointCommand = new RelayCommandAsync<PdbVariable>(AddStoreBreakpoint, v => v is not null);
         AddLoadBreakpointCommand = new RelayCommandAsync<PdbVariable>(AddLoadBreakpoint, v => v is not null);
+        (EditorLines, EditorRowToLinesMap, LineToEditorRowMap) = CreateEditorLines();
     }
+
+    internal (
+        ImmutableArray<EditorLineViewModel> EditorLines, 
+        ImmutableDictionary<int, int>? EditorRowToLinesMap,
+        ImmutableArray<int>? LineToEditorRowMap) 
+        CreateEditorLines()
+    {
+        ImmutableArray<EditorLineViewModel>.Builder builder;
+        ImmutableDictionary<int, int>? editorRowToLinesMap;
+        ImmutableArray<int>? lineToEditorRowMap;
+        if (ShowAssemblyLines)
+        {
+            int lines = Lines.Sum(l => 1 + l.AssemblyLines.Length);
+            builder = ImmutableArray.CreateBuilder<EditorLineViewModel>(lines);
+            var editorRowToLinesMapBuilder = ImmutableDictionary.CreateBuilder<int, int>();
+            var lineToEditorRowMapBuilder = ImmutableArray.CreateBuilder<int>(Lines.Length);
+            for (int i =0; i<Lines.Length; i++)
+            {
+                var line = Lines[i];
+                editorRowToLinesMapBuilder.Add(builder.Count, i);
+                lineToEditorRowMapBuilder.Add(builder.Count);
+                builder.Add(line);
+                builder.AddRange(line.AssemblyLines);
+            }
+            editorRowToLinesMap = editorRowToLinesMapBuilder.ToImmutable();
+            lineToEditorRowMap = lineToEditorRowMapBuilder.ToImmutable();
+        }
+        else
+        {
+            builder = ImmutableArray.CreateBuilder<EditorLineViewModel>(Lines.Length);
+            builder.AddRange(Lines);
+            editorRowToLinesMap = null;
+            lineToEditorRowMap = null;
+        }
+        return (builder.ToImmutable(), editorRowToLinesMap, lineToEditorRowMap);
+    }
+
+    public string Text => string.Join(Environment.NewLine, EditorLines.Select(l => l.Content));
+
+    public LineViewModel GetByLineNumber(int lineNumber)
+    {
+        int mapped = GetLineIndex(lineNumber);
+        return Lines[lineNumber];
+    }
+
+    public int GetLineIndex(int lineNumber)
+    {
+        if (ShowAssemblyLines)
+        {
+            return EditorRowToLinesMap![lineNumber];
+        }
+        return lineNumber;
+    }
+    public  int GetEditorRowByLineNumber(int lineNumber)
+    {
+        if (ShowAssemblyLines)
+        {
+            return LineToEditorRowMap!.Value[lineNumber];
+        }
+        return lineNumber;
+    }
+
     async Task ParseFileAsync()
     {
         using (var scope = serviceProvider.CreateScope())
@@ -110,9 +181,15 @@ public class SourceFileViewModel : ScopedViewModel
     void OnExecutionRowChanged(EventArgs e) => ExecutionRowChanged?.Invoke(this, e);
     [SuppressPropertyChangedWarnings]
     void OnBreakpointsChanged(EventArgs e) => BreakpointsChanged?.Invoke(this, e);
-    public void SetCursorRow(int value)
+    [SuppressPropertyChangedWarnings]
+    void OnContentChanged(EventArgs e) => ContentChanged?.Invoke(this, e);
+    /// <summary>
+    /// Editor row number
+    /// </summary>
+    /// <param name="row"></param>
+    public void SetCursorRow(int row)
     {
-        CursorRow = value;
+        CursorRow = row;
         OnShowCursorRow(EventArgs.Empty);
     }
     public void SetCursorColumn(int value)
@@ -123,7 +200,7 @@ public class SourceFileViewModel : ScopedViewModel
     /// <summary>
     /// Request client to position caret.
     /// </summary>
-    /// <param name="row"></param>
+    /// <param name="row">Editor row number</param>
     /// <param name="column"></param>
     public void SetMoveCaret(int row, int column)
     {
@@ -191,7 +268,7 @@ public class SourceFileViewModel : ScopedViewModel
     {
         if (variable is not null)
         {
-            // TODO check if DebugSymbols are static for this viewmodel and simplify if yes
+            // TODO check if DebugSymbols are static for this view model and simplify if yes
             var globalVariables = globals.Project?.DebugSymbols?.GlobalVariables ?? ImmutableHashSet<PdbVariable>.Empty;
             bool isGlobal = globalVariables.Contains(variable);
 
@@ -217,7 +294,7 @@ public class SourceFileViewModel : ScopedViewModel
     {
         if (symbolReference is PdbVariable variable)
         {
-            // TODO check if DebugSymbols are static for this viewmodel and simplify if yes
+            // TODO check if DebugSymbols are static for this view model and simplify if yes
             var globalVariables = globals.Project?.DebugSymbols?.GlobalVariables ?? ImmutableHashSet<PdbVariable>.Empty;
             bool isGlobal = globalVariables.Contains(variable);
             var slot = watchedVariablesViewModel.GetVariableSlot(variable, isGlobal);
@@ -325,6 +402,7 @@ public class SourceFileViewModel : ScopedViewModel
     }
     public void SetExecutionRow(int rowIndex)
     {
+        int lineIndex = GetLineIndex(rowIndex);
         Lines[rowIndex].IsExecution = true;
         OnExecutionRowChanged(EventArgs.Empty);
     }
@@ -337,6 +415,10 @@ public class SourceFileViewModel : ScopedViewModel
             case nameof(ContextSymbolReference):
                 GoToImplementationCommand.RaiseCanExecuteChanged();
                 GoToDefinitionCommand.RaiseCanExecuteChanged();
+                break;
+            case nameof(ShowAssemblyLines):
+                (EditorLines, EditorRowToLinesMap, LineToEditorRowMap) = CreateEditorLines();
+                OnContentChanged(EventArgs.Empty);
                 break;
         }
     }
@@ -355,24 +437,67 @@ public record VariableInfo(bool IsGlobal, string VariableName, VariableSlot? Slo
 {
     public bool HasValue => Slot is not null;
 }
-public class LineViewModel : NotifiableObject
+
+public abstract class EditorLineViewModel: NotifiableObject
 {
+    public string Content { get; }
+    public ushort? Address { get; }
+    public EditorLineViewModel(string content, ushort? address)
+    {
+        Content = content;
+        Address = address;
+    }
+}
+
+public class AssemblyLineViewModel : EditorLineViewModel
+{
+    public PdbAssemblyLine SourceLine { get; }
+    public AssemblyLineViewModel(PdbAssemblyLine sourceLine, string spacePrefix)
+        : base($"{spacePrefix}{sourceLine.Text}", sourceLine.Address)
+    {
+        SourceLine = sourceLine;
+    }
+}
+public class LineViewModel : EditorLineViewModel
+{
+    readonly Lazy<ImmutableArray<AssemblyLineViewModel>> assemblyLines;
+    readonly string spacePrefix;
     public PdbLine SourceLine { get; }
     public bool IsExecution { get; set; }
     public ImmutableArray<BreakpointViewModel> Breakpoints { get; private set; }
     public bool HasBreakpoint => !Breakpoints.IsEmpty;
     public int Row { get; }
-    public ushort? Address { get; }
-    public string Content { get; }
+    
     public LineSymbolReferences SymbolReferences { get; }
-    public LineViewModel(PdbLine sourceLine, int row, string content, LineSymbolReferences symbolReferences)
+    public LineViewModel(PdbLine sourceLine, int row, LineSymbolReferences symbolReferences) 
+        : base(sourceLine.Text, sourceLine.Addresses.FirstOrDefault()?.StartAddress)
     {
         Breakpoints = ImmutableArray<BreakpointViewModel>.Empty;
         SourceLine = sourceLine;
         Row = row;
-        Content = content;
-        Address = sourceLine.Addresses.FirstOrDefault()?.StartAddress;
         SymbolReferences = symbolReferences;
+        assemblyLines = new Lazy<ImmutableArray<AssemblyLineViewModel>>(InitAssemblyLines);
+        spacePrefix = CreateSpacePrefix(Content);
+    }
+    internal static string CreateSpacePrefix(string content)
+    {
+        if (content.Length == 0)
+        {
+            return "";
+        }
+        int index = 0;
+        while (index < content.Length && (content[index] == ' ' || content[index] == '\t'))
+        {
+            index++;
+        }
+        return content.Substring(0, index);
+    }
+    public ImmutableArray<AssemblyLineViewModel> AssemblyLines => assemblyLines.Value;
+    ImmutableArray<AssemblyLineViewModel> InitAssemblyLines()
+    {
+        return SourceLine.AssemblyLines
+            .Select(l => new AssemblyLineViewModel(l, spacePrefix))
+            .ToImmutableArray();
     }
     public void ClearBreakpoints()
     {

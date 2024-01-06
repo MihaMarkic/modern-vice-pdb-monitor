@@ -1,8 +1,5 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
@@ -115,7 +112,7 @@ public class SourceFileViewerViewModel : NotifiableObject
                 {
                     sr = LineSymbolReferences.Empty;
                 }
-                return new LineViewModel(l, l.LineNumber, l.Text, sr); 
+                return new LineViewModel(l, l.LineNumber, sr); 
             })
             .ToImmutableArray();
         var item = serviceProvider.CreateScopedSourceFileViewModel(file, content);
@@ -150,7 +147,8 @@ public class SourceFileViewerViewModel : NotifiableObject
             }
             if (cursorRow.HasValue)
             {
-                item.SetCursorRow(cursorRow.Value);
+                int row = item.GetEditorRowByLineNumber(cursorRow.Value - 1) + 1;
+                item.SetCursorRow(row);
             }
             if (message.Column.HasValue)
             {
@@ -158,7 +156,8 @@ public class SourceFileViewerViewModel : NotifiableObject
             }
             if (message.MoveCaret && cursorRow.HasValue && message.Column.HasValue)
             {
-                item.SetMoveCaret(cursorRow.Value, message.Column.Value);
+                int row = item.GetEditorRowByLineNumber(cursorRow.Value-1)+1;
+                item.SetMoveCaret(row, message.Column.Value);
             }
         }
     }

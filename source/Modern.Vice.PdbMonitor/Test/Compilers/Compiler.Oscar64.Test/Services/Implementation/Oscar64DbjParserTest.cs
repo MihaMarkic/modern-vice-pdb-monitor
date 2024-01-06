@@ -1,14 +1,15 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Compiler.Oscar64.Models;
 using Compiler.Oscar64.Services.Implementation;
 using NUnit.Framework;
 using TestsBase;
 
 namespace Compiler.Oscar64.Test.Services.Implementation;
-internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
+internal class Oscar64DbjParserTest : BaseTest<Oscar64DbjParser>
 {
     [TestFixture]
-    public class LoadFileAsync: Oscar64DbjParserTest
+    public class LoadFileAsync : Oscar64DbjParserTest
     {
         static string LoadSample(string name)
         {
@@ -205,4 +206,4 @@ internal class Oscar64DbjParserTest: BaseTest<Oscar64DbjParser>
             Assert.That(function!.References, Is.EquivalentTo(expectedReferences));
         }
     }
-}
+}    

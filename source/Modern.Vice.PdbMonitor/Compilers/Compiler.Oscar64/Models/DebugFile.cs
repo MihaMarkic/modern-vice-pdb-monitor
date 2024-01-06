@@ -72,3 +72,7 @@ public record Oscar64EnumType(string Name, int TypeId, int Size, [JsonProperty("
 
 public record Oscar64StructMember(string Name, int Offset, int TypeId);
 public record Oscar64EnumMember(string Name, uint Value);
+
+public sealed record AssemblyFunction(string Name, string FullName, ImmutableArray<AssemblySourceLine> SourceLines);
+public sealed record AssemblySourceLine(int LineNumber, string FilePath, ImmutableArray<AssemblyExecutionLine> ExecutionLines);
+public sealed record AssemblyExecutionLine(ushort Address, string Text, ImmutableArray<byte> Data);

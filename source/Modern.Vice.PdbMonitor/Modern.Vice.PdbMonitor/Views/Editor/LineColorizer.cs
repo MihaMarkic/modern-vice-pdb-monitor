@@ -4,7 +4,7 @@ using AvaloniaEdit.Rendering;
 using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-namespace Modern.Vice.PdbMonitor.Views;
+namespace Modern.Vice.PdbMonitor.Views.Editor;
 
 /// <summary>
 /// Provides execution line background for <see cref="SourceFileViewer"/>.
@@ -39,16 +39,29 @@ public class LineColorizer : DocumentColorizingTransformer
                     }
                 }
             }
-            if (LineNumber.HasValue && line.LineNumber == LineNumber)
+            //int mappedLineNumber = sourceFileViewModel.GetLineIndex(LineNumber);
+            var sourceLine = sourceFileViewModel.EditorLines[line.LineNumber - 1];
+            if (LineNumber.HasValue && sourceLine is LineViewModel)
             {
-                ChangeLinePart(line.Offset, line.EndOffset, ApplyExecutionLineChanges);
+                var lineIndex = sourceFileViewModel.GetLineIndex(line.LineNumber - 1);
+                if (LineNumber == lineIndex + 1)
+                {
+                    ChangeLinePart(line.Offset, line.EndOffset, ApplyExecutionLineChanges);
+                }
             }
             else
             {
-                var sourceLine = sourceFileViewModel.Lines[line.LineNumber - 1];
-                if (sourceLine.HasBreakpoint)
+                switch (sourceLine)
                 {
-                    ChangeLinePart(line.Offset, line.EndOffset, ApplyBreakpointLineChanges);
+                    case LineViewModel lineViewModel:
+                        if (lineViewModel.HasBreakpoint)
+                        {
+                            ChangeLinePart(line.Offset, line.EndOffset, ApplyBreakpointLineChanges);
+                        }
+                        break;
+                    default:
+                        ChangeLinePart(line.Offset, line.EndOffset, ApplyAssemblyChanges);
+                        break;
                 }
             }
         }
@@ -56,11 +69,11 @@ public class LineColorizer : DocumentColorizingTransformer
 
     void ApplyStringChanges(VisualLineElement element) => element.TextRunProperties.SetForegroundBrush(ElementColor.String);
     void ApplyCommentChanges(VisualLineElement element) => element.TextRunProperties.SetForegroundBrush(ElementColor.Comment);
-
+    void ApplyAssemblyChanges(VisualLineElement element) => element.TextRunProperties.SetForegroundBrush(ElementColor.Assembly);
     void ApplyExecutionLineChanges(VisualLineElement element)
     {
         // This is where you do anything with the line
-        
+
         element.TextRunProperties.SetForegroundBrush(Brushes.Black);
         element.TextRunProperties.SetBackgroundBrush(Brushes.Yellow);
     }
@@ -76,6 +89,7 @@ public class LineColorizer : DocumentColorizingTransformer
     {
         public static readonly IBrush String = Brushes.DarkRed;
         public static readonly IBrush Comment = Brushes.LightGray;
+        public static readonly IBrush Assembly = Brushes.Gray;
         public static readonly IBrush BreakpointBackground = new SolidColorBrush(new Color(0xFF, 0x96, 0x3A, 0x46));
     }
 }

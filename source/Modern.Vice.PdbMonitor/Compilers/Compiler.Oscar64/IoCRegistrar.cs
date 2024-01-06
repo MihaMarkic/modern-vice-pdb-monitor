@@ -10,5 +10,6 @@ public static class IoCRegistrar
         services.AddTransient<Oscar64CompilerServices>();
         services.AddTransient<Oscar64Compiler>();
         services.AddSingleton<Oscar64DbjParser>();
+        services.AddSingleton<AsmParser>();
     }
 }

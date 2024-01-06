@@ -1,4 +1,5 @@
-﻿using Compiler.Oscar64.Models;
+﻿using System.Collections.Immutable;
+using Compiler.Oscar64.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -6,9 +7,11 @@ namespace Compiler.Oscar64.Services.Implementation;
 public class Oscar64DbjParser
 {
     readonly ILogger<Oscar64DbjParser> logger;
-    public Oscar64DbjParser(ILogger<Oscar64DbjParser> logger)
+    readonly AsmParser asmParser;
+    public Oscar64DbjParser(ILogger<Oscar64DbjParser> logger, AsmParser asmParser)
     {
         this.logger = logger;
+        this.asmParser = asmParser;
     }
 
     public async Task<DebugFile?> LoadFileAsync(string path, CancellationToken ct = default)
@@ -19,7 +22,7 @@ public class Oscar64DbjParser
             string content;
             try
             {
-                content = File.ReadAllText(path);
+                content = await File.ReadAllTextAsync(path, ct);
             }
             catch (Exception ex)
             {
@@ -43,6 +46,23 @@ public class Oscar64DbjParser
             logger.LogError(ex, $"Failed to parser Oscar64 debug content");
             throw;
         }
-
+    }
+    public Task<ImmutableArray<AssemblyFunction>?> LoadAssemblyFileAsync(
+        string path, CancellationToken ct = default)
+    {
+        if (File.Exists(path))
+        {
+            try
+            {
+                var lines = File.ReadLines(path).ToImmutableArray();
+                ImmutableArray<AssemblyFunction>? result = asmParser.Parse(lines);
+                return Task.FromResult(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to load Oscar64 assembly program file {path}");
+            }
+        }
+        return Task.FromResult<ImmutableArray<AssemblyFunction>?>(null);
     }
 }
