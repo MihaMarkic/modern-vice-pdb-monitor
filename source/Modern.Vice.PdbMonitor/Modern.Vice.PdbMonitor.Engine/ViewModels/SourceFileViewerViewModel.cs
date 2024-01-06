@@ -139,7 +139,8 @@ public class SourceFileViewerViewModel : NotifiableObject
             ClearExecutionRow();
             if (message.ExecutingLine.HasValue && executionStatusViewModel.IsDebugging)
             {
-                item.SetExecutionRow(message.ExecutingLine.Value);
+                int row = item.GetEditorRowByLineNumber(message.ExecutingLine.Value - 1) + 1;
+                item.SetExecutionRow(row);
                 if (!message.Line.HasValue)
                 {
                     cursorRow = message.ExecutingLine.Value;

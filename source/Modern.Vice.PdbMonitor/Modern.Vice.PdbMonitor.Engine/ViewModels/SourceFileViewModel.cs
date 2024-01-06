@@ -402,7 +402,6 @@ public class SourceFileViewModel : ScopedViewModel
     }
     public void SetExecutionRow(int rowIndex)
     {
-        int lineIndex = GetLineIndex(rowIndex);
         Lines[rowIndex].IsExecution = true;
         OnExecutionRowChanged(EventArgs.Empty);
     }
