@@ -8,7 +8,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
-using Avalonia.Media.Immutable;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
@@ -18,7 +17,6 @@ using Modern.Vice.PdbMonitor.Core.Common.Compiler;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 using Modern.Vice.PdbMonitor.Views.Editor;
 using TextMateSharp.Grammars;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Modern.Vice.PdbMonitor.Views;
 
@@ -237,14 +235,6 @@ public partial class SourceFileViewer : UserControl
         }
         return null;
     }
-    private void Editor_PointerHoverStopped(object? sender, PointerEventArgs e)
-    {
-    }
-    private void Editor_PointerMoved(object? sender, PointerEventArgs e)
-    {
-        
-    }
-
     void ViewModel_BreakpointsChanged(object? sender, EventArgs e)
     {
         Editor.TextArea.TextView.Redraw();
@@ -398,33 +388,12 @@ public partial class SourceFileViewer : UserControl
             {
                 scrollViewer.Offset = new Vector(0, Math.Max(0, verticalPos));
             }
-
-            //if (column > 0)
-            //{
-            //    if (p.X > editor.ViewportWidth - Caret.MinimumDistanceToViewBorder * 2)
-            //    {
-            //        double horizontalPos = Math.Max(0, p.X - scrollViewer.ViewportWidth / 2);
-            //        if (Math.Abs(horizontalPos - scrollViewer.HorizontalOffset) >
-            //            minimumScrollFraction * scrollViewer.ViewportWidth)
-            //        {
-            //            scrollViewer.ScrollToHorizontalOffset(horizontalPos);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        scrollViewer.ScrollToHorizontalOffset(0);
-            //    }
-            //}
         }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         textMateInstallation.Dispose();
-        //if (DockDocumentViewModel is not null)
-        //{
-        //    DockDocumentViewModel.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
-        //}
         base.OnDetachedFromVisualTree(e);
     }
 }

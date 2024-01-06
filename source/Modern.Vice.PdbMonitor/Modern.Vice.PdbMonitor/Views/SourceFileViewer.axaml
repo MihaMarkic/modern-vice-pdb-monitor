@@ -28,9 +28,7 @@
           FontWeight="Light"
           FontSize="14"
           PointerHover="Editor_PointerHover"
-          PointerPressed="Editor_PointerPressed"
-          PointerHoverStopped="Editor_PointerHoverStopped"
-          PointerMoved="Editor_PointerMoved">
+          PointerPressed="Editor_PointerPressed">
       <ae:TextEditor.Styles>
         <Style Selector="aee|TextArea">
           <Setter Property="SelectionBrush" Value="#66ffff80" />
