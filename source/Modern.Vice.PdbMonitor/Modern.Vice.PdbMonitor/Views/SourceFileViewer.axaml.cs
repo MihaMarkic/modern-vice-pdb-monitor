@@ -257,10 +257,10 @@ public partial class SourceFileViewer : UserControl
             oldTypedDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
             oldTypedDataContext.PropertyChanged -= ViewModel_PropertyChanged;
             oldTypedDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
-            oldTypedDataContext.ShowCursorColumn += ViewModel_ShowCursorColumn;
-            oldTypedDataContext.MoveCaret += ViewModel_MoveCaret;
-            oldTypedDataContext.BreakpointsChanged += ViewModel_BreakpointsChanged;
-            oldTypedDataContext.ContentChanged += ViewModel_ContentChanged;
+            oldTypedDataContext.ShowCursorColumn -= ViewModel_ShowCursorColumn;
+            oldTypedDataContext.MoveCaret -= ViewModel_MoveCaret;
+            oldTypedDataContext.BreakpointsChanged -= ViewModel_BreakpointsChanged;
+            oldTypedDataContext.ContentChanged -= ViewModel_ContentChanged;
 
             foreach (var lm in leftMargins.ToImmutableArray())
             {
