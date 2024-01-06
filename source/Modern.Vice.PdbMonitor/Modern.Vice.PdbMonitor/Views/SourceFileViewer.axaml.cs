@@ -6,7 +6,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using AvaloniaEdit;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
@@ -33,7 +35,7 @@ public partial class SourceFileViewer : UserControl
 
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
-    SourceFileViewModel? oldViewModel;
+    ISolidColorBrush? lineNumberForeground;
     static SourceFileViewer()
     {
         TextEditorScrollViewerPropertyInfo = typeof(TextEditor)
@@ -47,47 +49,23 @@ public partial class SourceFileViewer : UserControl
         textMateInstallation = Editor.InstallTextMate(registryOptions);
         DataContextChanged += SourceFileViewer_DataContextChanged;
     }
+    protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToLogicalTree(e);
+        if (this.TryFindResource("LineNumber", out object? res) && res is ISolidColorBrush brush)
+        {
+            lineNumberForeground = brush;
+            if (lineNumbersMargin is not null)
+            {
+                lineNumbersMargin.Foreground = lineNumberForeground;
+            }
+        }
+    }
     ScrollViewer? EditorScrollViewer => (ScrollViewer?)TextEditorScrollViewerPropertyInfo.GetValue(Editor);
     internal SourceFileViewModel? ViewModel => (SourceFileViewModel?)base.DataContext;
     void SourceFileViewer_DataContextChanged(object? sender, EventArgs e)
     {
-        //    if (oldDataContext is not null)
-        //    {
-        //        oldDataContext.PropertyChanged -= DockDocumentViewModel_PropertyChanged;
-        //    }
-        BindToViewModel();
         UpdateContent();
-        //    var dataContext = DockDocumentViewModel;
-        //    if (dataContext is not null)
-        //    {
-        //        oldDataContext = dataContext;
-        //        dataContext.PropertyChanged += DockDocumentViewModel_PropertyChanged;
-        //    }
-    }
-    void BindToViewModel()
-    {
-        if (oldViewModel is not null)
-        {
-            oldViewModel.ShowCursorRow -= ViewModel_ShowCursorRow;
-            oldViewModel.ShowCursorColumn -= ViewModel_ShowCursorColumn;
-            oldViewModel.MoveCaret -= ViewModel_MoveCaret;
-            oldViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            oldViewModel.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
-            oldViewModel.BreakpointsChanged -= ViewModel_BreakpointsChanged;
-            oldViewModel.ContentChanged -= ViewModel_ContentChanged;
-        }
-        var viewModel = ViewModel;
-        if (viewModel is not null)
-        {
-            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
-            viewModel.ShowCursorColumn += ViewModel_ShowCursorColumn;
-            viewModel.MoveCaret += ViewModel_MoveCaret;
-            viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
-            viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
-            viewModel.ContentChanged += ViewModel_ContentChanged;
-        }
-        oldViewModel = viewModel;
     }
 
     private void ViewModel_ContentChanged(object? sender, EventArgs e)
@@ -116,6 +94,14 @@ public partial class SourceFileViewer : UserControl
         var viewModel = ViewModel;
         if (viewModel is not null)
         {
+            viewModel.ShowCursorRow += ViewModel_ShowCursorRow;
+            viewModel.ShowCursorColumn += ViewModel_ShowCursorColumn;
+            viewModel.MoveCaret += ViewModel_MoveCaret;
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
+            viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
+            viewModel.ContentChanged += ViewModel_ContentChanged;
+
             lineColorizer = new(viewModel);
             Editor.Text = viewModel.Text;
             breakpointsMargin = new BreakpointsMargin(viewModel);
@@ -126,9 +112,10 @@ public partial class SourceFileViewer : UserControl
                 Margin = new Thickness(4, 0),
             };
             leftMargins.Insert(1, addressMargin);
-            lineNumbersMargin = new LineNumbersMargin(Editor.FontFamily, Editor.FontSize, Brushes.MediumPurple, 
+            lineNumbersMargin = new LineNumbersMargin(Editor.FontFamily, Editor.FontSize,
                 viewModel.EditorLines, viewModel.EditorRowToLinesMap)
             {
+                Foreground = lineNumberForeground,
                 Margin = new Thickness(4, 0),
             };
             leftMargins.Insert(2, lineNumbersMargin);
@@ -270,10 +257,14 @@ public partial class SourceFileViewer : UserControl
             oldTypedDataContext.ShowCursorRow -= ViewModel_ShowCursorRow;
             oldTypedDataContext.PropertyChanged -= ViewModel_PropertyChanged;
             oldTypedDataContext.ExecutionRowChanged -= ViewModel_ExecutionRowChanged;
+            oldTypedDataContext.ShowCursorColumn += ViewModel_ShowCursorColumn;
+            oldTypedDataContext.MoveCaret += ViewModel_MoveCaret;
+            oldTypedDataContext.BreakpointsChanged += ViewModel_BreakpointsChanged;
+            oldTypedDataContext.ContentChanged += ViewModel_ContentChanged;
 
             foreach (var lm in leftMargins.ToImmutableArray())
             {
-                if (lm is BreakpointsMargin || lm is AddressMargin)
+                if (lm is BreakpointsMargin || lm is AddressMargin || lm is LineNumbersMargin)
                 {
                     leftMargins.Remove(lm);
                 }

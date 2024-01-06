@@ -9,15 +9,14 @@ namespace Modern.Vice.PdbMonitor.Views.Editor;
 public class LineNumbersMargin : AdditionalLineInfoMargin
 {
     readonly double fontSize;
-    readonly IBrush foreground;
+    internal IBrush? Foreground { get; set; }
     ImmutableArray<EditorLineViewModel> lines;
     ImmutableDictionary<int, int>? linesMap;
     readonly Typeface typeface;
-    public LineNumbersMargin(FontFamily fontFamily, double fontSize, IBrush foreground, 
+    public LineNumbersMargin(FontFamily fontFamily, double fontSize, 
         ImmutableArray<EditorLineViewModel> lines, ImmutableDictionary<int, int>? linesMap)
     {
         this.fontSize = fontSize;
-        this.foreground = foreground;
         this.lines = lines;
         this.linesMap = linesMap;
         typeface = new Typeface(fontFamily);
@@ -37,7 +36,7 @@ public class LineNumbersMargin : AdditionalLineInfoMargin
             FlowDirection.LeftToRight,
             typeface,
             fontSize,
-            foreground
+            Foreground
         );
         return new Size(text.Width, 0);
     }
@@ -62,7 +61,7 @@ public class LineNumbersMargin : AdditionalLineInfoMargin
                         FlowDirection.LeftToRight,
                         typeface,
                         fontSize,
-                        foreground
+                        Foreground
                     );
                     context.DrawText(text, new Point(renderSize.Width - text.Width, y - TextView.VerticalOffset));
                 }
