@@ -114,50 +114,44 @@ public abstract class VariablesCoreViewModel : NotifiableObject
                 switch (variableSlot.Source.Type)
                 {
                     case PdbArrayType arrayType:
-                        if (baseAddress.HasValue)
+                        var arrayVariableValue = (ArrayVariableValue?)variableSlot.Value!;
+                        int arrayItemSize = arrayType.ReferencedOfType!.Size;
+                        for (int i = 0; i < (arrayType.ItemsCount ?? 0); i++)
                         {
-                            var arrayVariableValue = (ArrayVariableValue?)variableSlot.Value!;
-                            int arrayItemSize = arrayType.ReferencedOfType!.Size;
-                            for (int i = 0; i < (arrayType.ItemsCount ?? 0); i++)
+                            int end = start + arrayItemSize;
+                            var arrayItemVariable = new PdbVariable($"[{i}]", start, end, baseAddress, arrayType.ReferencedOfType!, null);
+                            var arrayItemSlot = new VariableSlot(arrayItemVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
+                            var arrayItemData = variableSlot.Data!.Value.AsSpan().Slice(i * arrayItemSize, arrayItemSize);
+                            var variableValue = arrayVariableValue.Items[i];
+                            if (variableValue is not null)
                             {
-                                int end = start + arrayItemSize;
-                                var arrayItemVariable = new PdbVariable($"[{i}]", start, end, baseAddress, arrayType.ReferencedOfType!, null);
-                                var arrayItemSlot = new VariableSlot(arrayItemVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
-                                var arrayItemData = variableSlot.Data!.Value.AsSpan().Slice(i * arrayItemSize, arrayItemSize);
-                                var variableValue = arrayVariableValue.Items[i];
-                                if (variableValue is not null)
-                                {
-                                    arrayItemSlot.Value = variableValue;
-                                }
-                                start += arrayItemSize;
-                                Items.Insert(slotPosition + 1 + i, arrayItemSlot);
+                                arrayItemSlot.Value = variableValue;
                             }
+                            start += arrayItemSize;
+                            Items.Insert(slotPosition + 1 + i, arrayItemSlot);
                         }
                         break;
                     case PdbStructType structType:
-                        if (baseAddress.HasValue)
+                        var structVariableValue = (StructVariableValue?)variableSlot.Value!;
+                        var sortedMembers = structType.Members.OrderBy(m => m.Name).ToImmutableArray();
+                        for (int i = 0; i < sortedMembers.Length; i++)
                         {
-                            var structVariableValue = (StructVariableValue?)variableSlot.Value!;
-                            var sortedMembers = structType.Members.OrderBy(m => m.Name).ToImmutableArray();
-                            for (int i = 0; i < sortedMembers.Length; i++)
+                            var variableValue = structVariableValue.Items[i];
+                            var member = structType.Members[i];
+                            var memberType = (PdbDefinedType)member.Type;
+                            int memberStart = start + member.Offset;
+                            var memberVariable = new PdbVariable(
+                                member.Name,
+                                memberStart, memberStart + variableValue.Data.Length,
+                                baseAddress,
+                                memberType,
+                                null);
+                            var structMemberSlot = new VariableSlot(memberVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
+                            if (variableValue is not null)
                             {
-                                var variableValue = structVariableValue.Items[i];
-                                var member = structType.Members[i];
-                                var memberType = (PdbDefinedType)member.Type;
-                                int memberStart = start + member.Offset;
-                                var memberVariable = new PdbVariable(
-                                    member.Name,
-                                    memberStart, memberStart + variableValue.Data.Length,
-                                    baseAddress,
-                                    memberType,
-                                    null);
-                                var structMemberSlot = new VariableSlot(memberVariable, variableSlot.IsGlobal, variableSlot.Level + 1);
-                                if (variableValue is not null)
-                                {
-                                    structMemberSlot.Value = variableValue;
-                                }
-                                Items.Insert(slotPosition + 1 + i, structMemberSlot);
+                                structMemberSlot.Value = variableValue;
                             }
+                            Items.Insert(slotPosition + 1 + i, structMemberSlot);
                         }
                         break;
                     case PdbPtrType ptrType:
