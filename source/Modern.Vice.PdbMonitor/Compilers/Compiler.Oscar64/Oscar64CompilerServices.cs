@@ -388,10 +388,14 @@ public class Oscar64CompilerServices : ICompilerServices
                 {
                     pdbLine = slots[lineNumber];
                 }
-                pdbLine = pdbLine with
+                // there can be empty addresses, ignore those
+                if (line.Start < line.End)
                 {
-                    Addresses = pdbLine.Addresses.Add(new AddressRange(line.Start, (ushort)(line.End - line.Start))),
-                };
+                    pdbLine = pdbLine with
+                    {
+                        Addresses = pdbLine.Addresses.Add(new AddressRange(line.Start, (ushort)(line.End - line.Start))),
+                    };
+                }
                 slots[lineNumber] = pdbLine;
                 linesBuilder.Add(pdbLine);
             }
