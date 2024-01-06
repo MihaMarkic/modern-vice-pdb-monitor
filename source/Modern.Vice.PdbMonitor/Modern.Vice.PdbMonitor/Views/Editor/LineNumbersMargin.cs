@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Rendering;
+using Modern.Vice.PdbMonitor.Core.Extensions;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 namespace Modern.Vice.PdbMonitor.Views.Editor;
@@ -31,7 +32,7 @@ public class LineNumbersMargin : AdditionalLineInfoMargin
         int maxNumber = lines.OfType<LineViewModel>().Count();
 
         var text = new FormattedText(
-            new string('0', maxNumber / 10 + 1), // max address length is 4 chars
+            new string('0', maxNumber.CalculateNumberOfDigits()), // max address length is 4 chars
             CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight,
             typeface,
