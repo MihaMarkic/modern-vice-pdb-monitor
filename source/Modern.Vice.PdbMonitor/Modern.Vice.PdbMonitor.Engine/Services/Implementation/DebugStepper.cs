@@ -9,6 +9,11 @@ using Righthand.ViceMonitor.Bridge.Services.Abstract;
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 public abstract class DebugStepper: DisposableObject
 {
+#if DEBUG
+    static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+#else
+    static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+#endif
     readonly IViceBridge viceBridge;
     readonly ILogger logger;
     readonly IDispatcher dispatcher;
@@ -28,7 +33,7 @@ public abstract class DebugStepper: DisposableObject
     }
     public bool IsTimeout(DateTimeOffset current)
     {
-        return SteppingStart.HasValue && (current - SteppingStart.Value) > TimeSpan.FromSeconds(1);
+        return SteppingStart.HasValue && (current - SteppingStart.Value) > Timeout;
     }
     void ExecutionStatusViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
