@@ -16,7 +16,8 @@ public record Pdb(ImmutableDictionary<PdbPath, PdbFile> Files,
         ImmutableDictionary<string, PdbVariable> GlobalVariablesMap,
         ImmutableDictionary<int, PdbType> Types,
         ImmutableArray<PdbLine> LinesWithAddress,
-        ImmutableDictionary<PdbLine, LineSymbolReferences> SymbolReferences)
+        ImmutableDictionary<PdbLine, LineSymbolReferences> SymbolReferences,
+        PdbAddressToLineMap AddressToLineMap)
 {
     public static Pdb Empty { get; } = new Pdb(ImmutableDictionary<PdbPath, PdbFile>.Empty,
         ImmutableDictionary<string, PdbLabel>.Empty,
@@ -24,9 +25,45 @@ public record Pdb(ImmutableDictionary<PdbPath, PdbFile> Files,
         ImmutableDictionary<string, PdbVariable>.Empty,
         ImmutableDictionary<int, PdbType>.Empty,
         ImmutableArray<PdbLine>.Empty,
-        ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
+        ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty,
+        PdbAddressToLineMap.Empty);
     public PdbFile? GetFileOfLine(PdbLine line) => LinesToFilesMap[line];
     public ImmutableHashSet<PdbVariable> GlobalVariables { get; } = GlobalVariablesMap.Values.ToImmutableHashSet();
+}
+/// <summary>
+/// Provides fast search for lines given address.
+/// </summary>
+public class PdbAddressToLineMap
+{
+    public static readonly PdbAddressToLineMap Empty = new PdbAddressToLineMap(ImmutableArray<Segment?>.Empty);
+    public record SegmentItem(PdbLine Line, PdbAssemblyLine? AssemblyLine);
+    /// <summary>
+    /// Contains HiWord segments array.
+    /// </summary>
+    public ImmutableArray<Segment?> Segments { get; }
+    public PdbAddressToLineMap(ImmutableArray<Segment?> segments)
+    {
+        Segments = segments;
+    }
+    public class Segment
+    {
+        public ImmutableArray<SegmentItem?> Addresses { get; }
+        public Segment(ImmutableArray<SegmentItem?> addresses)
+        {
+            Addresses = addresses;
+        }
+    }
+    public SegmentItem? FindLineAtAddress(ushort address)
+    {
+        byte hi = (byte)(address >> 8);
+        var segment = Segments[hi];
+        if (segment is null)
+        {
+            return null;
+        }
+        byte lo  = (byte)(address & 0xFF);
+        return segment.Addresses[lo];
+    }
 }
 public sealed record PdbFile(PdbPath Path, ImmutableDictionary<string, PdbFunction> Functions, ImmutableArray<PdbLine> Lines)
 {
@@ -99,9 +136,30 @@ public record PdbLine(PdbPath path, int LineNumber, string Text)
         
         return false;
     }
+
+    public PdbAssemblyLine? GetAssemblyLineAtAddress(ushort address)
+    {
+        int i = 0;
+        while (i < AssemblyLines.Length)
+        {
+            var line = AssemblyLines[i];
+            if (line.IsAddressInRange(address))
+            {
+                return line;
+            }
+            if (line.Address > address)
+            {
+                break;
+            }
+        }
+        return null;
+    }
 }
 
-public sealed record PdbAssemblyLine(ushort Address, string Text, ImmutableArray<byte> Data);
+public sealed record PdbAssemblyLine(ushort Address, string Text, ImmutableArray<byte> Data)
+{
+    public bool IsAddressInRange(ushort address) => address >= Address && address < (Address + Data.Length);
+}
 
 public  record AddressRange(ushort StartAddress, ushort Length, ImmutableArray<byte>? Data = null, bool HasMoreData = false)
 {

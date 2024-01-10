@@ -58,7 +58,6 @@ class BreakpointsViewModelTest: BaseTest<BreakpointsViewModel>
         SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
         var globals = new Globals(Substitute.For<ILogger<Globals>>(), Substitute.For<ISettingsManager>());
         fixture.Register(() => globals);
-
     }
     [TestFixture]
     public class FindMatchingLine: BreakpointsViewModelTest

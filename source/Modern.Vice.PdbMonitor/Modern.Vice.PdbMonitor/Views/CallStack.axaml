@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:CallStackViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.CallStack">
+  <DataGrid Name="Grid" ItemsSource="{Binding CallStack}" AutoGenerateColumns="False">
+    <DataGrid.Resources>
+      <c:HexAddressConverter x:Key="HexAddressConverter" />
+    </DataGrid.Resources>
+    <i:Interaction.Behaviors>
+      <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
+        <ia:InvokeCommandAction Command="{Binding GoToLineCommand}" CommandParameter="{Binding #Grid.SelectedItem}"/>
+      </ia:EventTriggerBehavior>
+    </i:Interaction.Behaviors>
+    <DataGrid.Columns>
+      <DataGridTextColumn Header="Address" Binding="{Binding Address, Converter={StaticResource HexAddressConverter}, Mode=OneWay}"
+          IsReadOnly="True" Width="100" CellStyleClasses="colored" />
+      <DataGridTextColumn Header="Line" Binding="{Binding LineNumber, Mode=OneWay}"
+        IsReadOnly="True" Width="80" CellStyleClasses="colored" />
+      <DataGridTextColumn Header="File" Binding="{Binding FileText}, Mode=OneWay}"
+        IsReadOnly="True" Width="140" CellStyleClasses="colored" />
+      <DataGridTextColumn Header="Function" Binding="{Binding FunctionText, Mode=OneWay}"
+        IsReadOnly="True" Width="200" CellStyleClasses="colored" />
+      <DataGridTextColumn Header="Source" Binding="{Binding LineText}, Mode=OneWay}"
+        IsReadOnly="True" Width="300" CellStyleClasses="colored" />
+      <DataGridTextColumn Header="Assembly" Binding="{Binding Assembly}, Mode=OneWay}"
+        IsReadOnly="True" Width="300" CellStyleClasses="colored" />
+    </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

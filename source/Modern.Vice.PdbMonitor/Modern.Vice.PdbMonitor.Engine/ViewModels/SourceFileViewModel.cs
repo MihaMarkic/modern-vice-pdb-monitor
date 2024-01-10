@@ -27,6 +27,7 @@ public class SourceFileViewModel : ScopedViewModel
     readonly IViceBridge viceBridge;
     readonly IServiceProvider serviceProvider;
     readonly TaskFactory uiFactory;
+    public CallStackViewModel CallStack { get; }
     public event EventHandler? ShowCursorRow;
     public event EventHandler? ShowCursorColumn;
     public event EventHandler<MoveCaretEventArgs>? MoveCaret;
@@ -71,7 +72,8 @@ public class SourceFileViewModel : ScopedViewModel
     public SourceFileViewModel(ILogger<SourceFileViewModel> logger,
         Globals globals, IViceBridge viceBridge, IDispatcher dispatcher, IServiceProvider serviceProvider,
         PdbFile file, ImmutableArray<LineViewModel> lines, 
-        BreakpointsViewModel breakpointsViewModel, WatchedVariablesViewModel watchedVariablesViewModel)
+        BreakpointsViewModel breakpointsViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
+        CallStackViewModel callStackViewModel)
     {
         this.logger = logger;
         this.globals =  globals;
@@ -80,6 +82,7 @@ public class SourceFileViewModel : ScopedViewModel
         this.serviceProvider = serviceProvider;
         this.breakpointsViewModel = breakpointsViewModel;
         this.watchedVariablesViewModel = watchedVariablesViewModel;
+        this.CallStack = callStackViewModel;
         this.file = file;
         Elements = ImmutableDictionary<int, ImmutableArray<SyntaxElement>>.Empty;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());

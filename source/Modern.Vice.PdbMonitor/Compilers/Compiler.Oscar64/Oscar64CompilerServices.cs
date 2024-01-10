@@ -78,16 +78,40 @@ public class Oscar64CompilerServices : ICompilerServices
         var pdbFilesMap = pdbFiles.ToImmutableDictionary(f => f.Path, f => f);
         var symbolReferencesMap = CreateSymbolReferences(projectDirectory, debugFile, pdbFilesMap, globalVariables, localVariablesMap);
 
+        var addressLines = lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray();
+        var addressToLineMap = CreateAddressToLineMap(addressLines);
+
         var pdb = new Pdb(
             pdbFilesMap,
             ImmutableDictionary<string, PdbLabel>.Empty,
             finalLineToFileMap,
             globalVariables,
             pdbTypes,
-            lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray(),
-            symbolReferencesMap);
+            addressLines,
+            symbolReferencesMap,
+            addressToLineMap ?? PdbAddressToLineMap.Empty);
 
         return (pdb, null);
+    }
+
+    internal PdbAddressToLineMap CreateAddressToLineMap(IList<PdbLine> lines)
+    {
+        var addressToLineMapBuilder = new PdbAddressToLineMapBuilder();
+        foreach (var line in lines)
+        {
+            if (line.AssemblyLines.IsEmpty)
+            {
+                addressToLineMapBuilder.Add(line.Addresses, new PdbAddressToLineMap.SegmentItem(line, null));
+            }
+            else
+            {
+                foreach (var assemblyLine in line.AssemblyLines)
+                {
+                    addressToLineMapBuilder.Add(assemblyLine.Address, new PdbAddressToLineMap.SegmentItem(line, assemblyLine));
+                }
+            }
+        }
+        return addressToLineMapBuilder.ToImmutable();
     }
 
     internal record VariableRange(int? Start, int? End)

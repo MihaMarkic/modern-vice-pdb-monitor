@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Righthand.MessageBus;
@@ -17,8 +16,8 @@ public class EmulatorMemoryViewModel: NotifiableObject, IEmulatorMemory
     readonly ILogger<EmulatorMemoryViewModel> logger;
     readonly IViceBridge viceBridge;
     readonly IDispatcher dispatcher;
-    byte[] previousSnapshot = new byte[ushort.MaxValue];
-    byte[] currentSnapshot = new byte[ushort.MaxValue];
+    byte[] previousSnapshot = new byte[ushort.MaxValue+1];
+    byte[] currentSnapshot = new byte[ushort.MaxValue+1];
     public event EventHandler? MemoryContentChanged;
     public ReadOnlySpan<byte> Current => currentSnapshot.AsSpan();
     public ReadOnlySpan<byte> Previous => previousSnapshot.AsSpan();

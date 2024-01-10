@@ -90,6 +90,7 @@ public class MainViewModel : NotifiableObject
     public TraceOutputViewModel TraceOutputViewModel { get; }
     public MessagesHistoryViewModel MessagesHistoryViewModel { get; }
     public MemoryViewerViewModel MemoryViewerViewModel { get; }
+    public CallStackViewModel CallStackViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
@@ -102,6 +103,7 @@ public class MainViewModel : NotifiableObject
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
         VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
         DebuggerViewModel debuggerViewModel, MemoryViewerViewModel memoryViewerViewModel,
+        CallStackViewModel callStackViewModel,
         TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel)
     {
         this.logger = logger;
@@ -121,6 +123,7 @@ public class MainViewModel : NotifiableObject
         TraceOutputViewModel = traceOutputViewModel;
         MessagesHistoryViewModel = messagesHistoryViewModel;
         MemoryViewerViewModel = memoryViewerViewModel;
+        CallStackViewModel = callStackViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);

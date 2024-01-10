@@ -290,6 +290,9 @@
             <TabItem Header="Memory">
               <v:MemoryViewer DataContext="{Binding #Source.DataContext.MemoryViewerViewModel}" />
             </TabItem>
+            <TabItem Header="Call Stack">
+              <v:CallStack DataContext="{Binding #Source.DataContext.CallStackViewModel}" />
+            </TabItem>
           </TabControl>
           <v:ExecutionAddressInfo ExecutionAddress="{Binding RegistersViewModel.Current.PC}" 
             ExecutionAddressVisible="{Binding IsDebuggingPaused}"

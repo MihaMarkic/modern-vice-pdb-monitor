@@ -22,6 +22,7 @@ public class RegistersViewModel: NotifiableObject
     readonly CommandsManager commandsManager;
     readonly IDispatcher dispatcher;
     readonly TaskFactory uiFactory;
+    public event EventHandler? RegistersUpdated;
     public Registers6510 Current { get; private set; } = Registers6510.Empty;
     public Registers6510 Previous { get; private set; } = Registers6510.Empty;
     public bool IsLoadingMappings { get; private set; }
@@ -41,6 +42,7 @@ public class RegistersViewModel: NotifiableObject
         viceBridge.ViceResponse += ViceBridge_ViceResponse;
         UpdateCommand = commandsManager.CreateRelayCommandAsync(Update, () => !IsLoadingMappings && IsLoadingRegisters);
     }
+    protected void OnRegistersUpdated(EventArgs e) => RegistersUpdated?.Invoke(this, e);
     public async Task InitAsync()
     {
         var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory),
@@ -73,6 +75,7 @@ public class RegistersViewModel: NotifiableObject
         {
             Previous = Current;
             Current = mapping.MapValues(response);
+            OnRegistersUpdated(EventArgs.Empty);
         }
         else if (!IsLoadingMappings)
         {

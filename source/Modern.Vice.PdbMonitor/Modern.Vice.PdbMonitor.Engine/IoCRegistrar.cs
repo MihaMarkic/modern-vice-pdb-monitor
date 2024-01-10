@@ -29,6 +29,7 @@ public static class IoCRegistrar
             .AddSingleton<TraceOutputViewModel>()
             .AddTransient<SourceFileViewModel>()
             .AddSingleton<EmulatorMemoryViewModel>()
+            .AddSingleton<CallStackViewModel>()
             .AddSingleton<MemoryViewerViewModel>()
             .AddSingleton<Globals>()
             .AddSingleton<ISettingsManager, SettingsManager>()

@@ -99,6 +99,7 @@ public partial class SourceFileViewer : UserControl
             viewModel.ExecutionRowChanged += ViewModel_ExecutionRowChanged;
             viewModel.BreakpointsChanged += ViewModel_BreakpointsChanged;
             viewModel.ContentChanged += ViewModel_ContentChanged;
+            viewModel.CallStack.PropertyChanged += CallStack_PropertyChanged;
 
             lineColorizer = new(viewModel);
             Editor.Text = viewModel.Text;
@@ -140,6 +141,24 @@ public partial class SourceFileViewer : UserControl
             }
         }
         oldTypedDataContext = viewModel;
+    }
+
+    private void CallStack_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (ViewModel is not null)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(CallStackViewModel.CallStack):
+                    lineColorizer.CallStackLineNumbers =
+                        ViewModel.CallStack.CallStack
+                            .OfType<CallStackViewModel.SourceCallStackItem>()
+                            .Select(cs => cs.Line.LineNumber + 1)
+                            .ToImmutableHashSet();
+                    Editor.TextArea.TextView.Redraw();
+                    break;
+            }
+        }
     }
 
     private void ViewModel_MoveCaret(object? sender, MoveCaretEventArgs e)
@@ -251,6 +270,7 @@ public partial class SourceFileViewer : UserControl
             oldTypedDataContext.MoveCaret -= ViewModel_MoveCaret;
             oldTypedDataContext.BreakpointsChanged -= ViewModel_BreakpointsChanged;
             oldTypedDataContext.ContentChanged -= ViewModel_ContentChanged;
+            oldTypedDataContext.CallStack.PropertyChanged -= CallStack_PropertyChanged;
 
             foreach (var lm in leftMargins.ToImmutableArray())
             {

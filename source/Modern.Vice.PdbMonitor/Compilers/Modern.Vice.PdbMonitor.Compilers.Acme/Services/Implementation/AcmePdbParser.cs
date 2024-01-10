@@ -141,7 +141,8 @@ public class AcmePdbParser : IAcmePdbParser
             ImmutableDictionary<string, PdbVariable>.Empty,
             ImmutableDictionary<int, PdbType>.Empty,
             lines.Where(l => !l.Addresses.IsEmpty).ToImmutableArray(),
-            ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty);
+            ImmutableDictionary<PdbLine, LineSymbolReferences>.Empty,
+            PdbAddressToLineMap.Empty);
     }
     /// <summary>
     /// Adds DataLength to those lines with more data than reported by ACME
