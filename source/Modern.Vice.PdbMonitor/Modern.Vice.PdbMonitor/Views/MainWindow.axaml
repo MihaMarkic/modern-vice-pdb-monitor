@@ -34,6 +34,7 @@
         <svg:SvgImage Source="/Assets/Icons/disabled_sync.svg" />
       </c:BoolToSvgImageConverter.OnFalse>
     </c:BoolToSvgImageConverter>
+    <c:BoolToStringConverter x:Key="StepModeConverter" OnTrue="ASM" OnFalse="HIGH" />
   </Window.Resources>
   <Window.DataTemplates>
     <DataTemplate DataType="vm:SettingsViewModel">
@@ -109,8 +110,8 @@
           </MenuItem.Icon>
         </MenuItem>
         <Separator />
-        <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" />
-        <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" />
+        <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" CommandParameter="{Binding IsShiftDown}" />
+        <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}" />
       </MenuItem>
       <MenuItem Header="_Project">
         <MenuItem Header="_Update" Command="{Binding UpdatePdbCommand}">
@@ -221,11 +222,17 @@
           <TextBlock Margin="4,0,0,0">Stop</TextBlock>
         </StackPanel>
       </Button>
-      <Button ToolTip.Tip="Step Into" Command="{Binding StepIntoCommand}" DockPanel.Dock="Left">
+      <Button ToolTip.Tip="Step Into" Command="{Binding StepIntoCommand}" CommandParameter="{Binding IsShiftDown}"
+        DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Into</TextBlock>
       </Button>
-      <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" DockPanel.Dock="Left">
+      <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}" 
+        DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Over</TextBlock>
+      </Button>
+      <Button ToolTip.Tip="Show Disassembly at current PC address" Command="{Binding ShowDisassemblyCommand}" 
+        DockPanel.Dock="Left">
+        <TextBlock Margin="4,0,0,0">Show Disassembly</TextBlock>
       </Button>
       <Button ToolTip.Tip="Update Project Debug Data" Command="{Binding UpdatePdbCommand}" 
         IsVisible="{Binding !IsAutoUpdateEnabled}">
@@ -294,10 +301,8 @@
               <v:CallStack DataContext="{Binding #Source.DataContext.CallStackViewModel}" />
             </TabItem>
           </TabControl>
-          <v:ExecutionAddressInfo ExecutionAddress="{Binding RegistersViewModel.Current.PC}" 
-            ExecutionAddressVisible="{Binding IsDebuggingPaused}"
-            HorizontalAlignment="Right" VerticalAlignment="Bottom"
-            Margin="0,0,4,4"/>
+          <v:StatusInfo DataContext="{Binding StatusInfoViewModel}" HorizontalAlignment="Right" 
+            VerticalAlignment="Bottom" Margin="0,0,4,4"/>
         </Grid>
       </ctl:DockTool>
       <ctl:DockSizer Height="5" Margin="0,2" DockPanel.Dock="Bottom" Orientation="Horizontal" />

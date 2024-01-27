@@ -96,7 +96,7 @@ public class ProjectExplorerViewModel : NotifiableObject
         switch (item)
         {
             case PdbFile pdbFile:
-                dispatcher.Dispatch(new OpenSourceFileMessage(pdbFile));
+                dispatcher.Dispatch(new OpenSourceLineNumberFileMessage(pdbFile, 0));
                 break;
             case PdbLabel label:
                 var line = pdbManager.FindLineUsingAddress(label.Address);
@@ -107,7 +107,7 @@ public class ProjectExplorerViewModel : NotifiableObject
                     if (file is not null)
                     {
                         int lineNumber = file.Lines.IndexOf(line);
-                        dispatcher.Dispatch(new OpenSourceFileMessage(file, lineNumber, null));
+                        dispatcher.Dispatch(new OpenSourceLineNumberFileMessage(file, lineNumber));
                     }
                 }
                 break;

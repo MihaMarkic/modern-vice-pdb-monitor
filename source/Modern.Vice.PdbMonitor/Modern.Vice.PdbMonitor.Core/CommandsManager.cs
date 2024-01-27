@@ -50,18 +50,20 @@ public class CommandsManager: DisposableObject
         RegisterCommandsByPropertyNames(command, canExecute.Body, additionalProperties);
         return command;
     }
-    public RelayCommandAsync CreateRelayCommandAsync(Func<Task> execute, Expression<Func<bool>> canExecute, params string[] additionalProperties)
+    public RelayCommandAsync CreateRelayCommandAsync(Func<Task> execute, Expression<Func<bool>> canExecute, 
+        params string[] additionalProperties)
     {
         var command = new RelayCommandAsync(execute, canExecute.Compile());
         RegisterCommandsByPropertyNames(command, canExecute.Body, additionalProperties);
         return command;
     }
-    //public RelayCommandGenericAsync<T> CreateRelayCommandGenericAsync<T>(Func<T?, Task> execute, Expression<Func<T?, bool>> canExecute, params string[] additionalProperties)
-    //{
-    //    var command = new RelayCommandGenericAsync<T>(execute, canExecute.Compile());
-    //    RegisterCommandsByPropertyNames(command, canExecute.Body, additionalProperties);
-    //    return command;
-    //}
+    public RelayCommandAsync<T> CreateRelayCommandAsync<T>(Func<T?, Task> execute, Expression<Func<T?, bool>> canExecute, 
+        params string[] additionalProperties)
+    {
+        var command = new RelayCommandAsync<T>(execute, canExecute.Compile());
+        RegisterCommandsByPropertyNames(command, canExecute.Body, additionalProperties);
+        return command;
+    }
     public RelayCommand<T> CreateRelayCommand<T>(Action<T?> execute, Expression<Func<T?, bool>> canExecute, params string[] additionalProperties)
     {
         var command = new RelayCommand<T>(execute, canExecute.Compile());

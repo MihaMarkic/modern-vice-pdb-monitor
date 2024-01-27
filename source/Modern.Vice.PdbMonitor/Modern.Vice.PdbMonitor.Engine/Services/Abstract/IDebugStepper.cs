@@ -17,4 +17,5 @@ public interface IDebugStepper
     Task ExitViceMonitorAsync();
     Task StepOverAsync(PdbLine? line, CancellationToken ct = default);
     Task StepIntoAsync(PdbLine? line, CancellationToken ct = default);
+    void Clean();
 }

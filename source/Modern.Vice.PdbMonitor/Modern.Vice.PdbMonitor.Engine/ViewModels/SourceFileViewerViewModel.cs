@@ -11,14 +11,16 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public class SourceFileViewerViewModel : NotifiableObject
 {
     readonly ILogger<SourceFileViewerViewModel> logger;
-    readonly ISubscription openSourceFileSubscription;
+    readonly ISubscription openSourceLineNumberFileSubscription;
+    readonly ISubscription openSourceLineFileSubscription;
+    readonly ISubscription openAddressSubscription;
     readonly Globals globals;
     readonly IServiceProvider serviceProvider;
     readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly ISubscription debugDataChangedSubscription;
-    public ObservableCollection<SourceFileViewModel> Files { get; }
-    public SourceFileViewModel? Selected { get; set; }
-    public RelayCommand<SourceFileViewModel> CloseSourceFileCommand { get; }
+    public ObservableCollection<IViewableContent> Files { get; }
+    public IViewableContent? Selected { get; set; }
+    public RelayCommand<IViewableContent> CloseSourceFileCommand { get; }
     public SourceFileViewerViewModel(IDispatcher dispatcher, ILogger<SourceFileViewerViewModel> logger, Globals globals, IServiceProvider serviceProvider,
         ExecutionStatusViewModel executionStatusViewModel)
     {
@@ -26,7 +28,9 @@ public class SourceFileViewerViewModel : NotifiableObject
         this.globals = globals;
         this.executionStatusViewModel = executionStatusViewModel;
         this.serviceProvider = serviceProvider;
-        openSourceFileSubscription = dispatcher.Subscribe<OpenSourceFileMessage>(OpenSourceFile);
+        openSourceLineNumberFileSubscription = dispatcher.Subscribe<OpenSourceLineNumberFileMessage>(OpenSourceLineNumberFile);
+        openSourceLineFileSubscription = dispatcher.Subscribe<OpenSourceLineFileMessage>(OpenSourceLineFile);
+        openAddressSubscription = dispatcher.Subscribe<OpenAddressMessage>(OpenAddressDisassembly);
         CloseSourceFileCommand = new(CloseSourceFile);
         Files = new();
         globals.PropertyChanged += Globals_PropertyChanged;
@@ -85,15 +89,22 @@ public class SourceFileViewerViewModel : NotifiableObject
         for (int i = 0; i < oldFiles.Length; i++)
         {
             var oldFile = Files[i];
-            var newFile = debugSymbols.Files[oldFile.Path];
-            if (newFile is null)
+            if (oldFile is SourceFileViewModel oldSourceFile)
+            {
+                var newFile = debugSymbols.Files[oldSourceFile.Path];
+                if (newFile is null)
+                {
+                    filesToDelete.Add(i);
+                }
+                else
+                {
+                    var item = CreateSourceFileViewModel(newFile, debugSymbols.SymbolReferences);
+                    Files[i] = item;
+                }
+            }
+            else if (oldFile is DisassemblyViewModel)
             {
                 filesToDelete.Add(i);
-            }
-            else
-            {
-                var item = CreateSourceFileViewModel(newFile, debugSymbols.SymbolReferences);
-                Files[i] = item;
             }
             oldFile.Scope!.Dispose();
         }
@@ -118,51 +129,81 @@ public class SourceFileViewerViewModel : NotifiableObject
         var item = serviceProvider.CreateScopedSourceFileViewModel(file, content);
         return item;
     }
-    internal void OpenSourceFile(OpenSourceFileMessage? message)
+    internal SourceFileViewModel? GetSourceFile(PdbFile file)
     {
-        var pdbFile = message!.File;
-        var item = Files.FirstOrDefault(f => f.Path == pdbFile.Path);
+        var item = Files.OfType<SourceFileViewModel>().FirstOrDefault(f => f.Path == file.Path);
         var debugSymbols = (globals.Project?.DebugSymbols).ValueOrThrow();
         if (item is null)
         {
-            item = CreateSourceFileViewModel(pdbFile, debugSymbols.SymbolReferences);
+            item = CreateSourceFileViewModel(file, debugSymbols.SymbolReferences);
             Files.Add(item);
         }
-        if (item is not null)
+        return item;
+    }
+    internal void OpenSourceLineFile(OpenSourceLineFileMessage? message)
+    {
+        if (message is not null)
         {
-            Selected = item;
-            int? cursorRow = null;
-            if (message.Line.HasValue)
+            var pdbFile = message.File;
+            var item = GetSourceFile(pdbFile);
+            if (item is not null)
             {
-                cursorRow = message.Line.Value;
-            }
-            ClearExecutionRow();
-            if (message.ExecutingLine.HasValue && executionStatusViewModel.IsDebugging)
-            {
-                //int row = item.GetEditorRowByLineNumber(message.ExecutingLine.Value - 1) + 1;
-                item.SetExecutionRow(message.ExecutingLine.Value);
-                if (!message.Line.HasValue)
+                Selected = item;
+                if (message.IsExecution)
                 {
-                    cursorRow = message.ExecutingLine.Value;
+                    ClearExecutionRow();
+                    if (executionStatusViewModel.IsDebugging)
+                    {
+                        item.SetExecutionRow(message.Line, message.AssemblyLine);
+                    }
                 }
-            }
-            if (cursorRow.HasValue)
-            {
-                int row = item.GetEditorRowByLineNumber(cursorRow.Value - 1) + 1;
+                int row = item.GetEditorRowByLineNumber(message.Line.LineNumber-1)+1;
                 item.SetCursorRow(row);
-            }
-            if (message.Column.HasValue)
-            {
-                item.SetCursorColumn(message.Column.Value);
-            }
-            if (message.MoveCaret && cursorRow.HasValue && message.Column.HasValue)
-            {
-                int row = item.GetEditorRowByLineNumber(cursorRow.Value-1)+1;
-                item.SetMoveCaret(row, message.Column.Value);
+                if (message.Column.HasValue)
+                {
+                    item.SetCursorColumn(message.Column.Value);
+                }
+                if (message.MoveCaret && message.Column.HasValue)
+                {
+                    item.SetMoveCaret(row, message.Column.Value);
+                }
             }
         }
     }
-    void CloseSourceFile(SourceFileViewModel? sourceFile)
+    internal void OpenSourceLineNumberFile(OpenSourceLineNumberFileMessage? message)
+    {
+        if (message is not null)
+        {
+            var pdbFile = message.File;
+            var item = GetSourceFile(pdbFile);
+            if (item is not null)
+            {
+                Selected = item;
+                int? cursorRow = message.Line;
+                int row = item.GetEditorRowByLineNumber(cursorRow.Value - 1) + 1;
+                item.SetCursorRow(row);
+                if (message.Column.HasValue)
+                {
+                    item.SetCursorColumn(message.Column.Value);
+                }
+                if (message.MoveCaret && cursorRow.HasValue && message.Column.HasValue)
+                {
+                    int caretRow = item.GetEditorRowByLineNumber(cursorRow.Value - 1) + 1;
+                    item.SetMoveCaret(caretRow, message.Column.Value);
+                }
+            }
+        }
+    }
+    internal void OpenAddressDisassembly(OpenAddressMessage? message)
+    {
+        if (message is not null)
+        {
+            var item = serviceProvider.CreateScopedDisassemblyViewModel(message.Address);
+            Files.Add(item);
+            Selected = item;
+        }
+    }
+        void CloseSourceFile(IViewableContent? sourceFile)
     {
         if (sourceFile is not null)
         {
@@ -183,7 +224,9 @@ public class SourceFileViewerViewModel : NotifiableObject
             {
                 file.Scope!.Dispose();
             }
-            openSourceFileSubscription.Dispose();
+            openSourceLineNumberFileSubscription.Dispose();
+            openSourceLineFileSubscription.Dispose();
+            openAddressSubscription.Dispose();
             debugDataChangedSubscription.Dispose();
         }
         base.Dispose(disposing);

@@ -43,16 +43,21 @@ public class LineColorizer : DocumentColorizingTransformer
                 }
             }
             bool isBackgroundAssigned = false;
-            
+
             var sourceLine = sourceFileViewModel.EditorLines[line.LineNumber - 1];
-            if (LineNumber.HasValue && sourceLine is LineViewModel)
+            //if (LineNumber.HasValue && sourceLine is LineViewModel)
+            //{
+            //    int lineIndex = sourceFileViewModel.GetLineIndex(line.LineNumber - 1);
+            //    if (LineNumber == lineIndex + 1)
+            //    {
+            //        ChangeLinePart(line.Offset, line.EndOffset, ApplyExecutionLineChanges);
+            //        isBackgroundAssigned = true;
+            //    }
+            //}
+            if (LineNumber.HasValue && LineNumber == line.LineNumber)
             {
-                int lineIndex = sourceFileViewModel.GetLineIndex(line.LineNumber - 1);
-                if (LineNumber == lineIndex + 1)
-                {
-                    ChangeLinePart(line.Offset, line.EndOffset, ApplyExecutionLineChanges);
-                    isBackgroundAssigned = true;
-                }
+                ChangeLinePart(line.Offset, line.EndOffset, ApplyExecutionLineChanges);
+                isBackgroundAssigned = true;
             }
             if (!isBackgroundAssigned)
             {

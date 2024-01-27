@@ -18,6 +18,12 @@ namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
 public class BreakpointsViewModel: NotifiableObject
 {
+    public enum BreakPointContextColumn
+    {
+        Binding,
+        Other
+    }
+    public record BreakPointContext(BreakpointViewModel ViewModel, BreakPointContextColumn Column);
     readonly ILogger<BreakpointsViewModel> logger;
     readonly IDispatcher dispatcher;
     readonly IViceBridge viceBridge;
@@ -33,6 +39,7 @@ public class BreakpointsViewModel: NotifiableObject
     readonly ISubscription debugDataChangedSubscription;
     public RelayCommandAsync<BreakpointViewModel> ToggleBreakpointEnabledCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> ShowBreakpointPropertiesCommand { get; }
+    public RelayCommandAsync<BreakPointContext> BreakPointContextCommand { get; }
     public RelayCommandAsync<BreakpointViewModel> RemoveBreakpointCommand { get; }
     public RelayCommandAsync RemoveAllBreakpointsCommand { get; }
     public RelayCommandAsync CreateBreakpointCommand { get; }
@@ -59,6 +66,7 @@ public class BreakpointsViewModel: NotifiableObject
         breakpointsMap = new Dictionary<uint, BreakpointViewModel>();
         ToggleBreakpointEnabledCommand = new RelayCommandAsync<BreakpointViewModel>(ToggleBreakpointEnabledAsync);
         ShowBreakpointPropertiesCommand = new RelayCommandAsync<BreakpointViewModel>(ShowBreakpointPropertiesAsync, b => b is not null);
+        BreakPointContextCommand = new RelayCommandAsync<BreakPointContext>(BreakPointContextAsync, c => c is not null);
         RemoveBreakpointCommand = new RelayCommandAsync<BreakpointViewModel>(RemoveBreakpointAsync, b => b is not null);
         // TODO disable breakpoints manipulation when vice is not connected
         RemoveAllBreakpointsCommand = new RelayCommandAsync(RemoveAllBreakpointsAsync);
@@ -181,6 +189,27 @@ public class BreakpointsViewModel: NotifiableObject
             }
         }
     }
+    internal Task BreakPointContextAsync(BreakPointContext? context)
+    {
+        if (context is not null)
+        {
+            if (context.Column == BreakPointContextColumn.Binding)
+            {
+                var binding = context.ViewModel.Bind;
+                if (binding is BreakpointLineBind lineBind)
+                {
+                    dispatcher.Dispatch(new OpenSourceLineNumberFileMessage(
+                        lineBind.File, lineBind.LineNumber + 1, Column: 0, MoveCaret: true));
+                    return Task.CompletedTask;
+                }
+            }
+            if (ShowBreakpointPropertiesCommand.CanExecute(context.ViewModel))
+            {
+                ShowBreakpointPropertiesCommand.Execute(context.ViewModel);
+            }
+        }
+        return Task.CompletedTask;
+    }
     /// <summary>
     /// Removes all breakpoints from VICE and locally
     /// </summary>
@@ -264,7 +293,7 @@ public class BreakpointsViewModel: NotifiableObject
         var checkpointsList = await checkpointsListCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, checkpointsListCommand, ct: ct);
         if (checkpointsList is not null)
         {
-             // builds map of checkpointnumber->breakpoint
+             // builds map of CheckpointNumber->breakpoint
             var map = new Dictionary<uint, BreakpointViewModel>();
             foreach (var b in Breakpoints)
             {

@@ -31,6 +31,7 @@ public static class IoCRegistrar
             .AddSingleton<EmulatorMemoryViewModel>()
             .AddSingleton<CallStackViewModel>()
             .AddSingleton<MemoryViewerViewModel>()
+            .AddSingleton<StatusInfoViewModel>()
             .AddSingleton<Globals>()
             .AddSingleton<ISettingsManager, SettingsManager>()
             .AddSingleton<IDispatcher>(
@@ -42,6 +43,7 @@ public static class IoCRegistrar
             .AddTransient<IProjectFactory, ProjectFactory>()
             .AddSingleton<AssemblyDebugStepper>()
             .AddSingleton<HighLevelDebugStepper>()
+            .AddSingleton<IDisassembler, Disassembler>()
             .AddViceBridge();
         if (messagesHistoryEnabled)
         {

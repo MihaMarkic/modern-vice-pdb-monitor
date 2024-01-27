@@ -15,6 +15,7 @@
              x:Class="Modern.Vice.PdbMonitor.Views.Breakpoints">
   <UserControl.Resources>
     <c:BoolToColorConverter x:Key="IsHitToBackgroundConverter" OnTrue="Yellow" OnFalse="Transparent" />
+    <!--<c:BreakpointContextConverter x:Key="BreakpointContextConverter" BindingColumn="{Binding #Grid.Columns[6]}" />-->
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="DataGridCell.colored">
@@ -32,12 +33,21 @@
       </Button>
       <Button Margin="4" Command="{Binding CreateBreakpointCommand}">Create</Button>
     </StackPanel>
-      <DataGrid Name="Grid" ItemsSource="{Binding Breakpoints}" AutoGenerateColumns="False">
-        <i:Interaction.Behaviors>
-          <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
-            <ia:InvokeCommandAction Command="{Binding ShowBreakpointPropertiesCommand}" CommandParameter="{Binding #Grid.SelectedItem}"/>
-          </ia:EventTriggerBehavior>
-        </i:Interaction.Behaviors>
+    <DataGrid Name="Grid" ItemsSource="{Binding Breakpoints}" AutoGenerateColumns="False"
+      FontFamily="{StaticResource CodeFont}">
+      <!-- this approach doesn't work for some reason - most notably it doesn't retrieve #Grid.CurrentColumn -->
+      <!--<i:Interaction.Behaviors>
+        <ia:EventTriggerBehavior EventName="DoubleTapped" SourceObject="{Binding #Grid}">
+          <ia:InvokeCommandAction Command="{Binding BreakPointContextCommand}">
+            <ia:InvokeCommandAction.CommandParameter>
+              <MultiBinding Converter="{StaticResource BreakpointContextConverter}">
+                <Binding Path="#Grid.SelectedItem" />
+                <Binding Path="#Grid.CurrentColumn" />
+              </MultiBinding>
+            </ia:InvokeCommandAction.CommandParameter>
+          </ia:InvokeCommandAction>
+        </ia:EventTriggerBehavior>
+      </i:Interaction.Behaviors>-->
       <DataGrid.Styles>
         <Style Selector="DataGridRow">
           <Setter Property="ContextMenu">

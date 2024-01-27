@@ -100,6 +100,7 @@ public sealed class PdbFileByPathEqualityComparer : IEqualityComparer<PdbFile>
 /// </summary>
 public record PdbLine(PdbPath path, int LineNumber, string Text)
 {
+    public static readonly PdbLine Empty = new PdbLine(PdbPath.Empty, 0, "");
     public ImmutableArray<AddressRange> Addresses { get; init; } = ImmutableArray<AddressRange>.Empty;
     public ImmutableDictionary<string, PdbVariable> Variables { get; init; } = ImmutableDictionary<string, PdbVariable>.Empty;
     public ImmutableArray<PdbAssemblyLine> AssemblyLines { get; init; } = ImmutableArray<PdbAssemblyLine>.Empty;
@@ -151,6 +152,7 @@ public record PdbLine(PdbPath path, int LineNumber, string Text)
             {
                 break;
             }
+            i++;
         }
         return null;
     }
@@ -158,6 +160,7 @@ public record PdbLine(PdbPath path, int LineNumber, string Text)
 
 public sealed record PdbAssemblyLine(ushort Address, string Text, ImmutableArray<byte> Data)
 {
+    public static readonly PdbAssemblyLine Empty = new PdbAssemblyLine(0, "", ImmutableArray<byte>.Empty);
     public bool IsAddressInRange(ushort address) => address >= Address && address < (Address + Data.Length);
 }
 
@@ -278,7 +281,10 @@ public interface IWithDefinition
 }
 
 public record PdbFunction(string Name, string XName, PdbPath DefinitionFile, int Start, int End, int LineNumber,
-    SymbolDeclarationSource? Definition): IWithDefinition;
+    SymbolDeclarationSource? Definition): IWithDefinition
+{
+    public static readonly PdbFunction Empty = new PdbFunction("", "", PdbPath.Empty, 0, 0, 0, null);
+}
 
 public record PdbParseResult<T>(T ParsedData, ImmutableArray<PdbParseError> Errors);
 public static class PdbParseResultBuilder

@@ -1,0 +1,265 @@
+<Instructions>
+	<Instruction Name="ADC">
+	  <Mode Name="Immediate" OpCode="69" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="65" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="75" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="6D" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="7D" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="79" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="61" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="71" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="AND">
+	  <Mode Name="Immediate" OpCode="29" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="25" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="35" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="2D" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="3D" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="39" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="21" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="31" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="ASL">
+	  <Mode Name="Accumulator" OpCode="0A" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="06" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="16" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="0E" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="1E" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="BCC">
+	  <Mode Name="Relative" OpCode="90" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BCS">
+	  <Mode Name="Relative" OpCode="B0" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BEQ">
+	  <Mode Name="Relative" OpCode="F0" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BIT">
+	  <Mode Name="Zero Page" OpCode="24" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Absolute" OpCode="2C" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="BMI">
+	  <Mode Name="Relative" OpCode="30" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BNE">
+	  <Mode Name="Relative" OpCode="D0" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BPL">
+	  <Mode Name="Relative" OpCode="10" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BRK">
+	  <Mode Name="Implied" OpCode="00" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="BVC">
+	  <Mode Name="Relative" OpCode="50" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="BVS">
+	  <Mode Name="Relative" OpCode="70" Cycles="2" CyclesInfo="2 (+1 if branch succeeds&#xA;        +2 if to a new page)" />
+	</Instruction>
+	<Instruction Name="CLC">
+	  <Mode Name="Implied" OpCode="18" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="CLD">
+	  <Mode Name="Implied" OpCode="D8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="CLI">
+	  <Mode Name="Implied" OpCode="58" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="CLV">
+	  <Mode Name="Implied" OpCode="B8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="CMP">
+	  <Mode Name="Immediate" OpCode="C9" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="C5" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="D5" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="CD" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="DD" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="D9" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="C1" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="D1" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="CPX">
+	  <Mode Name="Immediate" OpCode="E0" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="E4" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Absolute" OpCode="EC" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="CPY">
+	  <Mode Name="Immediate" OpCode="C0" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="C4" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Absolute" OpCode="CC" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="DEC">
+	  <Mode Name="Zero Page" OpCode="C6" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="D6" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="CE" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="DE" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="DEX">
+	  <Mode Name="Implied" OpCode="CA" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="DEY">
+	  <Mode Name="Implied" OpCode="88" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="EOR">
+	  <Mode Name="Immediate" OpCode="49" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="45" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="55" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="4D" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="5D" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="59" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="41" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="51" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="INC">
+	  <Mode Name="Zero Page" OpCode="E6" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="F6" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="EE" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="FE" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="INX">
+	  <Mode Name="Implied" OpCode="E8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="INY">
+	  <Mode Name="Implied" OpCode="C8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="JMP">
+	  <Mode Name="Absolute" OpCode="4C" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Indirect" OpCode="6C" Cycles="5" CyclesInfo="5" />
+	</Instruction>
+	<Instruction Name="JSR">
+	  <Mode Name="Absolute" OpCode="20" Cycles="6" CyclesInfo="6" />
+	</Instruction>
+	<Instruction Name="LDA">
+	  <Mode Name="Immediate" OpCode="A9" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="A5" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="B5" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="AD" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="BD" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="B9" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="A1" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="B1" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="LDX">
+	  <Mode Name="Immediate" OpCode="A2" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="A6" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,Y" OpCode="B6" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="AE" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,Y" OpCode="BE" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="LDY">
+	  <Mode Name="Immediate" OpCode="A0" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="A4" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="B4" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="AC" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="BC" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="LSR">
+	  <Mode Name="Accumulator" OpCode="4A" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="46" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="56" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="4E" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="5E" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="NOP">
+	  <Mode Name="Implied" OpCode="EA" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="ORA">
+	  <Mode Name="Immediate" OpCode="09" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="05" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="15" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="0D" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="1D" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="19" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="01" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="11" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="PHA">
+	  <Mode Name="Implied" OpCode="48" Cycles="3" CyclesInfo="3" />
+	</Instruction>
+	<Instruction Name="PHP">
+	  <Mode Name="Implied" OpCode="08" Cycles="3" CyclesInfo="3" />
+	</Instruction>
+	<Instruction Name="PLA">
+	  <Mode Name="Implied" OpCode="68" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="PLP">
+	  <Mode Name="Implied" OpCode="28" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="ROL">
+	  <Mode Name="Accumulator" OpCode="2A" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="26" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="36" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="2E" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="3E" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="ROR">
+	  <Mode Name="Accumulator" OpCode="6A" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="66" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Zero Page,X" OpCode="76" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute" OpCode="6E" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="Absolute,X" OpCode="7E" Cycles="7" CyclesInfo="7" />
+	</Instruction>
+	<Instruction Name="RTI">
+	  <Mode Name="Implied" OpCode="40" Cycles="6" CyclesInfo="6" />
+	</Instruction>
+	<Instruction Name="RTS">
+	  <Mode Name="Implied" OpCode="60" Cycles="6" CyclesInfo="6" />
+	</Instruction>
+	<Instruction Name="SBC">
+	  <Mode Name="Immediate" OpCode="E9" Cycles="2" CyclesInfo="2" />
+	  <Mode Name="Zero Page" OpCode="E5" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="F5" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="ED" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="FD" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="Absolute,Y" OpCode="F9" Cycles="4" CyclesInfo="4 (+1 if page crossed)" />
+	  <Mode Name="(Indirect,X)" OpCode="E1" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="F1" Cycles="5" CyclesInfo="5 (+1 if page crossed)" />
+	</Instruction>
+	<Instruction Name="SEC">
+	  <Mode Name="Implied" OpCode="38" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="SED">
+	  <Mode Name="Implied" OpCode="F8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="SEI">
+	  <Mode Name="Implied" OpCode="78" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="STA">
+	  <Mode Name="Zero Page" OpCode="85" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="95" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="8D" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute,X" OpCode="9D" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="Absolute,Y" OpCode="99" Cycles="5" CyclesInfo="5" />
+	  <Mode Name="(Indirect,X)" OpCode="81" Cycles="6" CyclesInfo="6" />
+	  <Mode Name="(Indirect),Y" OpCode="91" Cycles="6" CyclesInfo="6" />
+	</Instruction>
+	<Instruction Name="STX">
+	  <Mode Name="Zero Page" OpCode="86" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,Y" OpCode="96" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="8E" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="STY">
+	  <Mode Name="Zero Page" OpCode="84" Cycles="3" CyclesInfo="3" />
+	  <Mode Name="Zero Page,X" OpCode="94" Cycles="4" CyclesInfo="4" />
+	  <Mode Name="Absolute" OpCode="8C" Cycles="4" CyclesInfo="4" />
+	</Instruction>
+	<Instruction Name="TAX">
+	  <Mode Name="Implied" OpCode="AA" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="TAY">
+	  <Mode Name="Implied" OpCode="A8" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="TSX">
+	  <Mode Name="Implied" OpCode="BA" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="TXA">
+	  <Mode Name="Implied" OpCode="8A" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="TXS">
+	  <Mode Name="Implied" OpCode="9A" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+	<Instruction Name="TYA">
+	  <Mode Name="Implied" OpCode="98" Cycles="2" CyclesInfo="2" />
+	</Instruction>
+  </Instructions>

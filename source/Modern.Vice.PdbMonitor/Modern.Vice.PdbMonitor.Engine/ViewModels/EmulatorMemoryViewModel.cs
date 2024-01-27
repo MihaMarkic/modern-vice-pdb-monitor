@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Core.Common;
 using Righthand.MessageBus;
@@ -8,8 +9,8 @@ using Righthand.ViceMonitor.Bridge.Services.Abstract;
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 public interface IEmulatorMemory
 {
-    ReadOnlySpan<byte> Current { get; }
-    ReadOnlySpan<byte> Previous { get; }
+    ReadOnlyMemory<byte> Current { get; }
+    ReadOnlyMemory<byte> Previous { get; }
 }
 public class EmulatorMemoryViewModel: NotifiableObject, IEmulatorMemory
 {
@@ -19,8 +20,8 @@ public class EmulatorMemoryViewModel: NotifiableObject, IEmulatorMemory
     byte[] previousSnapshot = new byte[ushort.MaxValue+1];
     byte[] currentSnapshot = new byte[ushort.MaxValue+1];
     public event EventHandler? MemoryContentChanged;
-    public ReadOnlySpan<byte> Current => currentSnapshot.AsSpan();
-    public ReadOnlySpan<byte> Previous => previousSnapshot.AsSpan();
+    public ReadOnlyMemory<byte> Current => currentSnapshot.AsMemory();
+    public ReadOnlyMemory<byte> Previous => previousSnapshot.AsMemory();
     public EmulatorMemoryViewModel(ILogger<EmulatorMemoryViewModel> logger, IViceBridge viceBridge, IDispatcher dispatcher)
     {
         this.logger = logger;
@@ -30,7 +31,7 @@ public class EmulatorMemoryViewModel: NotifiableObject, IEmulatorMemory
     void OnMemoryContentChanged(EventArgs e) => MemoryContentChanged?.Invoke(this, e);
     public async Task GetSnapshotAsync(CancellationToken ct)
     {
-        using (new StopWatchInfo(nameof(GetSnapshotAsync)));
+        //using (new StopWatchInfo(nameof(GetSnapshotAsync)));
 
         var command = viceBridge.EnqueueCommand(
         new MemoryGetCommand(0, 0, ushort.MaxValue-1, MemSpace.MainMemory, 0),

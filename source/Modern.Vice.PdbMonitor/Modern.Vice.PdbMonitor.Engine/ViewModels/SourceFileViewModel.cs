@@ -1,4 +1,5 @@
-﻿using System.Collections.Specialized;
+﻿using System.Collections.Frozen;
+using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,16 +13,16 @@ using PropertyChanged;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
-using static Compiler.Oscar64.Services.Implementation.AsmParser;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
 
-public class SourceFileViewModel : ScopedViewModel
+public class SourceFileViewModel : ScopedViewModel, IViewableContent
 {
     readonly ILogger<SourceFileViewModel> logger;
     readonly Globals globals;
     readonly BreakpointsViewModel breakpointsViewModel;
     readonly WatchedVariablesViewModel watchedVariablesViewModel;
+    readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly PdbFile file;
     readonly IDispatcher dispatcher;
     readonly IViceBridge viceBridge;
@@ -40,6 +41,7 @@ public class SourceFileViewModel : ScopedViewModel
     /// Signals need to update the content. Happens when <see cref="ShowAssemblyLines"/> changes.
     /// </summary>
     public event EventHandler? ContentChanged;
+    public string Caption => Path.FileName;
     public PdbPath Path => file.Path;
     public ImmutableArray<LineViewModel> Lines { get; }
     public ImmutableArray<EditorLineViewModel> EditorLines { get; private set; }
@@ -60,6 +62,11 @@ public class SourceFileViewModel : ScopedViewModel
     public bool ShowAssemblyLines { get; set; }
     public ImmutableDictionary<int, int>? EditorRowToLinesMap { get; private set; }
     public ImmutableArray<int>? LineToEditorRowMap { get; private set; }
+    public int? ExecutionRow { get; set; }
+    FrozenDictionary<PdbLine, LineViewModel> lineToViewModelMap;
+    FrozenDictionary<PdbAssemblyLine, AssemblyLineViewModel> assemblyLineToViewModelMap = FrozenDictionary<PdbAssemblyLine, AssemblyLineViewModel>.Empty;
+    PdbLine? executionLine;
+    PdbAssemblyLine? executionAssemblyLine;
     /// <summary>
     /// 
     /// </summary>
@@ -73,7 +80,7 @@ public class SourceFileViewModel : ScopedViewModel
         Globals globals, IViceBridge viceBridge, IDispatcher dispatcher, IServiceProvider serviceProvider,
         PdbFile file, ImmutableArray<LineViewModel> lines, 
         BreakpointsViewModel breakpointsViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
-        CallStackViewModel callStackViewModel)
+        ExecutionStatusViewModel executionStatusViewModel, CallStackViewModel callStackViewModel)
     {
         this.logger = logger;
         this.globals =  globals;
@@ -82,12 +89,16 @@ public class SourceFileViewModel : ScopedViewModel
         this.serviceProvider = serviceProvider;
         this.breakpointsViewModel = breakpointsViewModel;
         this.watchedVariablesViewModel = watchedVariablesViewModel;
+        this.executionStatusViewModel = executionStatusViewModel;
         this.CallStack = callStackViewModel;
         this.file = file;
         Elements = ImmutableDictionary<int, ImmutableArray<SyntaxElement>>.Empty;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         Lines = lines;
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
+
+        lineToViewModelMap = Lines.ToFrozenDictionary(l => l.SourceLine, l => l);
+
         AddOrRemoveBreakpointCommand = new RelayCommandAsync<LineViewModel>(AddOrRemoveBreakpointAsync,
            canExecute: l => l?.Address is not null);
         var fileBreakpoints = breakpointsViewModel.Breakpoints
@@ -129,6 +140,8 @@ public class SourceFileViewModel : ScopedViewModel
             }
             editorRowToLinesMap = editorRowToLinesMapBuilder.ToImmutable();
             lineToEditorRowMap = lineToEditorRowMapBuilder.ToImmutable();
+            assemblyLineToViewModelMap = builder.OfType<AssemblyLineViewModel>()
+                .ToFrozenDictionary(al => al.SourceLine, al => al);
         }
         else
         {
@@ -136,6 +149,7 @@ public class SourceFileViewModel : ScopedViewModel
             builder.AddRange(Lines);
             editorRowToLinesMap = null;
             lineToEditorRowMap = null;
+            assemblyLineToViewModelMap = FrozenDictionary<PdbAssemblyLine, AssemblyLineViewModel>.Empty;
         }
         return (builder.ToImmutable(), editorRowToLinesMap, lineToEditorRowMap);
     }
@@ -222,7 +236,7 @@ public class SourceFileViewModel : ScopedViewModel
             if (implementationFile is not null)
             {
                 dispatcher.Dispatch(
-                    new OpenSourceFileMessage(implementationFile, definition.LineNumber, 
+                    new OpenSourceLineNumberFileMessage(implementationFile, definition.LineNumber, 
                         Column: definition.ColumnNumber, MoveCaret: true));
             }
             else
@@ -241,7 +255,7 @@ public class SourceFileViewModel : ScopedViewModel
             if (definitionFile is not null)
             {
                 dispatcher.Dispatch(
-                    new OpenSourceFileMessage(definitionFile, definition.LineNumber, 
+                    new OpenSourceLineNumberFileMessage(definitionFile, definition.LineNumber, 
                         Column: definition.ColumnNumber, MoveCaret: true));
             }
             else
@@ -366,26 +380,13 @@ public class SourceFileViewModel : ScopedViewModel
             && a.Function?.Name == b.Function?.Name
             && a.Function?.DefinitionFile == b.Function?.DefinitionFile;
     }
-    public int? ExecutionRow
-    {
-        get
-        {
-            for (int i=0; i<Lines.Length; i++)
-            {
-                if (Lines[i].IsExecution)
-                {
-                    return i;
-                }
-            }
-            return null;
-        }
-    }
     public void ClearExecutionRow()
     {
-        foreach (var line in Lines)
+        foreach (var line in EditorLines)
         {
             line.IsExecution = false;
         }
+        ExecutionRow = null;
         OnExecutionRowChanged(EventArgs.Empty);
     }
     internal async Task AddOrRemoveBreakpointAsync(LineViewModel? line)
@@ -403,10 +404,46 @@ public class SourceFileViewModel : ScopedViewModel
             }
         }
     }
-    public void SetExecutionRow(int rowIndex)
+    public void SetExecutionRow(PdbLine line, PdbAssemblyLine? assemblyLine)
     {
-        Lines[rowIndex].IsExecution = true;
-        OnExecutionRowChanged(EventArgs.Empty);
+        executionLine = line;
+        executionAssemblyLine = assemblyLine;
+        UpdateExecutionLineVisibility();
+    }
+
+    bool IsLive => executionStatusViewModel.IsDebugging && executionStatusViewModel.IsDebuggingPaused;
+
+    internal void UpdateExecutionLineVisibility()
+    {
+        ClearExecutionRow();
+        if (ShowAssemblyLines)
+        {
+            if (executionAssemblyLine is not null)
+            {
+                var viewModel = assemblyLineToViewModelMap[executionAssemblyLine];
+                viewModel.IsExecution = true;
+                if (IsLive)
+                {
+                    ExecutionRow = EditorLines.IndexOf(viewModel);
+                }
+            }
+        }
+        else
+        {
+            if (executionLine is not null)
+            {
+                var viewModel = lineToViewModelMap[executionLine];
+                viewModel.IsExecution = true;
+                if (IsLive)
+                {
+                    ExecutionRow = EditorLines.IndexOf(viewModel);
+                }
+            }
+        }
+        if (IsLive)
+        {
+            OnExecutionRowChanged(EventArgs.Empty);
+        }
     }
 
     protected override void OnPropertyChanged([CallerMemberName] string name = default!)
@@ -421,6 +458,7 @@ public class SourceFileViewModel : ScopedViewModel
             case nameof(ShowAssemblyLines):
                 (EditorLines, EditorRowToLinesMap, LineToEditorRowMap) = CreateEditorLines();
                 OnContentChanged(EventArgs.Empty);
+                UpdateExecutionLineVisibility();
                 break;
         }
     }
@@ -444,6 +482,7 @@ public abstract class EditorLineViewModel: NotifiableObject
 {
     public string Content { get; }
     public ushort? Address { get; }
+    public bool IsExecution { get; set; }
     public EditorLineViewModel(string content, ushort? address)
     {
         Content = content;
@@ -465,7 +504,6 @@ public class LineViewModel : EditorLineViewModel
     readonly Lazy<ImmutableArray<AssemblyLineViewModel>> assemblyLines;
     readonly string spacePrefix;
     public PdbLine SourceLine { get; }
-    public bool IsExecution { get; set; }
     public ImmutableArray<BreakpointViewModel> Breakpoints { get; private set; }
     public bool HasBreakpoint => !Breakpoints.IsEmpty;
     public int Row { get; }

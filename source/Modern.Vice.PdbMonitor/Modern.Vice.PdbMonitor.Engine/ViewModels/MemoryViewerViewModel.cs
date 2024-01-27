@@ -104,8 +104,8 @@ public class MemoryViewerCell: NotifiableObject
         this.owner = owner;
         Address = address;
     }
-    public byte Value => owner.Current[Address];
-    public byte PreviousValue => owner.Previous[Address];
+    public byte Value => owner.Current.Span[Address];
+    public byte PreviousValue => owner.Previous.Span[Address];
     public bool HasChanges => Value != PreviousValue;
     public void RaiseChanged()
     {

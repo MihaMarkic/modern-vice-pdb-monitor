@@ -1,6 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,16 @@ partial class MainWindow : Window
             SizeToContent = SizeToContent.Width,
         };
         dialog.ShowDialog(this);
+    }
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+        ViewModel.IsShiftDown = false;
+    }
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        ViewModel.IsShiftDown = e.KeyModifiers == KeyModifiers.Shift;
     }
     internal async Task<string?> ShowOpenProjectFileDialogAsync(OpenFileDialogModel model,
         CancellationToken ct)

@@ -14,6 +14,13 @@ public static class ServiceProviderExtension
         viewModel.AssignScope(contentScope);
         return viewModel;
     }
+    public static DisassemblyViewModel CreateScopedDisassemblyViewModel(this IServiceProvider serviceProvider, ushort address)
+    {
+        var contentScope = serviceProvider.CreateScope();
+        var viewModel = ActivatorUtilities.CreateInstance<DisassemblyViewModel>(serviceProvider, address);
+        viewModel.AssignScope(contentScope);
+        return viewModel;
+    }
     /// <summary>
     /// Creates an instance of <typeparamref name="T"/> within a new scope and stores scope in the newly created instance.
     /// </summary>

@@ -1,6 +1,6 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Core;
@@ -49,11 +49,12 @@ public class MainViewModel : NotifiableObject
     public RelayCommandAsync RunCommand { get; }
     public RelayCommand PauseCommand { get; }
     public RelayCommandAsync StopCommand { get; }
-    public RelayCommandAsync StepIntoCommand { get; }
-    public RelayCommandAsync StepOverCommand { get; }
+    public RelayCommandAsync<bool?> StepIntoCommand { get; }
+    public RelayCommandAsync<bool?> StepOverCommand { get; }
     public RelayCommandAsync UpdatePdbCommand { get; }
     public RelayCommand ToggleIsAutoUpdateEnabledCommand { get; }
     public RelayCommand ShowMessagesHistoryCommand { get; }
+    public RelayCommand ShowDisassemblyCommand { get; }
     /// <summary>
     /// When true, <see cref="UpdatePdbCommand"/> is called automatically upon detected changes.
     /// </summary>
@@ -92,6 +93,12 @@ public class MainViewModel : NotifiableObject
     public MemoryViewerViewModel MemoryViewerViewModel { get; }
     public CallStackViewModel CallStackViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
+    public StatusInfoViewModel StatusInfoViewModel { get; }
+    /// <summary>
+    /// Tracks whether user held shift when it performed an action.
+    /// AvaloniaObject should set this property for each event when it needs to handle shift status.
+    /// </summary>
+    public bool IsShiftDown { get; set; }
     TaskCompletionSource stoppedExecution;
     TaskCompletionSource resumedExecution;
     Process? viceProcess;
@@ -104,7 +111,8 @@ public class MainViewModel : NotifiableObject
         VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
         DebuggerViewModel debuggerViewModel, MemoryViewerViewModel memoryViewerViewModel,
         CallStackViewModel callStackViewModel,
-        TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel)
+        TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel,
+        StatusInfoViewModel statusInfoViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -124,6 +132,7 @@ public class MainViewModel : NotifiableObject
         MessagesHistoryViewModel = messagesHistoryViewModel;
         MemoryViewerViewModel = memoryViewerViewModel;
         CallStackViewModel = callStackViewModel;
+        StatusInfoViewModel = statusInfoViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
@@ -147,10 +156,10 @@ public class MainViewModel : NotifiableObject
         StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging);
         PauseCommand = commandsManager.CreateRelayCommand(
             PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping);
-        StepIntoCommand = commandsManager.CreateRelayCommandAsync(
-            StepIntoAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
-        StepOverCommand = commandsManager.CreateRelayCommandAsync(
-            StepOverAsync, () => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+        StepIntoCommand = commandsManager.CreateRelayCommandAsync<bool?>(
+            StepIntoAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+        StepOverCommand = commandsManager.CreateRelayCommandAsync<bool?>(
+            StepOverAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
         UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(
             UpdatePdbAsync, () => !IsBusy && !IsDebugging && IsUpdatedPdbAvailable);
         ToggleIsAutoUpdateEnabledCommand = commandsManager.CreateRelayCommand(ToggleIsAutoUpdateEnabled, () => true);
@@ -160,6 +169,7 @@ public class MainViewModel : NotifiableObject
             OpenProjectFromPath(globals.Settings.RecentProjects[0]);
         }
         ShowMessagesHistoryCommand = commandsManager.CreateRelayCommand(ShowMessagesHistory, () => MessagesHistoryViewModel.IsAvailable);
+        ShowDisassemblyCommand = commandsManager.CreateRelayCommand(ShowDisassembly, () => IsDebugging && IsDebuggingPaused);
         IsAutoUpdateEnabled = globals.Settings.IsAutoUpdateEnabled;
         stoppedExecution = new TaskCompletionSource();
         resumedExecution = new TaskCompletionSource();
@@ -492,6 +502,7 @@ public class MainViewModel : NotifiableObject
         logger.LogDebug("Cleaning after debugging");
         executionStatusViewModel.IsDebugging = false;
         executionStatusViewModel.IsDebuggingPaused = false;
+        DebuggerViewModel.Clean();
         await TraceOutputViewModel.ClearTraceCheckpointAsync();
         if (viceBridge?.IsConnected ?? false)
         {
@@ -555,13 +566,13 @@ public class MainViewModel : NotifiableObject
             SwitchOverlayContent<ProjectViewModel>();
         }
     }
-    internal async Task StepIntoAsync()
+    internal async Task StepIntoAsync(bool? isAssemblyLevel)
     {
-        await DebuggerViewModel.StepIntoAsync();
+        await DebuggerViewModel.StepIntoAsync(isAssemblyLevel ?? false);
     }
-    internal async Task StepOverAsync()
+    internal async Task StepOverAsync(bool? isAssemblyLevel)
     {
-        await DebuggerViewModel.StepOverAsync();
+        await DebuggerViewModel.StepOverAsync(isAssemblyLevel ?? false);
     }
     internal void SwitchOverlayContent<T>()
         where T : ScopedViewModel
@@ -624,6 +635,10 @@ public class MainViewModel : NotifiableObject
     }
 
     void ShowMessagesHistory() => ShowMessagesHistoryContent?.Invoke();
+    void ShowDisassembly()
+    {
+        dispatcher.Dispatch(new OpenAddressMessage(RegistersViewModel.Current.PC?? 0));
+    }
     void Test()
     {
         if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
@@ -754,6 +769,17 @@ public class MainViewModel : NotifiableObject
             }
         }
         return false;
+    }
+
+    protected override void OnPropertyChanged([CallerMemberName] string name = default!)
+    {
+        switch(name)
+        {
+            case nameof(IsShiftDown):
+                StatusInfoViewModel.StepMode = IsShiftDown ? DebuggerStepMode.Assembly : DebuggerStepMode.High;
+                break;
+        }
+        base.OnPropertyChanged(name);
     }
 
     protected override void Dispose(bool disposing)

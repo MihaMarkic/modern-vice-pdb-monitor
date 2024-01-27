@@ -6,15 +6,37 @@ using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
-internal class AssemblyDebugStepper : DebugStepper, IDebugStepper
+public class AssemblyDebugStepper : DebugStepper, IDebugStepper
 {
     public AssemblyDebugStepper(IViceBridge viceBridge, ILogger<AssemblyDebugStepper> logger, IDispatcher dispatcher, 
         ExecutionStatusViewModel executionStatusViewModel) : base(viceBridge, logger, dispatcher, executionStatusViewModel)
     {
     }
-    public async Task StepIntoAsync(PdbLine? line, CancellationToken ct = default) => await AtomicStepIntoAsync(ct);
+    public async Task StepIntoAsync(PdbLine? line, CancellationToken ct = default)
+    {
+        IsActive = true;
+        try
+        {
+            await AtomicStepIntoAsync(ct);
+        }
+        finally
+        {
+            IsActive = false;
+        }
+    }
 
-    public async Task StepOverAsync(PdbLine? line, CancellationToken ct = default) =>await AtomicStepOverAsync(ct);
+    public async Task StepOverAsync(PdbLine? line, CancellationToken ct = default)
+    {
+        IsActive = true;
+        try
+        {
+            await AtomicStepOverAsync(ct);
+        }
+        finally
+        {
+            IsActive = false;
+        }
+    }
     public async override Task ContinueAsync(PdbLine? line, CancellationToken ct = default)
     {
         await ExitViceMonitorAsync();

@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
+             xmlns:v="clr-namespace:Modern.Vice.PdbMonitor.Views"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:DataType="vm:DisassemblyViewModel"
+             x:Class="Modern.Vice.PdbMonitor.Views.DisassemblyViewer">
+  <DockPanel LastChildFill="True">
+    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,4">
+      <TextBox Text="{Binding AddressForJump}" VerticalAlignment="Center" Width="100">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding JumpToAddressCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Margin="4,0,0,0" Command="{Binding JumpToAddressCommand}">Jump to</Button>
+    </StackPanel>
+    <ScrollViewer HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto">
+      <ItemsRepeater ItemsSource="{Binding Lines}">
+        <ItemsRepeater.ItemTemplate>
+          <DataTemplate DataType="vm:DisassemblyLine">
+            <v:DisassemblyLine />
+          </DataTemplate>
+        </ItemsRepeater.ItemTemplate>
+      </ItemsRepeater>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

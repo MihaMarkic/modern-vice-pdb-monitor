@@ -18,7 +18,7 @@
     <TabControl.ItemTemplate>
       <DataTemplate>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Path.FileName}" FontSize="15" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding Caption}" FontSize="15" VerticalAlignment="Center"/>
           <Button Command="{Binding $parent[TabControl].DataContext.CloseSourceFileCommand}" CommandParameter="{Binding}" VerticalAlignment="Top"
             Padding="4" Background="Transparent">
             <Image Height="12">
@@ -31,9 +31,16 @@
       </DataTemplate>
     </TabControl.ItemTemplate>
     <TabControl.ContentTemplate>
-      <DataTemplate>
-        <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
-      </DataTemplate>
+      <v:DataContextTemplateSelector>
+        <v:DataContextTemplateSelector.Templates>
+          <DataTemplate x:Key="{x:Type vm:SourceFileViewModel}">
+            <v:SourceFileViewer FontFamily="{StaticResource CodeFont}" />
+          </DataTemplate>
+          <DataTemplate x:Key="{x:Type vm:DisassemblyViewModel}">
+            <v:DisassemblyViewer FontFamily="{StaticResource CodeFont}" />
+          </DataTemplate>
+        </v:DataContextTemplateSelector.Templates>
+      </v:DataContextTemplateSelector>
     </TabControl.ContentTemplate>
   </TabControl>
 </UserControl>

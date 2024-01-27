@@ -76,6 +76,13 @@ public abstract class DebugStepper: DisposableObject
         //}
         //continueTcs.SetResult();
     }
+    public virtual void Clean()
+    {
+        IsActive = false;
+        continueTcs?.TrySetResult();
+        SteppingStart = null;
+        StartLine = null;
+    }
     protected Task? ContinueTask => continueTcs?.Task;
 
     public void Stop()

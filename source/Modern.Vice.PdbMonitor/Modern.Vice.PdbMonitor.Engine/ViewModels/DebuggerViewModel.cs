@@ -8,7 +8,11 @@ using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
 using Righthand.MessageBus;
 
 namespace Modern.Vice.PdbMonitor.Engine.ViewModels;
-
+public enum DebuggerStepMode
+{
+    High,
+    Assembly,
+}
 public class DebuggerViewModel : ScopedViewModel
 {
     readonly ILogger<DebuggerViewModel> logger;
@@ -28,7 +32,11 @@ public class DebuggerViewModel : ScopedViewModel
     public SourceFileViewerViewModel SourceFileViewerViewModel { get; }
     public VariablesViewModel Variables { get; }
     public WatchedVariablesViewModel WatchedVariables { get; }
+    DebuggerStepMode? stepMode;
     PdbLine? lastActiveLine;
+    PdbAssemblyLine? lastActiveAssemblyLine;
+    // previous address for update
+    ushort? previousAddress;
     public DebuggerViewModel(ILogger<DebuggerViewModel> logger, Globals globals, ProjectExplorerViewModel projectExplorerViewModel,
         SourceFileViewerViewModel sourceFileViewerViewModel, RegistersViewModel registers, IDispatcher dispatcher,
         ExecutionStatusViewModel executionStatusViewModel, 
@@ -51,10 +59,12 @@ public class DebuggerViewModel : ScopedViewModel
         Variables = variablesViewModel;
         WatchedVariables = watchedVariablesViewModel;
         Registers = registers;
-        Registers.PropertyChanged += Registers_PropertyChanged;
+        //Registers.PropertyChanged += Registers_PropertyChanged;
+        Registers.RegistersUpdated += Registers_RegistersUpdated;
         globals.PropertyChanged += Globals_PropertyChanged;
         UpdatePdbManager();
     }
+
     void UpdatePdbManager()
     {
         if (globals.Project?.CompilerType is not null)
@@ -107,25 +117,49 @@ public class DebuggerViewModel : ScopedViewModel
         }
     }
     
-    internal async Task StepIntoAsync()
+    internal async Task StepIntoAsync(bool isAssemblyStepMode)
     {
         if (DebugStepper is not null)
         {
-            await DebugStepper.StepIntoAsync(lastActiveLine);
+            stepMode = isAssemblyStepMode ? DebuggerStepMode.Assembly : DebuggerStepMode.High;
+            try
+            {
+                await DebugStepper.StepIntoAsync(lastActiveLine);
+            }
+            finally
+            {
+                stepMode = null;
+            }
         }
     }
-    internal async Task StepOverAsync()
+    internal async Task StepOverAsync(bool isAssemblyStepMode)
     {
         if (DebugStepper is not null)
         {
-            await DebugStepper.StepOverAsync(lastActiveLine);
+            stepMode = isAssemblyStepMode ? DebuggerStepMode.Assembly : DebuggerStepMode.High;
+            try
+            {
+                await DebugStepper.StepOverAsync(lastActiveLine);
+            }
+            finally
+            {
+                stepMode = null;
+            }
         }
     }
     internal async Task ContinueAsync()
     {
         if (DebugStepper is not null)
         {
-            await DebugStepper.ContinueAsync(lastActiveLine);
+            stepMode = DebuggerStepMode.High;
+            try
+            {
+                await DebugStepper.ContinueAsync(lastActiveLine);
+            }
+            finally
+            {
+                stepMode = null;
+            }
         }
     }
     internal async Task ExitViceMonitorAsync()
@@ -137,75 +171,112 @@ public class DebuggerViewModel : ScopedViewModel
     }
 
     bool registersUpdated;
-    void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        switch (e.PropertyName)
-        {
-            case nameof(Registers.Current):
+    //void Registers_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    //{
+    //    switch (e.PropertyName)
+    //    {
+    //        case nameof(Registers.Current):
 
-                // first exclude processing based on execution status
-                if (pdbManager is null
-                    || !executionStatusViewModel.IsDebugging || executionStatusViewModel.IsStartingDebugging)
-                {
-                    return;
-                }
-                registersUpdated = true;
-                break;
+    //            // first exclude processing based on execution status
+    //            if (pdbManager is null
+    //                || !executionStatusViewModel.IsDebugging || executionStatusViewModel.IsStartingDebugging)
+    //            {
+    //                return;
+    //            }
+    //            registersUpdated = true;
+    //            break;
+    //    }
+    //}
+
+    private void Registers_RegistersUpdated(object? sender, EventArgs e)
+    {
+        // first exclude processing based on execution status
+        if (pdbManager is null
+            || !executionStatusViewModel.IsDebugging || executionStatusViewModel.IsStartingDebugging)
+        {
+            return;
         }
+        registersUpdated = true;
+    }
+
+    internal async Task HandleMatchingLineAsync(PdbLine matchingLine, ushort address, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(pdbManager);
+        lastActiveAssemblyLine = matchingLine.GetAssemblyLineAtAddress(address);
+        // don't do anything when DebugStepper is active as it takes control
+        if (DebugStepper?.IsActive == true)
+        {
+            bool isTimeout = DebugStepper.IsTimeout(DateTimeOffset.Now);
+            bool shouldContinue = stepMode switch
+            {
+                DebuggerStepMode.High => matchingLine == DebugStepper.StartLine,
+                DebuggerStepMode.Assembly => address == previousAddress,
+                _ => false,
+            };
+            if (!isTimeout && shouldContinue)
+            {
+                DebugStepper.Continue();
+                return;
+            }
+            else
+            {
+                DebugStepper.Stop();
+            }
+        }
+        // when not stepping in/over, stop only on lines that are under a breakpoint
+        else
+        {
+            if (breakpointsViewModel.GetBreakpointsAssociatedWithLine(matchingLine).IsEmpty)
+            {
+                return;
+            }
+        }
+        var file = pdbManager.FindFileOfLine(matchingLine)!;
+        dispatcher.Dispatch(new OpenSourceLineFileMessage(file, matchingLine, lastActiveAssemblyLine, true));
+        await emulatorMemoryViewModel.GetSnapshotAsync(ct);
+        Variables.UpdateForLine(matchingLine);
+        WatchedVariables.UpdateValues();
+        return;
     }
 
     internal async Task UpdateStateAsync(CancellationToken ct)
     {
         ushort? address = Registers.Current.PC;
-        if (pdbManager is not null && address.HasValue)
+        try
         {
-            var matchingLine = pdbManager.FindLineUsingAddress(address.Value);
-            lastActiveLine = matchingLine;
-            Debug.WriteLine($"Got address {address.Value:X4}");
-            if (matchingLine is not null)
+            if (pdbManager is not null && address.HasValue)
             {
-                // don't do anything when DebugStepper is active as it takes control
-                if (DebugStepper?.IsActive == true)
+                var matchingLine = pdbManager.FindLineUsingAddress(address.Value);
+                lastActiveLine = matchingLine;
+                Debug.WriteLine($"Got address {address.Value:X4}");
+                if (matchingLine is not null)
+                {
+                    await HandleMatchingLineAsync(matchingLine, address.Value, ct);
+                    return;
+                }
+                else if (DebugStepper?.IsActive == true)
                 {
                     bool isTimeout = DebugStepper.IsTimeout(DateTimeOffset.Now);
-                    if (!isTimeout && matchingLine == DebugStepper.StartLine)
+                    if (isTimeout)
                     {
-                        DebugStepper.Continue();
-                        return;
-                    }
-                    else
-                    {
+                        logger.LogWarning("Timeout while stepping. Stepping will stop.");
                         DebugStepper.Stop();
                     }
-                }                // when not stepping in/over, stop only on lines that are under a breakpoint
-                else
-                {
-                    if (breakpointsViewModel.GetBreakpointsAssociatedWithLine(matchingLine).IsEmpty)
-                    {
-                        return;
-                    }
-                }
-                var file = pdbManager.FindFileOfLine(matchingLine)!;
-                int matchingLineNumber = file.Lines.IndexOf(matchingLine);
-                dispatcher.Dispatch(new OpenSourceFileMessage(file, ExecutingLine: matchingLineNumber));
-                await emulatorMemoryViewModel.GetSnapshotAsync(ct);
-                Variables.UpdateForLine(matchingLine);
-                WatchedVariables.UpdateValues();
-                return;
-            }
-            else if (DebugStepper?.IsActive == true)
-            {
-                bool isTimeout = DebugStepper.IsTimeout(DateTimeOffset.Now);
-                if (isTimeout)
-                {
-                    logger.LogWarning("Timeout while stepping. Stepping will stop.");
-                    DebugStepper.Stop();
                 }
             }
+        }
+        finally
+        {
+            previousAddress = address;
         }
         Variables.ClearVariables();
         WatchedVariables.ClearValues();
         SourceFileViewerViewModel.ClearExecutionRow();
+    }
+
+    public void Clean()
+    {
+        DebugStepper?.Clean();
     }
 
     void Globals_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -229,7 +300,8 @@ public class DebuggerViewModel : ScopedViewModel
         if (disposing)
         {
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
-            Registers.PropertyChanged -= Registers_PropertyChanged;
+            Registers.RegistersUpdated -= Registers_RegistersUpdated;
+            //Registers.PropertyChanged -= Registers_PropertyChanged;
             globals.PropertyChanged -= Globals_PropertyChanged;
         }
         base.Dispose(disposing);
