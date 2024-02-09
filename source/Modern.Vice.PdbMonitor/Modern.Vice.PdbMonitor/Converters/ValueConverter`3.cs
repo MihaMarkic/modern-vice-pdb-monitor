@@ -8,7 +8,7 @@ public abstract class ValueConverter<TSource, TDest, TParam> : IValueConverter
     {
         if (value is TSource)
         {
-            TParam? param = RhConverter.ConvertFrom<TParam>(parameter);
+            TParam? param = ConvertParameter(parameter);
             return Convert((TSource)value, targetType, param, culture);
         }
         else
@@ -19,13 +19,22 @@ public abstract class ValueConverter<TSource, TDest, TParam> : IValueConverter
     {
         if (value is TDest)
         {
-            TParam? param = RhConverter.ConvertFrom<TParam>(parameter);
+            TParam? param = ConvertParameter(parameter);
             return ConvertBack((TDest)value, targetType, param, culture);
         }
         else
             return default(TSource);
     }
-
+    internal TParam? ConvertParameter(object? source)
+    {
+        switch (source)
+        {
+            case TParam param:
+                return param;
+            default:
+                return (TParam?)RhConverter.ConvertToObject<TParam>(source);
+        }
+    }
     public abstract TDest? Convert(TSource? value, Type targetType, TParam? parameter, CultureInfo culture);
     public abstract TSource? ConvertBack(TDest? value, Type targetType, TParam? parameter, CultureInfo culture);
 }

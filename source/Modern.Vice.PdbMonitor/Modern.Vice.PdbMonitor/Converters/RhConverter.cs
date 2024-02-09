@@ -6,44 +6,32 @@ public static class RhConverter
 {
     static readonly Dictionary<Type, TypeConverter> converters = new Dictionary<Type, TypeConverter>();
 
-    public static T? ConvertFrom<T>(object? source)
+    internal static object? ConvertToObject<T>(object? source)
     {
-        T? result;
-        if (source is T)
+        if (source is null)
         {
-            result = (T)source;
+            return null;
         }
         else
         {
-            if (source is null)
+            TypeConverter? converter;
+            if (!converters.TryGetValue(typeof(T), out converter))
             {
-                result = default;
+                converter = TypeDescriptor.GetConverter(typeof(T));
+                converters.Add(typeof(T), converter);
             }
-            else
+            if (converter.CanConvertFrom(source.GetType()))
             {
-                TypeConverter? converter;
-                if (!converters.TryGetValue(typeof(T), out converter))
+                try
                 {
-                    converter = TypeDescriptor.GetConverter(typeof(T));
-                    converters.Add(typeof(T), converter);
+                    return converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
                 }
-                if (converter.CanConvertFrom(source.GetType()))
+                catch
                 {
-                    try
-                    {
-                        result = (T?)converter.ConvertFrom(null, CultureInfo.InvariantCulture, source);
-                    }
-                    catch
-                    {
-                        result = default;
-                    }
-                }
-                else
-                {
-                    result = default;
+                    return null;
                 }
             }
         }
-        return result;
+        return null;
     }
 }
