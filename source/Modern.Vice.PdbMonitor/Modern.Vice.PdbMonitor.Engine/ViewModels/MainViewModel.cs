@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,7 +72,7 @@ public class MainViewModel : NotifiableObject
     public bool IsShowingErrors { get; set; }
     public bool IsParsingPdb { get; private set; }
     public bool IsBusy => executionStatusViewModel.IsOpeningProject || executionStatusViewModel.IsStartingDebugging || IsParsingPdb;
-    public bool IsStartingDebugging => executionStatusViewModel.IsDebugging;
+    public bool IsStartingDebugging => executionStatusViewModel.IsStartingDebugging;
     public bool IsDebugging => executionStatusViewModel.IsDebugging;
     public bool IsDebuggingPaused => executionStatusViewModel.IsDebuggingPaused;
     public bool IsDebuggerStepping => executionStatusViewModel.IsStepping;
@@ -83,7 +84,8 @@ public class MainViewModel : NotifiableObject
     /// True when pdb file was changed.
     /// </summary>
     public bool IsUpdatedPdbAvailable { get; private set; }
-    public bool IsProfiling => ProfilerViewModel.IsActive;
+    public bool IsProfiling => ProfilerViewModel.IsActive || IsProfilerStarting;
+    public bool IsProfilerStarting => ProfilerViewModel.IsStarting;
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
     //public ScopedViewModel Content { get; private set; }
     public RegistersViewModel RegistersViewModel { get; }
@@ -205,6 +207,9 @@ public class MainViewModel : NotifiableObject
         {
             case nameof(ProfilerViewModel.IsActive):
                 OnPropertyChanged(nameof(IsProfiling));
+                break;
+            case nameof(ProfilerViewModel.IsStarting):
+                OnPropertyChanged(nameof(IsProfilerStarting));
                 break;
         }
     }
@@ -442,8 +447,35 @@ public class MainViewModel : NotifiableObject
 
     internal async Task StartProfilerAsync()
     {
-        ProfilerViewModel.Start();
-
+        if (Globals.Project is null)
+        {
+            logger.LogError("Can't run profiler when there is no project");
+            return;
+        }
+        const string title = "Start profiling";
+        if (!IsViceConnected)
+        {
+            if (viceProcess is null)
+            {
+                viceProcess = StartVice();
+                if (viceProcess is null)
+                {
+                    dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, title, "Failed to start profiler"));
+                    return;
+                }
+            }
+        }
+        bool hasPdbChanged = IsUpdatedPdbAvailable;
+        if (IsUpdatedPdbAvailable)
+        {
+            await UpdatePdbAsync();
+        }
+        startDebuggingCts = new CancellationTokenSource();
+        if (!viceBridge.IsConnected)
+        {
+            await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
+        }
+        await ProfilerViewModel.StartAsync();
     }
 
     internal async Task StartDebuggingAsync()
@@ -467,7 +499,6 @@ public class MainViewModel : NotifiableObject
                         dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, title, "Failed to start debugging"));
                         return;
                     }
-                    viceProcess.Exited += ViceProcess_Exited;
                 }
             }
             bool hasPdbChanged = IsUpdatedPdbAvailable;
@@ -547,14 +578,7 @@ public class MainViewModel : NotifiableObject
         var command = viceBridge.EnqueueCommand(new ResetCommand(ResetMode.Soft), resumeOnStopped: false);
         await command.Response;
     }
-    
-    void ViceProcess_Exited(object? sender, EventArgs e)
-    {
-        viceProcess!.Exited -= ViceProcess_Exited;
-        viceProcess = null;
-        _ = StopDebuggingAsync();
-    }
-
+ 
     internal async Task ClearAfterDebuggingAsync()
     {
         logger.LogDebug("Cleaning after debugging");
@@ -677,7 +701,14 @@ public class MainViewModel : NotifiableObject
             try
             {
                 string arguments = $"-binarymonitor";
-                return Process.Start(path, arguments);
+                Process result = Process.Start(path, arguments);
+                result.WaitForExitAsync().ContinueWith(t =>
+                {
+                    viceProcess = null;
+                    _ = StopDebuggingAsync();
+                    IsViceConnected = false;
+                });
+                return result;
             }
             catch (Exception ex)
             {

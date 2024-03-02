@@ -2,7 +2,7 @@
 public interface IProfiler: IAsyncDisposable
 {
     event EventHandler? IsActiveChanged;
-    void Start();
+    Task StartAsync();
     Task StopAsync();
     bool IsActive { get; }
 }
