@@ -112,6 +112,8 @@
         <Separator />
         <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" CommandParameter="{Binding IsShiftDown}" />
         <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}" />
+        <Separator />
+        <MenuItem Header="Start Profiler" Command="{Binding RunProfilerCommand}" />
       </MenuItem>
       <MenuItem Header="_Project">
         <MenuItem Header="_Update" Command="{Binding UpdatePdbCommand}">
@@ -229,6 +231,9 @@
       <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}" 
         DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Over</TextBlock>
+      </Button>
+      <Button ToolTip.Tip="Start profiler session" Command="{Binding RunProfilerCommand}" DockPanel.Dock="Left">
+        <TextBlock Margin="4,0,0,0">Start Profiler</TextBlock>
       </Button>
       <Button ToolTip.Tip="Show Disassembly at current PC address" Command="{Binding ShowDisassemblyCommand}" 
         DockPanel.Dock="Left">

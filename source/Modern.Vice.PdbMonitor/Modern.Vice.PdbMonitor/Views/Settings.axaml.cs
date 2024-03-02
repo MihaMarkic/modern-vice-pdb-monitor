@@ -30,7 +30,7 @@ partial class Settings : UserControl
                 options.SuggestedStartLocation = await storageProvider.TryGetFolderFromPathAsync(viewModel.Settings.VicePath);
             }
             var result = await storageProvider.OpenFolderPickerAsync(options);
-            var path = result?[0].Path;
+            var path = result.FirstOrDefault()?.Path;
             if (path is not null)
             {
                 viewModel.Settings.VicePath = path.LocalPath;

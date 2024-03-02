@@ -30,6 +30,7 @@ public class MainViewModel : NotifiableObject
     readonly IServiceProvider serviceProvider;
     readonly CommandsManager commandsManager;
     readonly ExecutionStatusViewModel executionStatusViewModel;
+    readonly IProfiler profiler;
     public Globals Globals { get; }
     readonly ISubscription closeOverlaySubscription;
     readonly ISubscription prgFileChangedSubscription;
@@ -55,6 +56,7 @@ public class MainViewModel : NotifiableObject
     public RelayCommand ToggleIsAutoUpdateEnabledCommand { get; }
     public RelayCommand ShowMessagesHistoryCommand { get; }
     public RelayCommand ShowDisassemblyCommand { get; }
+    public RelayCommandAsync RunProfilerCommand { get; }
     /// <summary>
     /// When true, <see cref="UpdatePdbCommand"/> is called automatically upon detected changes.
     /// </summary>
@@ -81,6 +83,7 @@ public class MainViewModel : NotifiableObject
     /// True when pdb file was changed.
     /// </summary>
     public bool IsUpdatedPdbAvailable { get; private set; }
+    public bool IsProfiling => ProfilerViewModel.IsActive;
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
     //public ScopedViewModel Content { get; private set; }
     public RegistersViewModel RegistersViewModel { get; }
@@ -94,6 +97,7 @@ public class MainViewModel : NotifiableObject
     public CallStackViewModel CallStackViewModel { get; }
     public ScopedViewModel? OverlayContent { get; private set; }
     public StatusInfoViewModel StatusInfoViewModel { get; }
+    public ProfilerViewModel ProfilerViewModel { get; }
     /// <summary>
     /// Tracks whether user held shift when it performed an action.
     /// AvaloniaObject should set this property for each event when it needs to handle shift status.
@@ -106,13 +110,14 @@ public class MainViewModel : NotifiableObject
     readonly TaskFactory uiFactory;
     public MainViewModel(ILogger<MainViewModel> logger, Globals globals, IDispatcher dispatcher,
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
-        IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, RegistersMapping registersMapping, RegistersViewModel registers, 
+        IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, IProfiler profiler,
+        RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
         VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
         DebuggerViewModel debuggerViewModel, MemoryViewerViewModel memoryViewerViewModel,
         CallStackViewModel callStackViewModel,
         TraceOutputViewModel traceOutputViewModel, MessagesHistoryViewModel messagesHistoryViewModel,
-        StatusInfoViewModel statusInfoViewModel)
+        StatusInfoViewModel statusInfoViewModel, ProfilerViewModel profilerViewModel)
     {
         this.logger = logger;
         this.Globals = globals;
@@ -123,6 +128,7 @@ public class MainViewModel : NotifiableObject
         this.projectPdbFileWatcher = projectPdbFileWatcher;
         this.executionStatusViewModel = executionStatusViewModel;
         this.serviceProvider = serviceProvider;
+        this.profiler = profiler;
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
         VariablesViewModel = variablesViewModel;
@@ -133,7 +139,9 @@ public class MainViewModel : NotifiableObject
         MemoryViewerViewModel = memoryViewerViewModel;
         CallStackViewModel = callStackViewModel;
         StatusInfoViewModel = statusInfoViewModel;
+        ProfilerViewModel = profilerViewModel;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
+        profilerViewModel.PropertyChanged += ProfilerViewModel_PropertyChanged;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, uiFactory);
         closeOverlaySubscription = dispatcher.Subscribe<CloseOverlayMessage>(CloseOverlay);
@@ -141,27 +149,29 @@ public class MainViewModel : NotifiableObject
         prgFilePathChangedSubscription = dispatcher.Subscribe<PrgFilePathChangedMessage>(PrgFilePathChanged);
         showModalDialogMessageSubscription = dispatcher.Subscribe<ShowModalDialogMessageCore>(OnShowModalDialog);
         ErrorMessagesViewModel = errorMessagesViewModel;
-        ShowSettingsCommand = commandsManager.CreateRelayCommand(ShowSettings, () => !IsShowingSettings);
-        ShowProjectCommand = commandsManager.CreateRelayCommand(ShowProject, () => !IsShowingProject && IsProjectOpen);
-        TestCommand = commandsManager.CreateRelayCommand(Test, () => !IsBusy);
-        CreateProjectCommand = commandsManager.CreateRelayCommand<CompilerType>(CreateProject, _ => !IsBusy && !IsDebugging);
-        OpenProjectFromPathCommand = commandsManager.CreateRelayCommand<string>(OpenProjectFromPath, _ => !IsBusy && !IsDebugging);
-        OpenProjectCommand = commandsManager.CreateRelayCommand(OpenProject, () => !IsBusy && !IsDebugging);
+        ShowSettingsCommand = commandsManager.CreateRelayCommand(ShowSettings, () => !IsShowingSettings && !IsDebugging && !IsProfiling);
+        ShowProjectCommand = commandsManager.CreateRelayCommand(ShowProject, () => !IsShowingProject && IsProjectOpen && !IsDebugging && !IsProfiling);
+        TestCommand = commandsManager.CreateRelayCommand(Test, () => !IsBusy && !IsProfiling);
+        CreateProjectCommand = commandsManager.CreateRelayCommand<CompilerType>(CreateProject, _ => !IsBusy && !IsDebugging && !IsProfiling);
+        OpenProjectFromPathCommand = commandsManager.CreateRelayCommand<string>(OpenProjectFromPath, _ => !IsBusy && !IsDebugging && !IsProfiling);
+        OpenProjectCommand = commandsManager.CreateRelayCommand(OpenProject, () => !IsBusy && !IsDebugging && !IsProfiling);
         globals.PropertyChanged += Globals_PropertyChanged;
-        CloseProjectCommand = commandsManager.CreateRelayCommand(CloseProject, () => IsProjectOpen && !IsDebugging);
+        CloseProjectCommand = commandsManager.CreateRelayCommand(CloseProject, () => IsProjectOpen && !IsDebugging && !IsProfiling);
         ExitCommand = new RelayCommand(() => CloseApp?.Invoke());
         ToggleErrorsVisibilityCommand = new RelayCommand(() => IsShowingErrors = !IsShowingErrors);
         RunCommand = commandsManager.CreateRelayCommandAsync(
-            StartDebuggingAsync, () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping));
-        StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging);
+            StartDebuggingAsync, 
+            () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping) && !IsProfiling 
+                && !IsShowingSettings && !IsShowingProject);
+        StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging || IsProfiling);
         PauseCommand = commandsManager.CreateRelayCommand(
-            PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping);
+            PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping && !IsProfiling);
         StepIntoCommand = commandsManager.CreateRelayCommandAsync<bool?>(
-            StepIntoAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+            StepIntoAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping && !IsProfiling);
         StepOverCommand = commandsManager.CreateRelayCommandAsync<bool?>(
-            StepOverAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping);
+            StepOverAsync, al => IsDebugging && IsDebuggingPaused && !IsDebuggerStepping && !IsProfiling);
         UpdatePdbCommand = commandsManager.CreateRelayCommandAsync(
-            UpdatePdbAsync, () => !IsBusy && !IsDebugging && IsUpdatedPdbAvailable);
+            UpdatePdbAsync, () => !IsBusy && !IsDebugging && IsUpdatedPdbAvailable && !IsProfiling);
         ToggleIsAutoUpdateEnabledCommand = commandsManager.CreateRelayCommand(ToggleIsAutoUpdateEnabled, () => true);
         // by default opens most recent project
         if (globals.Settings.RecentProjects.Count > 0)
@@ -169,18 +179,48 @@ public class MainViewModel : NotifiableObject
             OpenProjectFromPath(globals.Settings.RecentProjects[0]);
         }
         ShowMessagesHistoryCommand = commandsManager.CreateRelayCommand(ShowMessagesHistory, () => MessagesHistoryViewModel.IsAvailable);
-        ShowDisassemblyCommand = commandsManager.CreateRelayCommand(ShowDisassembly, () => IsDebugging && IsDebuggingPaused);
+        ShowDisassemblyCommand = commandsManager.CreateRelayCommand(ShowDisassembly, () => IsDebugging && IsDebuggingPaused && !IsProfiling);
+        RunProfilerCommand = commandsManager.CreateRelayCommandAsync(StartProfilerAsync, 
+            () => IsProjectOpen && !IsDebugging && !IsProfiling && !IsShowingSettings && !IsShowingProject);
         IsAutoUpdateEnabled = globals.Settings.IsAutoUpdateEnabled;
         stoppedExecution = new TaskCompletionSource();
         resumedExecution = new TaskCompletionSource();
         viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
-        viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        if (!profiler.IsActive)
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
+        profiler.IsActiveChanged += Profiler_IsActiveChanged;
         viceBridge.Start();
         if (!Directory.Exists(globals.Settings.VicePath))
         {
             SwitchOverlayContent<SettingsViewModel>();
         }
+        ProfilerViewModel = profilerViewModel;
     }
+
+    private void ProfilerViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(ProfilerViewModel.IsActive):
+                OnPropertyChanged(nameof(IsProfiling));
+                break;
+        }
+    }
+
+    private void Profiler_IsActiveChanged(object? sender, EventArgs e)
+    {
+        if (profiler.IsActive)
+        {
+            viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+        }
+        else
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
+    }
+
     /// <summary>
     /// Relays execution status
     /// </summary>
@@ -378,8 +418,19 @@ public class MainViewModel : NotifiableObject
     }
     internal async Task StopDebuggingAsync()
     {
-        await BreakpointsViewModel.DisarmAllBreakpoints(CancellationToken.None);
-        await ClearAfterDebuggingAsync();
+        if (IsProfiling)
+        {
+            await profiler.StopAsync();
+        }
+        else if (IsDebugging)
+        {
+            await BreakpointsViewModel.DisarmAllBreakpoints(CancellationToken.None);
+            await ClearAfterDebuggingAsync();
+        }
+        else
+        {
+            logger.LogError("Stopping debugging failed because no debugging or profiling session is active");
+        }
     }
     internal void PauseDebugging()
     {
@@ -388,6 +439,13 @@ public class MainViewModel : NotifiableObject
             viceBridge.EnqueueCommand(new PingCommand(), resumeOnStopped: false);
         }
     }
+
+    internal async Task StartProfilerAsync()
+    {
+        ProfilerViewModel.Start();
+
+    }
+
     internal async Task StartDebuggingAsync()
     {
         if (IsDebugging)
@@ -790,7 +848,9 @@ public class MainViewModel : NotifiableObject
             viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+            profiler.IsActiveChanged -= Profiler_IsActiveChanged;
             Globals.PropertyChanged -= Globals_PropertyChanged;
+            ProfilerViewModel.PropertyChanged -= ProfilerViewModel_PropertyChanged;
             closeOverlaySubscription.Dispose();
             prgFileChangedSubscription.Dispose();
             prgFilePathChangedSubscription.Dispose();

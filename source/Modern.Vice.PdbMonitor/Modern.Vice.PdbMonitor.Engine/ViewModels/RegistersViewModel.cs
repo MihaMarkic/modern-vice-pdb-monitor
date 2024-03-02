@@ -21,6 +21,7 @@ public class RegistersViewModel: NotifiableObject
     readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly CommandsManager commandsManager;
     readonly IDispatcher dispatcher;
+    readonly IProfiler profiler;
     readonly TaskFactory uiFactory;
     public event EventHandler? RegistersUpdated;
     public Registers6510 Current { get; private set; } = Registers6510.Empty;
@@ -30,18 +31,36 @@ public class RegistersViewModel: NotifiableObject
     public byte? PCRegisterId { get; private set; }
     public RelayCommandAsync UpdateCommand { get; }
     public RegistersViewModel(ILogger<RegistersViewModel> logger, IViceBridge viceBridge, RegistersMapping mapping,
-        ExecutionStatusViewModel executionStatusViewModel, IDispatcher dispatcher)
+        ExecutionStatusViewModel executionStatusViewModel, IDispatcher dispatcher, IProfiler profiler)
     {
         this.logger = logger;
         this.viceBridge = viceBridge;
         this.mapping = mapping;
         this.executionStatusViewModel = executionStatusViewModel;
         this.dispatcher = dispatcher;
+        this.profiler = profiler;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         commandsManager = new CommandsManager(this, new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext()));
-        viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        if (!profiler.IsActive)
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
+        profiler.IsActiveChanged += Profiler_IsActiveChanged;
         UpdateCommand = commandsManager.CreateRelayCommandAsync(Update, () => !IsLoadingMappings && IsLoadingRegisters);
     }
+
+    private void Profiler_IsActiveChanged(object? sender, EventArgs e)
+    {
+        if (profiler.IsActive)
+        {
+            viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+        }
+        else
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
+    }
+
     protected void OnRegistersUpdated(EventArgs e) => RegistersUpdated?.Invoke(this, e);
     public async Task InitAsync()
     {
@@ -131,6 +150,7 @@ public class RegistersViewModel: NotifiableObject
         if (disposing)
         {
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+            profiler.IsActiveChanged -= Profiler_IsActiveChanged;
         }
         base.Dispose(disposing);
     }

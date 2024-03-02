@@ -9,6 +9,7 @@ using Modern.Vice.PdbMonitor.Engine.Messages;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.Models.Configuration;
 using Modern.Vice.PdbMonitor.Engine.Services.Abstract;
+using Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 using Righthand.MessageBus;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
@@ -31,6 +32,7 @@ public class BreakpointsViewModel: NotifiableObject
     readonly Globals globals;
     readonly IServiceScopeFactory serviceScopeFactory;
     readonly IProjectFactory projectFactory;
+    readonly IProfiler profiler;
     public ObservableCollection<BreakpointViewModel> Breakpoints { get; }
     readonly Dictionary<PdbLine, List<BreakpointViewModel>> breakpointsLinesMap;
     readonly Dictionary<uint, BreakpointViewModel> breakpointsMap;
@@ -50,7 +52,7 @@ public class BreakpointsViewModel: NotifiableObject
     bool suppressLocalPersistence;
     public BreakpointsViewModel(ILogger<BreakpointsViewModel> logger, IViceBridge viceBridge, IDispatcher dispatcher, Globals globals,
         ExecutionStatusViewModel executionStatusViewModel, IServiceScopeFactory serviceScopeFactory,
-        IProjectFactory projectFactory)
+        IProjectFactory projectFactory, IProfiler profiler)
     {
         this.logger = logger;
         this.viceBridge = viceBridge;
@@ -59,6 +61,7 @@ public class BreakpointsViewModel: NotifiableObject
         this.serviceScopeFactory = serviceScopeFactory;
         this.executionStatusViewModel = executionStatusViewModel;
         this.projectFactory = projectFactory;
+        this.profiler = profiler;
         uiFactory = new TaskFactory(TaskScheduler.FromCurrentSynchronizationContext());
         Breakpoints = new ObservableCollection<BreakpointViewModel>();
         Breakpoints.CollectionChanged += Breakpoints_CollectionChanged;
@@ -71,11 +74,27 @@ public class BreakpointsViewModel: NotifiableObject
         // TODO disable breakpoints manipulation when vice is not connected
         RemoveAllBreakpointsCommand = new RelayCommandAsync(RemoveAllBreakpointsAsync);
         CreateBreakpointCommand = new RelayCommandAsync(CreateBreakpoint);
-        viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        if (!profiler.IsActive)
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
+        profiler.IsActiveChanged += Profiler_IsActiveChanged;
         globals.PropertyChanged += Globals_PropertyChanged;
         executionStatusViewModel.PropertyChanged += ExecutionStatusViewModel_PropertyChanged;
         debugDataChangedSubscription = dispatcher.Subscribe<DebugDataChangedMessage>(SubscriptionDebugDataChanged);
         UpdatePdbManager();
+    }
+
+    private void Profiler_IsActiveChanged(object? sender, EventArgs e)
+    {
+        if (profiler.IsActive)
+        {
+            viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+        }
+        else
+        {
+            viceBridge.ViceResponse += ViceBridge_ViceResponse;
+        }
     }
 
     void Breakpoints_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -926,6 +945,7 @@ public class BreakpointsViewModel: NotifiableObject
         {
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
+            profiler.IsActiveChanged -= Profiler_IsActiveChanged;
             debugDataChangedSubscription.Dispose();
         }
         base.Dispose(disposing);
