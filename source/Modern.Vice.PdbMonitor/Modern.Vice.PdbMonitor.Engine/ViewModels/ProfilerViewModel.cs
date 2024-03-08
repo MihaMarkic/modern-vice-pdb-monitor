@@ -27,7 +27,7 @@ public class ProfilerViewModel : NotifiableObject
         IsStarting = true;
         try
         {
-            await profiler.StartAsync();
+            await profiler.StartAsync(CancellationToken.None);
         }
         finally
         {

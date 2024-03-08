@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models;
+using Righthand.MessageBus;
+using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
+using Righthand.ViceMonitor.Bridge.Services.Abstract;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 
@@ -11,16 +14,30 @@ namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 public class RegistersMapping
 {
     readonly ILogger<RegistersMapping> logger;
+    readonly IViceBridge viceBridge;
+    readonly IDispatcher dispatcher;
     ImmutableDictionary<byte, Register6510> map = ImmutableDictionary<byte, Register6510>.Empty;
     ImmutableDictionary<Register6510, byte> inverseMap = ImmutableDictionary<Register6510, byte>.Empty;
-    public RegistersMapping(ILogger<RegistersMapping> logger)
+    TaskCompletionSource? initializedTcs;
+    public Task Initialized => initializedTcs?.Task ?? throw new Exception("Can't wait for initialization before calling InitAsync");
+    public RegistersMapping(ILogger<RegistersMapping> logger, IViceBridge viceBridge, IDispatcher dispatcher)
     {
         this.logger = logger;
+        this.viceBridge = viceBridge;
+        this.dispatcher = dispatcher;
     }
     public bool IsMappingAvailable => !map.IsEmpty;
     public void Clear()
     {
         map = map.Clear();
+    }
+    public async Task InitAsync()
+    {
+        initializedTcs = new TaskCompletionSource();
+        var command = viceBridge.EnqueueCommand(new RegistersAvailableCommand(MemSpace.MainMemory),
+            resumeOnStopped: true);
+        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, Init);
+        initializedTcs.SetResult();
     }
     public void Init(RegistersAvailableResponse response)
     {

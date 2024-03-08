@@ -46,6 +46,7 @@ public static class IoCRegistrar
             .AddSingleton<HighLevelDebugStepper>()
             .AddSingleton<IDisassembler, Disassembler>()
             .AddSingleton<IProfiler, Profiler>()
+            .AddSingleton<IPrgParser, PrgParser>()
             .AddViceBridge();
         if (messagesHistoryEnabled)
         {

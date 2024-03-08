@@ -32,6 +32,8 @@ public class MainViewModel : NotifiableObject
     readonly CommandsManager commandsManager;
     readonly ExecutionStatusViewModel executionStatusViewModel;
     readonly IProfiler profiler;
+    readonly IPrgParser prgParser;
+    readonly RegistersMapping registersMapping;
     public Globals Globals { get; }
     readonly ISubscription closeOverlaySubscription;
     readonly ISubscription prgFileChangedSubscription;
@@ -113,6 +115,7 @@ public class MainViewModel : NotifiableObject
     public MainViewModel(ILogger<MainViewModel> logger, Globals globals, IDispatcher dispatcher,
         ISettingsManager settingsManager, ErrorMessagesViewModel errorMessagesViewModel, IServiceScope scope, IViceBridge viceBridge,
         IProjectPrgFileWatcher projectPdbFileWatcher, IServiceProvider serviceProvider, IProfiler profiler,
+        IPrgParser prgParser,
         RegistersMapping registersMapping, RegistersViewModel registers, 
         ExecutionStatusViewModel executionStatusViewModel, BreakpointsViewModel breakpointsViewModel,
         VariablesViewModel variablesViewModel, WatchedVariablesViewModel watchedVariablesViewModel,
@@ -131,6 +134,8 @@ public class MainViewModel : NotifiableObject
         this.executionStatusViewModel = executionStatusViewModel;
         this.serviceProvider = serviceProvider;
         this.profiler = profiler;
+        this.prgParser = prgParser;
+        this.registersMapping = registersMapping;
         RegistersViewModel = registers;
         BreakpointsViewModel = breakpointsViewModel;
         VariablesViewModel = variablesViewModel;
@@ -358,7 +363,9 @@ public class MainViewModel : NotifiableObject
                 IsParsingPdb = true;
                 try
                 {
-                    bool newDebuggingIsApplied = await ParseDebugSymbolsAsync(Globals.Project);
+                    var parsingTask = ParseDebugSymbolsAsync(Globals.Project);
+                    ExtractStartAddress(Globals.Project);
+                    bool newDebuggingIsApplied = await parsingTask; 
                     if (newDebuggingIsApplied)
                     {
                         await dispatcher.DispatchAsync(new DebugDataChangedMessage());
@@ -405,10 +412,24 @@ public class MainViewModel : NotifiableObject
             return false;
         }
     }
+
+    bool ExtractStartAddress(Project project)
+    {
+        if (project.FullPrgPath is not null && File.Exists(project.FullPrgPath))
+        {
+            project.StartAddress = prgParser.GetStartAddress(project.FullPrgPath);
+            return true;
+        }
+        return false;
+    }
     void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
     {
-        uiFactory.StartNew(() =>
+        uiFactory.StartNew(async () =>
         {
+            if (e.IsConnected)
+            {
+                await registersMapping.InitAsync();
+            }
             IsViceConnected = e.IsConnected;
         });
     }
@@ -457,7 +478,7 @@ public class MainViewModel : NotifiableObject
         {
             if (viceProcess is null)
             {
-                viceProcess = StartVice();
+                viceProcess = await StartViceAsync();
                 if (viceProcess is null)
                 {
                     dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, title, "Failed to start profiler"));
@@ -475,6 +496,7 @@ public class MainViewModel : NotifiableObject
         {
             await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
         }
+        await registersMapping.Initialized;
         await ProfilerViewModel.StartAsync();
     }
 
@@ -493,7 +515,7 @@ public class MainViewModel : NotifiableObject
             {
                 if (viceProcess is null)
                 {
-                    viceProcess = StartVice();
+                    viceProcess = await StartViceAsync();
                     if (viceProcess is null)
                     {
                         dispatcher.Dispatch(new ErrorMessage(ErrorMessageLevel.Error, title, "Failed to start debugging"));
@@ -516,6 +538,7 @@ public class MainViewModel : NotifiableObject
                 {
                     await viceBridge.WaitForConnectionStatusChangeAsync(startDebuggingCts.Token);
                 }
+                await registersMapping.Initialized;
                 await BreakpointsViewModel.RearmBreakpoints(hasPdbChanged, startDebuggingCts.Token);
                 await TraceOutputViewModel.CreateTraceCheckpointAsync(startDebuggingCts.Token);
                 // make sure vice isn't in paused state
@@ -523,7 +546,6 @@ public class MainViewModel : NotifiableObject
                 {
                     await DebuggerViewModel.ExitViceMonitorAsync();
                 }
-                await RegistersViewModel.InitAsync();
                 executionStatusViewModel.IsStartingDebugging = false;
 
                 var command = viceBridge.EnqueueCommand(
@@ -693,7 +715,7 @@ public class MainViewModel : NotifiableObject
         DebuggerViewModel.CloseProject();
         Globals.Project = null;
     }
-    internal Process? StartVice()
+    internal async Task<Process?> StartViceAsync()
     {
         if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
         {
@@ -702,7 +724,7 @@ public class MainViewModel : NotifiableObject
             {
                 string arguments = $"-binarymonitor";
                 Process result = Process.Start(path, arguments);
-                result.WaitForExitAsync().ContinueWith(t =>
+                _ = result.WaitForExitAsync().ContinueWith(t =>
                 {
                     viceProcess = null;
                     _ = StopDebuggingAsync();
@@ -769,7 +791,9 @@ public class MainViewModel : NotifiableObject
             Globals.Project = project;
             if (project!.PrgPath is not null)
             {
-                await ParseDebugSymbolsAsync(project);
+                var parsingTask = ParseDebugSymbolsAsync(project);
+                ExtractStartAddress(project);
+                await parsingTask;
                 await LoadBreakpointsAsync(ct);
                 UpdateDirectoryChangesTracker();
             }

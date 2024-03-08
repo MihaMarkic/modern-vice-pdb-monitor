@@ -64,9 +64,7 @@ public class RegistersViewModel: NotifiableObject
     protected void OnRegistersUpdated(EventArgs e) => RegistersUpdated?.Invoke(this, e);
     public async Task InitAsync()
     {
-        var command = viceBridge.EnqueueCommand( new RegistersAvailableCommand(MemSpace.MainMemory),
-            resumeOnStopped: true);
-        await command.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger, command, mapping.Init);
+        await mapping.Initialized;
         PCRegisterId = mapping.GetRegisterId(Register6510.PC);
     }
     async Task Update()

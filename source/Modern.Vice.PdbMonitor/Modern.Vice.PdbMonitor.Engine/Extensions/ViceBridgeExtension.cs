@@ -77,7 +77,8 @@ public static class ViceBridgeExtension
         }
     }
 
-    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command,
+    public static async Task<TResponse?> AwaitWithLogAndTimeoutAsync<TCommand, TResponse>(
+        this Task<CommandResponse<TResponse>> task, IDispatcher dispatcher, ILogger logger, TCommand command,
         TimeSpan? timeout = default, CancellationToken ct = default)
         where TCommand: ViceCommand<TResponse>
         where TResponse: ViceResponse
@@ -96,6 +97,42 @@ public static class ViceBridgeExtension
             LogTimeout<TCommand>(dispatcher, logger);
             return default;
         }
+    }
+    /// <summary>
+    /// Awaits for an unbound event of given type <typeparamref name="TResponse"/>.
+    /// </summary>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <param name="bridge"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static Task<TResponse> WaitForUnboundResponse<TResponse>(this IViceBridge bridge, CancellationToken ct = default)
+        where TResponse : ViceResponse
+    {
+        TaskCompletionSource<TResponse> tcs = new TaskCompletionSource<TResponse>();
+        EventHandler<ViceResponseEventArgs>? eventHandler = null;
+        CancellationTokenRegistration? ctr = null;
+        eventHandler = (_, e) =>
+        {
+            if (e.Response is TResponse response)
+            {
+                ctr?.Dispose();
+                bridge.ViceResponse -= eventHandler;
+                tcs.TrySetResult(response);
+            }
+        };
+        ctr = ct.Register(() =>
+        {
+            ctr?.Dispose();
+            bridge.ViceResponse -= eventHandler;
+            tcs.TrySetCanceled();
+        });
+        bridge.ViceResponse += eventHandler;
+        return tcs.Task;
+    }
+
+    private static void Bridge_ViceResponse(object? sender, ViceResponseEventArgs e)
+    {
+        throw new NotImplementedException();
     }
 
     internal static void LogTimeout<TCommand>(IDispatcher dispatcher, ILogger logger)

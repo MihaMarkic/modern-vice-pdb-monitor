@@ -15,6 +15,7 @@ public class Project : NotifiableObject
     public string? BreakpointsSettingsPath => IsPrgSet ? Path.Combine(Directory!, "breakpoints.json") : null;
     public bool IsPrgSet => !string.IsNullOrWhiteSpace(PrgPath);
     public Pdb? DebugSymbols { get; set; }
+    public ushort? StartAddress { get; set; }
     public string Caption => $"{Globals.AppName} - {File}";
     public string? PrgPath { get; set; }
     /// <summary>
