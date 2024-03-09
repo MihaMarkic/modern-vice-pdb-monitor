@@ -19,6 +19,7 @@
     <None Remove="Assets\Icons\pause_disabled.svg" />
     <None Remove="Assets\Icons\play.svg" />
     <None Remove="Assets\Icons\play_disabled.svg" />
+    <None Remove="Assets\Icons\profile.svg" />
     <None Remove="Assets\Icons\stop.svg" />
     <None Remove="Assets\Icons\stop_disabled.svg" />
     <None Remove="Assets\Icons\sync-solid.svg" />
@@ -41,6 +42,7 @@
     <AvaloniaResource Include="Assets\Icons\link.svg" />
     <AvaloniaResource Include="Assets\Icons\pause_disabled.svg" />
     <AvaloniaResource Include="Assets\Icons\pause.svg" />
+    <AvaloniaResource Include="Assets\Icons\profile.svg" />
     <AvaloniaResource Include="Assets\Icons\play.svg" />
     <AvaloniaResource Include="Assets\Icons\play_disabled.svg" />
     <AvaloniaResource Include="Assets\Icons\stop_disabled.svg" />

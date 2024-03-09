@@ -31,7 +31,6 @@ public class MainViewModel : NotifiableObject
     readonly IServiceProvider serviceProvider;
     readonly CommandsManager commandsManager;
     readonly ExecutionStatusViewModel executionStatusViewModel;
-    readonly IProfiler profiler;
     readonly IPrgParser prgParser;
     readonly RegistersMapping registersMapping;
     public Globals Globals { get; }
@@ -88,6 +87,7 @@ public class MainViewModel : NotifiableObject
     public bool IsUpdatedPdbAvailable { get; private set; }
     public bool IsProfiling => ProfilerViewModel.IsActive || IsProfilerStarting;
     public bool IsProfilerStarting => ProfilerViewModel.IsStarting;
+    public bool IsProfilerStopping => ProfilerViewModel.IsStopping;
     public ErrorMessagesViewModel ErrorMessagesViewModel { get; }
     //public ScopedViewModel Content { get; private set; }
     public RegistersViewModel RegistersViewModel { get; }
@@ -133,7 +133,6 @@ public class MainViewModel : NotifiableObject
         this.projectPdbFileWatcher = projectPdbFileWatcher;
         this.executionStatusViewModel = executionStatusViewModel;
         this.serviceProvider = serviceProvider;
-        this.profiler = profiler;
         this.prgParser = prgParser;
         this.registersMapping = registersMapping;
         RegistersViewModel = registers;
@@ -170,7 +169,7 @@ public class MainViewModel : NotifiableObject
             StartDebuggingAsync, 
             () => IsProjectOpen && (!IsDebugging || IsDebuggingPaused && !IsDebuggerStepping) && !IsProfiling 
                 && !IsShowingSettings && !IsShowingProject);
-        StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging || IsProfiling);
+        StopCommand = commandsManager.CreateRelayCommandAsync(StopDebuggingAsync, () => IsDebugging || (!IsProfilerStopping && IsProfiling));
         PauseCommand = commandsManager.CreateRelayCommand(
             PauseDebugging, () => IsDebugging && !IsDebuggingPaused && IsViceConnected && !IsDebuggerStepping && !IsProfiling);
         StepIntoCommand = commandsManager.CreateRelayCommandAsync<bool?>(
@@ -205,7 +204,6 @@ public class MainViewModel : NotifiableObject
         }
         ProfilerViewModel = profilerViewModel;
     }
-
     private void ProfilerViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -216,12 +214,15 @@ public class MainViewModel : NotifiableObject
             case nameof(ProfilerViewModel.IsStarting):
                 OnPropertyChanged(nameof(IsProfilerStarting));
                 break;
+            case nameof(ProfilerViewModel.IsStopping):
+                OnPropertyChanged(nameof(IsProfilerStopping));
+                break;
         }
     }
 
     private void Profiler_IsActiveChanged(object? sender, EventArgs e)
     {
-        if (profiler.IsActive)
+        if (ProfilerViewModel.IsActive)
         {
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
         }
@@ -446,7 +447,7 @@ public class MainViewModel : NotifiableObject
     {
         if (IsProfiling)
         {
-            await profiler.StopAsync();
+            await ProfilerViewModel.StopAsync();
         }
         else if (IsDebugging)
         {
@@ -903,7 +904,6 @@ public class MainViewModel : NotifiableObject
             viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
             viceBridge.ViceResponse -= ViceBridge_ViceResponse;
             executionStatusViewModel.PropertyChanged -= ExecutionStatusViewModel_PropertyChanged;
-            profiler.IsActiveChanged -= Profiler_IsActiveChanged;
             Globals.PropertyChanged -= Globals_PropertyChanged;
             ProfilerViewModel.PropertyChanged -= ProfilerViewModel_PropertyChanged;
             closeOverlaySubscription.Dispose();

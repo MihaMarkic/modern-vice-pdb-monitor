@@ -4,7 +4,7 @@
              xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
-             mc:Ignorable="d" d:DesignWidth="160" d:DesignHeight="30"
+             mc:Ignorable="d" d:DesignWidth="260" d:DesignHeight="30"
              Name="control"
              x:DataType="vm:IStatusInfoViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.StatusInfo">
@@ -16,6 +16,9 @@
       <c:HexAddressConverter x:Key="HexAddressConverter" />
       <c:StepModeToStringConverter x:Key="StepModeToStringConverter" />
     </StackPanel.Resources>
+    <TextBlock Classes="pc_value" Text="{Binding StatusText}" FontWeight="Bold"
+        ToolTip.Tip="Current status"/>
+    <TextBlock Classes="pc_value">|</TextBlock>
     <TextBlock Classes="pc_value" Text="{Binding StepMode, Converter={StaticResource StepModeToStringConverter}}"
       MinWidth="34" TextAlignment="Center" ToolTip.Tip="Step Mode. Hold Shift to activate ASM mode."/>
     <TextBlock Classes="pc_value">|</TextBlock>

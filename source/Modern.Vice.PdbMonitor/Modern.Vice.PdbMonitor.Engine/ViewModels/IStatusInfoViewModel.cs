@@ -5,4 +5,5 @@ public interface IStatusInfoViewModel
     ushort? ExecutionAddress { get; }
     bool ExecutionAddressVisible { get; }
     DebuggerStepMode StepMode { get;  }
+    string StatusText { get; }
 }

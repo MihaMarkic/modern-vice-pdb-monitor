@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Modern.Vice.PdbMonitor.Engine.Models;
 using Modern.Vice.PdbMonitor.Engine.ViewModels;
@@ -7,11 +8,12 @@ using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
+using static Compiler.Oscar64.Services.Implementation.AsmParser;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 public sealed class Profiler : IProfiler
 {
-    const int InstructionsPerStep = 10;
+    const int InstructionsPerStep = 50;
     readonly ILogger<Profiler> logger;
     readonly IViceBridge viceBridge;
     readonly IDispatcher dispatcher;
@@ -35,8 +37,6 @@ public sealed class Profiler : IProfiler
     }
 
     TaskCompletionSource? loopStoppedTcs;
-    TaskCompletionSource? executionResumedTcs;
-    TaskCompletionSource? executionStoppedTcs;
     public async Task StartAsync(CancellationToken ct)
     {
         if (!IsActive)
@@ -58,31 +58,43 @@ public sealed class Profiler : IProfiler
             }
             IsActive = true;
             OnIsActiveChanged();
-            viceBridge.ViceResponse += ViceBridge_ViceResponse;
             viceBridge.ConnectedChanged += ViceBridge_ConnectedChanged;
 
             Debug.WriteLine("Starting profiler");
+            loopStoppedTcs = new TaskCompletionSource();
+            ctsLoop = new CancellationTokenSource();
             bool isAppStarted = await StartAppAsync(globals.Project.FullPrgPath, globals.Project.StartAddress.Value, ct);
-            if (!isAppStarted)
+            if (!isAppStarted || ctsLoop.IsCancellationRequested)
             {
-                logger.LogError("Failed starting app");
+                logger.LogError(isAppStarted ? "Profiling cancelled": "Failed starting app");
+                loopStoppedTcs.SetResult();
                 IsActive = false;
                 OnIsActiveChanged();
-                viceBridge.ViceResponse -= ViceBridge_ViceResponse;
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
                 return;
             }
+
+            // creates a channel for consumer/producer of data
+            var channel = Channel.CreateUnbounded<ProfilingData>(new UnboundedChannelOptions
+            {
+                SingleWriter = true,
+                SingleReader = true,
+                AllowSynchronousContinuations = false
+            });
+            var reader = ProfilingDataConsumer(channel.Reader);
             Debug.WriteLine("App ready for profiling");
-            ctsLoop = new CancellationTokenSource();
             loop = Task.Factory.StartNew(
-                async () => await LoopAsync(ctsLoop.Token),
+                async () => await LoopAsync(channel.Writer, ctsLoop.Token),
                 ctsLoop.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default).Unwrap();
-            loopStoppedTcs = new TaskCompletionSource();
-            _ = loop.ContinueWith(c =>
+            _ = loop.ContinueWith(async c =>
             {
-                viceBridge.ViceResponse -= ViceBridge_ViceResponse;
+                Debug.WriteLine("Shutting down channel");
+                channel.Writer.TryComplete();
+                Debug.WriteLine("Waiting for consumer");
+                await reader;
+                Debug.WriteLine("Consumer done");
                 viceBridge.ConnectedChanged -= ViceBridge_ConnectedChanged;
                 IsActive = false;
                 OnIsActiveChanged();
@@ -115,7 +127,6 @@ public sealed class Profiler : IProfiler
                 Temporary: true));
         var startCheckpointResponse = await startCheckpoint.Response;
         Debug.WriteLine("Checkpoint awaited");
-        executionStoppedTcs = new TaskCompletionSource();
         Debug.WriteLine("Starting app");
         var waitForCheckpoint = viceBridge.WaitForUnboundResponse<CheckpointInfoResponse>(ct);
         var command = viceBridge.EnqueueCommand(
@@ -127,37 +138,47 @@ public sealed class Profiler : IProfiler
         return startCheckpointResponse.Response?.CheckpointNumber == checkpointInfoResponse.CheckpointNumber;
     }
 
-    private async Task LoopAsync(CancellationToken ct)
+    private async ValueTask ProfilingDataConsumer(ChannelReader<ProfilingData> reader)
+    {
+        await foreach (ProfilingData data in reader.ReadAllAsync().ConfigureAwait(false))
+        {
+            //await Task.Delay(1);
+            Debug.WriteLine($"{Thread.CurrentThread.ManagedThreadId} Received {data.index}:{data.PC}");
+        }
+        Debug.WriteLine("Consumer loop ended");
+    }
+    ulong profilingDataIndex;
+    private async Task LoopAsync(ChannelWriter<ProfilingData> writer, CancellationToken ct)
     {
         int commands = 0;
         double averagePerCommand = 0;
         Stopwatch sw = Stopwatch.StartNew();
         //await viceBridge.EnqueueCommand(new ExitCommand()).Response;
         Debug.WriteLine("Profiler loop started");
+        profilingDataIndex = 0;
+        EventHandler<ViceResponseEventArgs> unboundEventsHandler = (s, e) =>
+        {
+            if (e.Response is RegistersResponse response)
+            {
+                ushort address = response.Items.Single(i => i.RegisterId == pcRegisterId).RegisterValue;
+                writer.TryWrite(new ProfilingData(profilingDataIndex++, address));
+            }
+        };
+        viceBridge.ViceResponse += unboundEventsHandler;
         try
         {
             while (!ct.IsCancellationRequested)
             {
-                //Stopwatch sw = Stopwatch.StartNew();
-                //var getRegisters = viceBridge.EnqueueCommand(new RegistersGetCommand(MemSpace.MainMemory), resumeOnStopped: false);
-                //var response = await getRegisters.Response;
-                //long toAwait = sw.ElapsedMilliseconds;
-
-                //ushort address = response.Response!.Items.Single(i => i.RegisterId == pcRegisterId).RegisterValue;
-                //Debug.WriteLine($"PC: {address:X4}");
-                //Debug.WriteLine($"Elapsed ticks {toAwait:#,##0}");
-                //Thread.Sleep(TimeSpan())
-                //await Task.Delay(1, ct);
-                //Debug.WriteLine($"Step into {commands}");
-                executionStoppedTcs = new TaskCompletionSource();
+                //executionStoppedTcs = new TaskCompletionSource();
                 var c = viceBridge.EnqueueCommand(
                     new AdvanceInstructionCommand(StepOverSubroutine: false, NumberOfInstructions: InstructionsPerStep));
                 try
                 {
                     //var response = await c.Response.AwaitWithTimeoutAsync(TimeSpan.FromSeconds(1));
                     //Debug.WriteLine("Step into done");
-                    await executionStoppedTcs.Task;
-                    executionStoppedTcs = null;
+                    //await executionStoppedTcs.Task;
+                    //executionStoppedTcs = null;
+                    await viceBridge.WaitForUnboundResponse<StoppedResponse>();
                 }
                 catch (OperationCanceledException)
                 {
@@ -184,35 +205,13 @@ public sealed class Profiler : IProfiler
         }
         finally
         {
+            viceBridge.ViceResponse -= unboundEventsHandler;
             Debug.WriteLine("Profiler loop stopped");
         }
-    }
-    Task UpdateRegistersFromResponseAsync(RegistersResponse response)
-    {
-        ushort address = response.Items.Single(i => i.RegisterId == pcRegisterId).RegisterValue;
-        //Debug.WriteLine($"PC: {address:X4}");
-        return Task.CompletedTask;
     }
 
     private void ViceBridge_ConnectedChanged(object? sender, ConnectedChangedEventArgs e)
     {
-    }
-
-    private void ViceBridge_ViceResponse(object? sender, ViceResponseEventArgs e)
-    {
-        //Debug.WriteLine($"Response {e.Response.GetType().Name}");
-        switch (e.Response)
-        {
-            case StoppedResponse:
-                executionStoppedTcs?.TrySetResult();
-                break;
-            case ResumedResponse:
-                executionResumedTcs?.TrySetResult();
-                break;
-            case RegistersResponse registersResponse:
-                UpdateRegistersFromResponseAsync(registersResponse);
-                break;
-        }
     }
 
     public async Task StopAsync()
@@ -231,3 +230,5 @@ public sealed class Profiler : IProfiler
         await StopAsync();
     }
 }
+
+record ProfilingData(ulong index, ushort PC);

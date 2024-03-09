@@ -10,6 +10,7 @@ public class ProfilerViewModel : NotifiableObject
     readonly IProfiler profiler;
     public bool IsActive { get; private set; }
     public bool IsStarting {  get; private set; }
+    public bool IsStopping { get; private set; }
     public ProfilerViewModel(ILogger<ProfilerViewModel> logger, IProfiler profiler)
     {
         this.logger = logger;
@@ -28,17 +29,25 @@ public class ProfilerViewModel : NotifiableObject
         try
         {
             await profiler.StartAsync(CancellationToken.None);
+            Debug.WriteLine(profiler.IsActive ? "Profiler started": "Profiler cancelled");
         }
         finally
         {
-            Debug.WriteLine("Profiler started");
             IsStarting = false;
         }
     }
 
-    public async Task Stop()
+    public async Task StopAsync()
     {
-        await profiler.StopAsync();
+        IsStopping = true;
+        try
+        {
+            await profiler.StopAsync();
+        }
+        finally
+        {
+            IsStopping = false;
+        }
     }
 
     protected override void Dispose(bool disposing)

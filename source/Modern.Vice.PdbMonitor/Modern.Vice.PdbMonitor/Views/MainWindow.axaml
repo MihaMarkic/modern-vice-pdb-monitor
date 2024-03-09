@@ -9,7 +9,7 @@
         xmlns:ctl="clr-namespace:Modern.Vice.PdbMonitor.Controls"
         xmlns:cmn="clr-namespace:Modern.Vice.PdbMonitor.Engine.Common;assembly=Modern.Vice.PdbMonitor.Engine"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        MinWidth="600" Width="800"
+        MinWidth="850" Width="850"
         MinHeight="300" Height="600"
         x:Class="Modern.Vice.PdbMonitor.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -205,7 +205,7 @@
           <TextBlock Margin="4,0,0,0">Pause</TextBlock>
         </StackPanel>
       </Button>
-      <Button ToolTip.Tip="Stops debugging" Command="{Binding StopCommand}" DockPanel.Dock="Left">
+      <Button ToolTip.Tip="Stops execution" Command="{Binding StopCommand}" DockPanel.Dock="Left">
         <StackPanel Orientation="Horizontal">
           <Image>
             <Image.Styles>
@@ -228,12 +228,28 @@
         DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Into</TextBlock>
       </Button>
-      <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}" 
+      <Button ToolTip.Tip="Step Over" Command="{Binding StepOverCommand}" CommandParameter="{Binding IsShiftDown}"
         DockPanel.Dock="Left">
         <TextBlock Margin="4,0,0,0">Step Over</TextBlock>
       </Button>
-      <Button ToolTip.Tip="Start profiler session" Command="{Binding RunProfilerCommand}" DockPanel.Dock="Left">
-        <TextBlock Margin="4,0,0,0">Start Profiler</TextBlock>
+      <Button ToolTip.Tip="Starts profiler session" Command="{Binding RunProfilerCommand}" DockPanel.Dock="Left">
+        <StackPanel Orientation="Horizontal">
+          <Image>
+            <Image.Styles>
+              <Style Selector="Image:disabled">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/play_disabled.svg"/>
+                </Setter>
+              </Style>
+              <Style Selector="Image">
+                <Setter Property="Source">
+                  <svg:SvgImage Source="/Assets/Icons/profile.svg"/>
+                </Setter>
+              </Style>
+            </Image.Styles>
+          </Image>
+          <TextBlock Margin="4,0,0,0">Profiler</TextBlock>
+        </StackPanel>
       </Button>
       <Button ToolTip.Tip="Show Disassembly at current PC address" Command="{Binding ShowDisassemblyCommand}" 
         DockPanel.Dock="Left">
