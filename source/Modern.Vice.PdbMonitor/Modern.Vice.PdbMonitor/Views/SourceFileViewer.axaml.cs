@@ -30,6 +30,7 @@ public partial class SourceFileViewer : UserControl
     SourceFileViewModel? oldDataContext;
     BreakpointsMargin? breakpointsMargin;
     AddressMargin? addressMargin;
+    ProfilingMargin? profilingMargin;
 
     bool useLineColorizerForElements;
     TextMate.Installation textMateInstallation;
@@ -118,6 +119,7 @@ public partial class SourceFileViewer : UserControl
                 Margin = new Thickness(4, 0),
             };
             leftMargins.Insert(2, lineNumbersMargin);
+            ToggleProfilingMargin();
             lineColorizer.LineNumber = viewModel.ExecutionRow + 1;
             Editor.TextArea.TextView.LineTransformers.Add(lineColorizer);
             if (viewModel.SourceLanguage == SourceLanguage.Custom)
@@ -141,6 +143,25 @@ public partial class SourceFileViewer : UserControl
             }
         }
         oldTypedDataContext = viewModel;
+    }
+
+    void ToggleProfilingMargin()
+    {
+        var leftMargins = Editor.TextArea.LeftMargins;
+        if (ViewModel is not null)
+        {
+            if (ViewModel.ShowProfilingData)
+            {
+                profilingMargin = new ProfilingMargin();
+                leftMargins.Insert(0, profilingMargin);
+                return;
+            }
+        }
+        if (profilingMargin is not null)
+        {
+            leftMargins.Remove(profilingMargin);
+            profilingMargin = null;
+        }
     }
 
     private void CallStack_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -313,6 +334,9 @@ public partial class SourceFileViewer : UserControl
                     lineColorizer.Elements = ViewModel!.Elements;
                     Editor.TextArea.TextView.Redraw();
                 }
+                break;
+            case nameof(ViewModel.ShowProfilingData):
+                ToggleProfilingMargin();
                 break;
         }
     }

@@ -15,6 +15,7 @@
   <DockPanel LastChildFill="True">
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
       <CheckBox IsChecked="{Binding ShowAssemblyLines}">Assembly</CheckBox>
+      <CheckBox IsChecked="{Binding ShowProfilingData}" Margin="8,0">Profiling</CheckBox>
     </StackPanel>
     <ae:TextEditor Name="Editor"
           FontFamily="{StaticResource CodeFont}"

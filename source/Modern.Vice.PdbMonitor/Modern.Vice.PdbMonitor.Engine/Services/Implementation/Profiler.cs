@@ -8,7 +8,6 @@ using Righthand.ViceMonitor.Bridge;
 using Righthand.ViceMonitor.Bridge.Commands;
 using Righthand.ViceMonitor.Bridge.Responses;
 using Righthand.ViceMonitor.Bridge.Services.Abstract;
-using static Compiler.Oscar64.Services.Implementation.AsmParser;
 
 namespace Modern.Vice.PdbMonitor.Engine.Services.Implementation;
 public sealed class Profiler : IProfiler
@@ -25,6 +24,8 @@ public sealed class Profiler : IProfiler
     Task? loop;
     CancellationTokenSource? ctsLoop;
     TaskScheduler uiTaskScheduler;
+    // holds hits
+    uint[] heatMap = new uint[ushort.MaxValue+1];
     public Profiler(ILogger<Profiler> logger, IViceBridge viceBridge, IDispatcher dispatcher,
         RegistersMapping registersMapping, Globals globals)
     {
@@ -39,6 +40,7 @@ public sealed class Profiler : IProfiler
     TaskCompletionSource? loopStoppedTcs;
     public async Task StartAsync(CancellationToken ct)
     {
+        Array.Clear(heatMap);
         if (!IsActive)
         {
             if (globals.Project is null)
@@ -140,10 +142,11 @@ public sealed class Profiler : IProfiler
 
     private async ValueTask ProfilingDataConsumer(ChannelReader<ProfilingData> reader)
     {
-        await foreach (ProfilingData data in reader.ReadAllAsync().ConfigureAwait(false))
+        await foreach (ProfilingData data in reader.ReadAllAsync())
         {
-            //await Task.Delay(1);
-            Debug.WriteLine($"{Thread.CurrentThread.ManagedThreadId} Received {data.index}:{data.PC}");
+            Debug.Assert(Thread.CurrentThread.ManagedThreadId == 1);
+            heatMap[data.PC]++;
+            //Debug.WriteLine($"{Thread.CurrentThread.ManagedThreadId} Received {data.index}:{data.PC}");
         }
         Debug.WriteLine("Consumer loop ended");
     }

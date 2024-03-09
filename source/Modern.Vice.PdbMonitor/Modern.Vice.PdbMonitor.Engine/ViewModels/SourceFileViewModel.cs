@@ -60,6 +60,7 @@ public class SourceFileViewModel : ScopedViewModel, IViewableContent
     public ImmutableDictionary<int, ImmutableArray<SyntaxElement>> Elements { get; private set; }
     public SourceLanguage? SourceLanguage => globals.Project?.SourceLanguage;
     public bool ShowAssemblyLines { get; set; }
+    public bool ShowProfilingData { get; set; }
     public ImmutableDictionary<int, int>? EditorRowToLinesMap { get; private set; }
     public ImmutableArray<int>? LineToEditorRowMap { get; private set; }
     public int? ExecutionRow { get; set; }
