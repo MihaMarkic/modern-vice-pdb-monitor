@@ -484,6 +484,19 @@ public abstract class EditorLineViewModel: NotifiableObject
     public string Content { get; }
     public ushort? Address { get; }
     public bool IsExecution { get; set; }
+    /// <summary>
+    /// Hits to this method only
+    /// </summary>
+    public ulong? Hits { get; init; }
+    /// <summary>
+    /// Hits to this method and all invoked methods from within.
+    /// </summary>
+    public ulong? HitsWithSubroutines { get; init; }
+    /// <summary>
+    /// Total profiling hits.
+    /// </summary>
+    public ulong? TotalHits { get; init; }
+    public double? PercentageHits => Hits is not null && TotalHits is not null ? 
     public EditorLineViewModel(string content, ushort? address)
     {
         Content = content;
