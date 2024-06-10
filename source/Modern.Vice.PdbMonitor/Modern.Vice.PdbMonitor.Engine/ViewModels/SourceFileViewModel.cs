@@ -496,7 +496,7 @@ public abstract class EditorLineViewModel: NotifiableObject
     /// Total profiling hits.
     /// </summary>
     public ulong? TotalHits { get; init; }
-    public double? PercentageHits => Hits is not null && TotalHits is not null ? 
+    public double? PercentageHits => Hits is not null && TotalHits > 0 ? Hits / (double)TotalHits : null;
     public EditorLineViewModel(string content, ushort? address)
     {
         Content = content;
