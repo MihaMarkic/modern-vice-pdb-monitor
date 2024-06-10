@@ -8,4 +8,6 @@ public enum CompilerType
     Acme,
     [Display(Description = "Oscar64")]
     Oscar64,
+    [Display(Description = "KickAssembler")]
+    KickAssembler,
 }

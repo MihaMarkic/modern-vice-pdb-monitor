@@ -61,6 +61,11 @@
               <cmn:CompilerType>Oscar64</cmn:CompilerType>
             </MenuItem.CommandParameter>
           </MenuItem>
+          <MenuItem Header="New KickAssembler project" Command="{Binding CreateProjectCommand}">
+            <MenuItem.CommandParameter>
+              <cmn:CompilerType>KickAssembler</cmn:CompilerType>
+            </MenuItem.CommandParameter>
+          </MenuItem>
         </MenuItem>
         <MenuItem Header="_Open..." Command="{Binding OpenProjectCommand}" />
         <Separator/>

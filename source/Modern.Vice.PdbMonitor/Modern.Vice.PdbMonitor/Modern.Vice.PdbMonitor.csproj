@@ -83,6 +83,7 @@
     <PackageReference Include="Righthand.Vice.Bridge" Version="1.0.0-beta.18" />
    </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Compilers\Assembler.KickAssembler\Assembler.KickAssembler.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Engine\Modern.Vice.PdbMonitor.Engine.csproj" />
   </ItemGroup>

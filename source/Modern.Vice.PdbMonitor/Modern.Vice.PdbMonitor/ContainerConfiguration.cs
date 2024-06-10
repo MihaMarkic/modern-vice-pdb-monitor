@@ -5,6 +5,7 @@ using Modern.Vice.PdbMonitor.Core;
 using Modern.Vice.PdbMonitor.Engine;
 using NLog.Extensions.Logging;
 using Compiler.Oscar64;
+using Assembler.KickAssembler;
 
 namespace Modern.Vice.PdbMonitor;
 
@@ -29,6 +30,7 @@ public static class ContainerConfiguration
         services.AddCore();
         services.AddAcme();
         services.AddOscar64();
+        services.AddKickAssembler();
         return services;
     }
 }

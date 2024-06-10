@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Compilers\Assembler.KickAssembler\Assembler.KickAssembler.csproj" />
     <ProjectReference Include="..\Compilers\Compiler.Oscar64\Compiler.Oscar64.csproj" />
     <ProjectReference Include="..\Compilers\Modern.Vice.PdbMonitor.Compilers.Acme\Modern.Vice.PdbMonitor.Compilers.Acme.csproj" />
     <ProjectReference Include="..\Modern.Vice.PdbMonitor.Core\Modern.Vice.PdbMonitor.Core.csproj" />

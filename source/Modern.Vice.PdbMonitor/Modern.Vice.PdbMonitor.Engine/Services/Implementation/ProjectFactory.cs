@@ -1,4 +1,5 @@
-﻿using Compiler.Oscar64;
+﻿using Assembler.KickAssembler;
+using Compiler.Oscar64;
 using Microsoft.Extensions.DependencyInjection;
 using Modern.Vice.PdbMonitor.Compilers.Acme;
 using Modern.Vice.PdbMonitor.Core.Services.Abstract;
@@ -23,6 +24,7 @@ public class ProjectFactory : IProjectFactory
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<AcmeCompilerServices>(),
             CompilerType.Oscar64 => serviceProvider.GetRequiredService<Oscar64CompilerServices>(),
+            CompilerType.KickAssembler => serviceProvider.GetRequiredService<KickAssemblerServices>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -32,6 +34,7 @@ public class ProjectFactory : IProjectFactory
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<AcmeCompiler>(),
             CompilerType.Oscar64 => serviceProvider.GetRequiredService<Oscar64Compiler>(),
+            CompilerType.KickAssembler => serviceProvider.GetRequiredService<KickAssembler>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -41,6 +44,7 @@ public class ProjectFactory : IProjectFactory
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<AssemblyDebugStepper>(),
             CompilerType.Oscar64 => serviceProvider.GetRequiredService<HighLevelDebugStepper>(),
+            CompilerType.KickAssembler => serviceProvider.GetRequiredService<AssemblyDebugStepper>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -50,6 +54,7 @@ public class ProjectFactory : IProjectFactory
         {
             CompilerType.Acme => serviceProvider.GetRequiredService<IPdbManager>(),
             CompilerType.Oscar64 => serviceProvider.GetRequiredService<IPdbManager>(),
+            CompilerType.KickAssembler => serviceProvider.GetRequiredService<IPdbManager>(),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
     }
@@ -60,12 +65,17 @@ public class ProjectFactory : IProjectFactory
             CompilerType.Acme => new DebugFileOpenDialogModel(
                 initialDirectory,
                 "Open output file",
-                "ACME Compiled CBM files",
+                "ACME compiled CBM files",
                 "*.prg"),
             CompilerType.Oscar64 => new DebugFileOpenDialogModel(
                 initialDirectory,
                 "Open output file",
-                "Oscar64 Compiled files",
+                "Oscar64 compiled files",
+                "*.prg"),
+            CompilerType.KickAssembler => new DebugFileOpenDialogModel(
+                initialDirectory,
+                "Open output file",
+                "KickAssembler compiled files",
                 "*.prg"),
             _ => throw new Exception($"Unknown compiler type {compilerType}"),
         };
