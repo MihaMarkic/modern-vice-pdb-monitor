@@ -3,6 +3,7 @@
 namespace Assembler.KickAssembler.Models;
 
 public record C64Debugger(
+    string Version,
     ImmutableArray<Source> Sources,
     ImmutableArray<Segment> Segments,
     ImmutableArray<Label> Labels,
