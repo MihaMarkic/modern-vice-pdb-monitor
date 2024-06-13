@@ -26,13 +26,13 @@
           IsReadOnly="True" Width="100" />
       <DataGridTextColumn Header="Line" Binding="{Binding LineNumber, Mode=OneWay}"
         IsReadOnly="True" Width="80" />
-      <DataGridTextColumn Header="File" Binding="{Binding FileText}, Mode=OneWay}"
+      <DataGridTextColumn Header="File" Binding="{Binding FileText, Mode=OneWay}"
         IsReadOnly="True" Width="140" />
       <DataGridTextColumn Header="Function" Binding="{Binding FunctionText, Mode=OneWay}"
         IsReadOnly="True" Width="200" />
-      <DataGridTextColumn Header="Source" Binding="{Binding LineText}, Mode=OneWay}"
+      <DataGridTextColumn Header="Source" Binding="{Binding LineText, Mode=OneWay}"
         IsReadOnly="True" Width="300" />
-      <DataGridTextColumn Header="Assembly" Binding="{Binding Assembly}, Mode=OneWay}"
+      <DataGridTextColumn Header="Assembly" Binding="{Binding Assembly, Mode=OneWay}"
         IsReadOnly="True" Width="300" />
     </DataGrid.Columns>
   </DataGrid>
