@@ -613,13 +613,16 @@ public class MainViewModel : NotifiableObject
     }
     internal Process? StartVice()
     {
-        if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
+        string? realVicePath = Globals.Settings.RealVicePath;
+        if (!string.IsNullOrWhiteSpace(realVicePath))
         {
-            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64sc.exe");
+            string path = Path.Combine(realVicePath, "x64sc.exe");
             try
             {
-                string arguments = $"-binarymonitor";
-                return Process.Start(path, arguments);
+                string arguments = Globals.Settings.BinaryMonitorArgument;
+                var process = Process.Start(path, arguments);
+                process.EnableRaisingEvents = true;
+                return process;
             }
             catch (Exception ex)
             {
@@ -641,10 +644,11 @@ public class MainViewModel : NotifiableObject
     }
     void Test()
     {
-        if (!string.IsNullOrWhiteSpace(Globals.Settings.VicePath))
+        string? realVicePath = Globals.Settings.RealVicePath;
+        if (!string.IsNullOrWhiteSpace(realVicePath))
         {
-            string path = Path.Combine(Globals.Settings.VicePath, "bin", "x64sc.exe");
-            var proc = Process.Start(path, "-binarymonitor");
+            string path = Path.Combine(realVicePath, "x64sc.exe");
+            var proc = Process.Start(path, Globals.Settings.BinaryMonitorArgument);
         }
     }
     internal async void OpenProjectFromPath(string? path)

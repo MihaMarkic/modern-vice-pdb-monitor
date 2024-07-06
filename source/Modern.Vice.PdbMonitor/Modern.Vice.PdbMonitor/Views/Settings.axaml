@@ -3,9 +3,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Modern.Vice.PdbMonitor.Engine.ViewModels;assembly=Modern.Vice.PdbMonitor.Engine"
+             xmlns:c="clr-namespace:Modern.Vice.PdbMonitor.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:SettingsViewModel"
              x:Class="Modern.Vice.PdbMonitor.Views.Settings">
+  <UserControl.Resources>
+    <c:BoolToStringConverter x:Key="ViceDirectoryLocationConverter" OnTrue="Valid directory (in bin subdirectory)" OnFalse="Valid directory" />
+  </UserControl.Resources>
   <DockPanel LastChildFill="True">
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" HorizontalAlignment="Right">
       <Button Command="{Binding VerifyValuesCommand}">Verify values</Button>
@@ -18,7 +22,10 @@
         <Button x:Name="Open" DockPanel.Dock="Right" Click="OpenViceDirectory">...</Button>
         <TextBox Text="{Binding Settings.VicePath}" Margin="0,0,4,0" />
       </DockPanel>
-      <CheckBox IsChecked="{Binding IsVicePathGood}" IsEnabled="false">Valid directory</CheckBox>
+      <StackPanel Orientation="Horizontal">
+        <CheckBox IsChecked="{Binding IsVicePathGood}" IsEnabled="false" 
+          Content="{Binding Settings.ViceFilesInBinDirectory, Converter={StaticResource ViceDirectoryLocationConverter}}" />
+      </StackPanel>
       <CheckBox IsChecked="{Binding Settings.ResetOnStop}">Reset On Stop</CheckBox>
       <TextBlock Classes="info" Margin="28,0,0,0">Resets VICE when upon Stop button click. Otherwise application is left running.</TextBlock>
     </StackPanel>

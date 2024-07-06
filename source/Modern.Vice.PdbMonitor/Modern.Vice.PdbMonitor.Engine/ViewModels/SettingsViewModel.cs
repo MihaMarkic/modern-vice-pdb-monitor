@@ -42,15 +42,12 @@ public sealed class SettingsViewModel: OverlayContentViewModel
             IsVicePathGood = false;
             return;
         }
-        string path = Path.Combine(Settings.VicePath, "bin"); 
-        if (!Directory.Exists(path))
-        {
-            IsVicePathGood = false;
-            return;
-        }
+        string binPath = Path.Combine(Settings.VicePath, "bin");
+        Settings.ViceFilesInBinDirectory = Directory.Exists(binPath);
+        string pathToVerify = Settings.ViceFilesInBinDirectory ? binPath : Settings.VicePath;
         try
         {
-            IsVicePathGood = Directory.GetFiles(path, "x64sc.exe").Any();
+            IsVicePathGood = Directory.GetFiles(pathToVerify, "x64sc.exe").Any();
         }
         catch (Exception ex)
         {
