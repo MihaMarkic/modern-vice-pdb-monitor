@@ -15,25 +15,26 @@ public class KickAssemblerDbgParser
     public async Task<C64Debugger> LoadFileAsync(string path, CancellationToken ct = default)
     {
         C64Debugger? result = null;
-        if (File.Exists(path))
+        if (!File.Exists(path))
         {
-            string content;
-            try
-            {
-                content = await File.ReadAllTextAsync(path, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to load KickAssembler debug files {path}");
-                return null;
-            }
-            result = await LoadContentAsync(content, ct);
+            throw new Exception($"File {path} does not exist");
         }
+        string content;
+        try
+        {
+            content = await File.ReadAllTextAsync(path, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to load KickAssembler debug files {path}");
+            throw;
+        }
+        result = await LoadContentAsync(content, ct);
         return result;
     }
 
     internal XElement GetElement(XElement root, string name) => root.Element(name) ?? new XElement(name);
-    internal async ValueTask<C64Debugger?> LoadContentAsync(string content, CancellationToken ct = default)
+    internal async ValueTask<C64Debugger> LoadContentAsync(string content, CancellationToken ct = default)
     {
         const string rootName = "C64debugger";
         try
@@ -66,7 +67,7 @@ public class KickAssemblerDbgParser
     internal int CountChars(string text, char c)
     {
         int count = 0;
-        for (int i=0; i<text.Length, i++)
+        for (int i=0; i<text.Length; i++)
         {
             if (text[i] == c)
             {
