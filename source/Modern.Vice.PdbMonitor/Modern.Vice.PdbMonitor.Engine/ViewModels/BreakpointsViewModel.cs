@@ -672,7 +672,7 @@ public class BreakpointsViewModel: NotifiableObject
                     var conditionSetCommand = viceBridge.EnqueueCommand(
                         new ConditionSetCommand(checkpointSetResponse.CheckpointNumber, breakpoint.Condition),
                         resumeOnStopped: true);
-                    var conditionSetResponse = conditionSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger,
+                    var conditionSetResponse = await conditionSetCommand.Response.AwaitWithLogAndTimeoutAsync(dispatcher, logger,
                         conditionSetCommand, ct: ct);
                     // in case condition set fails, remove the checkpoint
                     if (conditionSetResponse is null)
